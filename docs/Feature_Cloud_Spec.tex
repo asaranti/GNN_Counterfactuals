@@ -1,0 +1,66 @@
+\documentclass[12p3, letterpaper, twoside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{circuitikz}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\tikzset{block/.style = {draw, rectangle},
+Connect/.style={-latex,thick}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{GNN Counterfactual Specifications}
+\date{05. October 2021}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{titlepage}
+\maketitle
+\end{titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\section{Introduction}
+
+Current xAI platform constraints influence the GNN counterfactuals corresponingly. Only GNNs for homogeneous graphs (all nodes same number and type of features) and no multi-graphs (no self-edges or multiple edges between nodes). The software package that is used is 
+Pytorch-Geometric (PyG):\\ 
+\url{https://pytorch-geometric.readthedocs.io/en/latest/}, so the architectures that are already implemented in this package have priority. It needs to be noted that this package (as well as another well-known based on that topic \url{https://www.dgl.ai/}) can be used to create new custom types of GNN architetures. 
+
+Hierarchy levels:
+
+\begin{itemize}
+	\item Graph tasks
+	\item Typical state-of-the-art architectures
+	\item Possible actions
+\end{itemize}
+
+The change of number of classes is out of scope. Same goes for the number of hidden units (or so-called hidden channels).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\section{GNN Architectures}
+
+\url{https://pytorch-geometric.readthedocs.io/en/latest/modules/nn.html#models}
+
+GCN is the most prominent, GIN for graph classification
+
+The possible layers are listed here: \url{https://pytorch-geometric.readthedocs.io/en/latest/modules/nn.html#convolutional-layers}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Quality Management}
+\label{Quality Management}
+
+The aforementioned logic needs to be tested after each series of actions is ``submited'', i.e. after the buttons ``Predict'' or ``Retrain'' are pressed. Property-based Testing: \cite{Saranti:2020:PropertyBasedTesting}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Future Work}
+\label{Future Work}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}
