@@ -6,10 +6,12 @@
     :date: 2021-10-05
 """
 
+import numpy as np
 import torch
 from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
 
+from actionable.graph_actions import add_edge
 from gnns.gnns_graph_classification.GCN import GCN
 from plots.graph_visualization import graph_viz
 
@@ -25,27 +27,30 @@ print(f'Number of graphs: {len(dataset)}')
 print(f'Number of features: {dataset.num_features}')
 print(f'Number of classes: {dataset.num_classes}')
 
-data = dataset[0]  # Get the first graph object.
+input_graph = dataset[0]  # Get the first graph object.
 
 print()
-print(data)
+print(input_graph)
 
-print(data.x.shape)
-print(data.edge_index)
-print(data.edge_attr.shape)
-print(data.y)
-print(data.pos)
+print(f'Number of nodes: {input_graph.num_nodes}')
+print(f'Number of edges: {input_graph.num_edges}')
+print(f'Average node degree: {input_graph.num_edges / input_graph.num_nodes:.2f}')
+print(f'Has isolated nodes: {input_graph.has_isolated_nodes()}')
+print(f'Has self-loops: {input_graph.has_self_loops()}')
+print(f'Is undirected: {input_graph.is_undirected()}')
 
-print(f'Number of nodes: {data.num_nodes}')
-print(f'Number of edges: {data.num_edges}')
-print(f'Average node degree: {data.num_edges / data.num_nodes:.2f}')
-print(f'Has isolated nodes: {data.has_isolated_nodes()}')
-print(f'Has self-loops: {data.has_self_loops()}')
-print(f'Is undirected: {data.is_undirected()}')
+print('=============================================================')
+graph_viz(input_graph)
+new_edge_index_left = 16
+new_edge_index_right = 11
+new_edge_attr = np.array([])
+updated_graph = add_edge(input_graph, new_edge_index_left, new_edge_index_right, new_edge_attr)
 
-graph_viz(data)
+graph_viz(updated_graph)
 print('=============================================================')
 
+
+"""
 torch.manual_seed(12345)
 dataset = dataset.shuffle()
 
@@ -106,5 +111,5 @@ for epoch in range(1, 101):
     test_acc = test(test_loader)
 
     print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
-
+"""
 
