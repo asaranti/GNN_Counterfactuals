@@ -79,8 +79,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) ->
     :return: The updated graph
     """
 
-    # [0.] Make a deepcopy of the input graph --------------------------------------------------------------------------
-    #      and check that the index of the deleted node is valid -------------------------------------------------------
+    # [0.] Check that the index of the deleted node is valid -----------------------------------------------------------
     assert input_graph.x is not None, "No nodes saved in the graphs, the \"x\" field is None"
     assert 0 <= node_index < input_graph.num_nodes, \
         f"The index of the node {node_index} is not in accordance with the number of nodes {input_graph.num_nodes}"
@@ -197,9 +196,10 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
     # [1.] Add the node's features -------------------------------------------------------------------------------------
     input_graph_edge_attr = input_graph.edge_attr.numpy()
     if input_graph_edge_attr is not None:
-        assert input_graph_edge_attr.shape[1] != input_graph_edge_attr.shape[1], \
-            "The shape of the features of the new edge must conform to the shape " \
-            "of the features of the rest of the edges. The graph must be homogeneous."
+        assert input_graph_edge_attr.shape[1] == new_edge_attr.shape[1], \
+            f"The shape of the features of the new edge: {new_edge_attr.shape[1]} must conform to the shape " \
+            f"of the features of the rest of the edges: {input_graph_edge_attr.shape[1]}. " \
+            f"The graph must be homogeneous."
         output_graph_edge_attr = torch.from_numpy(np.row_stack((input_graph_edge_attr, new_edge_attr)))
     else:
         output_graph_edge_attr = torch.from_numpy(np.array([new_edge_attr]))
@@ -292,10 +292,10 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data, new_input
 
     # [1.] Number of rows of the input feature should be equal to the number of nodes ----------------------------------
     nodes_nr = input_graph.num_nodes
-    assert nodes_nr == new_input_node_feature.shape[0], f"The number of nodes: {nodes_nr} in the graph is not equal to the" \
-                                                   f" number of rows in the input feature: " \
-                                                   f"{new_input_node_feature.shape[0]}. All nodes should have the " \
-                                                   f"feature, since heterogeneous graphs are not allowed."
+    assert nodes_nr == new_input_node_feature.shape[0], f"The number of nodes: {nodes_nr} in the graph is not equal " \
+                                                        f"to the number of rows in the input feature: " \
+                                                        f"{new_input_node_feature.shape[0]}. All nodes should have " \
+                                                        f"the feature, since heterogeneous graphs are not allowed."
 
     input_graph_x = input_graph.x.numpy()
     output_graph_x = np.column_stack((input_graph_x, new_input_node_feature))
@@ -303,7 +303,7 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data, new_input
     # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
 
-    # [4.] Output graph ------------------------------------------------------------------------------------------------
+    # [3.] Output graph ------------------------------------------------------------------------------------------------
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
@@ -312,7 +312,28 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data, new_input
                         dtype=torch.long)
     return output_graph
 
-# def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data) -> torch_geometric.data.data.Data:
+
+def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, removed_node_feature_idx: int) -> \
+        torch_geometric.data.data.Data:
+    """
+    Remove a feature in all of the nodes. The features field of all the nodes "x" will have one column less.
+    It is presupposed that the node index is valid. For example, one cannot delete the last node of a graph or
+    a node with a higher index than the one allowed by the number of nodes.
+    If the node's features field "x" is empty then nothing is done. The other fields stay unchanged.
+
+    :param input_graph: Input graph
+    :param removed_node_feature_idx: Index of the column of the removed feature
+
+    :return: The updated graph
+    """
+
+    # [0.] Check that the index of the deleted node is valid -----------------------------------------------------------
+    # assert input_graph.x is not None, "No nodes saved in the graphs, the \"x\" field is None"
+    # assert 0 <= removed_node_feature_idx < input_graph.num_nodes, \
+    #    f"The index of the node {removed_node_feature_idx} is not in accordance with the " \
+    #    f"number of nodes {input_graph.num_nodes}"
+
+    # TODO ..... after meeting :-)
 
 
 def add_feature_all_edges(input_graph: torch_geometric.data.data.Data, new_input_edge_feature: np.array) -> \
@@ -322,11 +343,31 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data, new_input
     will have another column. The number of rows of the input attribute should be equal to the number of edges.
     If the edges's attributes field "edge_attr" is empty or None then a one column array is created.
     The other fields stay unchanged.
-
-
-
     """
 
+    # [1.] Number of rows of the input feature should be equal to the number of nodes ----------------------------------
+    edges_nr = input_graph.num_edges
+    assert edges_nr == new_input_edge_feature.shape[0], f"The number of edges: {edges_nr} in the graph is not equal " \
+                                                        f"to the number of rows in the input attribute: " \
+                                                        f"{new_input_edge_feature.shape[0]}. All edges should have " \
+                                                        f"the attribute, since heterogeneous graphs are not allowed."
 
+    if input_graph.edge_attr is not None:
+        input_graph_edge_attr = input_graph.edge_attr.numpy()
+        output_graph_edge_attr = torch.from_numpy(np.column_stack((input_graph_edge_attr, new_input_edge_feature)))
+    else:
+        output_graph_edge_attr = torch.from_numpy([new_input_edge_feature])
+
+    # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
+    output_pos = input_graph.pos
+
+    # [3.] Output graph ------------------------------------------------------------------------------------------------
+    output_graph = Data(x=input_graph.x,
+                        edge_index=input_graph.edge_index,
+                        edge_attr=output_graph_edge_attr,
+                        y=input_graph.y,
+                        pos=output_pos,
+                        dtype=torch.long)
+    return output_graph
 
 # def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data) -> torch_geometric.data.data.Data:
