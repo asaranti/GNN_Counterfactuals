@@ -29,7 +29,8 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
     # [0.] Constraint: the new node's features needs to be the same length (type) --------------------------------------
     input_graph_x = input_graph.x.numpy()
     if input_graph_x is not None:
-        assert input_graph_x.shape[1] != node_features.shape[1], \
+
+        assert input_graph_x.shape[1] == node_features.shape[1], \
             "The shape of the features of the new node must conform to the shape " \
             "of the features of the rest of the nodes. The graph must be homogeneous."
 
@@ -334,7 +335,7 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, remove
            f"The index of the feature index: {removed_node_feature_idx} is not in accordance with the " \
            f"number of features {node_features_nr}"
 
-    output_graph_x = torch.from_numpy(np.delete(input_graph_x, removed_node_feature_idx, 1))
+    output_graph_x = np.delete(input_graph_x, removed_node_feature_idx, 1)
 
     # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
