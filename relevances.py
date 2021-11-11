@@ -6,6 +6,7 @@
     :date: 2021-11-10
 """
 
+import json
 
 from flask import Flask, request
 
@@ -29,6 +30,7 @@ def index():
 
 # Graphs dataset that was used in the GNN task -------------------------------------------------------------------------
 dataset = Planetoid(root='data/Planetoid', name='Cora', transform=NormalizeFeatures())
+nodes_and_edges_relevances = {}
 
 
 ########################################################################################################################
@@ -42,6 +44,8 @@ def get_relevances_nodes():
     :return:
     """
 
+    return json.dumps(nodes_and_edges_relevances["graph_nodes_relevances"])
+
 
 ########################################################################################################################
 # [2.] Get the relevances for all edges ================================================================================
@@ -53,6 +57,8 @@ def get_relevances_edges():
 
     :return:
     """
+
+    return json.dumps(nodes_and_edges_relevances["graph_edges_relevances"])
 
 
 ########################################################################################################################
@@ -84,9 +90,9 @@ def get_edge_feature_relevances():
 ########################################################################################################################
 if __name__ == "__main__":
 
-    # [A.] Perform the first task (atm: node classification) with the GNN ----------------------------------------------
-    #      Get the relevances for each node ----------------------------------------------------------------------------
-    node_classification(dataset)
+    # Perform the first task (atm: node classification) with the GNN ---------------------------------------------------
+    # Get the relevances for each node and edge ------------------------------------------------------------------------
+    nodes_and_edges_relevances = node_classification(dataset)
 
     relevances_app.run(debug=True)
 

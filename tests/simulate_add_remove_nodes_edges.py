@@ -14,7 +14,6 @@ def add_remove_nodes_edges_simulation_valid():
     - Check in the list of edges that you don't add an edge that already exists.
     - Check in the list of edges that you don't remove an edge does not exist.
     - Don't remove the last node in the graph.
-
     """
 
     # [1.] Random number of node and edge additions --------------------------------------------------------------------
