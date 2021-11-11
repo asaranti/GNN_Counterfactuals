@@ -1,5 +1,6 @@
 """
-    Flask application instance
+    Flask application instance for the main graph presentation and
+    actions on them (addition/removal of nodes and edges as well as features thereof)
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
@@ -13,7 +14,7 @@ from torch_geometric.datasets import TUDataset
 
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
     add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
-from app_utils.jsonification import graph_to_json
+from testing_utils.jsonification import graph_to_json
 
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -25,9 +26,10 @@ app = Flask(__name__)
 @app.route('/')
 @app.route('/index')
 def index():
-    return "Hello, World!"
+    return "Hello Graphs!"
 
 
+# Graphs dataset that was used in the GNN task -------------------------------------------------------------------------
 dataset = TUDataset(root='data/TUDataset', name='MUTAG')
 graph_idx = 0
 

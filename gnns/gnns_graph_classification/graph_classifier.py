@@ -12,7 +12,7 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
 
 from actionable.graph_actions import add_edge, remove_node
-from gnns.gnns_graph_classification.GCN import GCN
+from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from plots.graph_visualization import graph_viz
 
 ########################################################################################################################
