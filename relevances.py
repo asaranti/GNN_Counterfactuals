@@ -13,7 +13,7 @@ from flask import Flask, request
 from torch_geometric.datasets import Planetoid
 from torch_geometric.transforms import NormalizeFeatures
 
-from gnns.gnns_node_classification.node_classifier import node_classification
+from gnns.gnns_node_classification.node_classifier import GNNNodeClassifierExplainer
 
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -30,13 +30,13 @@ def index():
 
 # Graphs dataset that was used in the GNN task -------------------------------------------------------------------------
 dataset = Planetoid(root='data/Planetoid', name='Cora', transform=NormalizeFeatures())
-nodes_and_edges_relevances = {}
+graph_index = 0
 
 
 ########################################################################################################################
 # [1.] Get the relevances for all nodes ================================================================================
 ########################################################################################################################
-@relevances_app.route('/relevances_nodes', methods=['GET'])
+@relevances_app.route('/relevances_nodes', methods=['POST'])
 def get_relevances_nodes():
     """
     Get the relevances of all nodes
@@ -44,13 +44,29 @@ def get_relevances_nodes():
     :return:
     """
 
-    return json.dumps(nodes_and_edges_relevances["graph_nodes_relevances"])
+    # [1.] User specifies the node to explain --------------------------------------------------------------------------
+    req_data = request.get_json()
+    node_to_explain = req_data["node_to_explain"]
+
+    if not str(node_to_explain).isdigit():
+        return f"The node index must be a valid integer. Instead it is: {node_to_explain}"
+
+    selected_graph = dataset[graph_index]
+    if 0 <= node_to_explain < selected_graph.num_nodes:
+
+        # [2.] Compute and return relevances ---------------------------------------------------------------------------
+        nodes_and_edges_relevances = gnn_node_classification_explainer.node_explanation(dataset, node_to_explain)
+        return json.dumps(nodes_and_edges_relevances["graph_nodes_relevances"])
+
+    else:
+        return f"The node index: {node_to_explain} is not compatible with the number of nodes " \
+               f"in the graph: {selected_graph.num_nodes}"
 
 
 ########################################################################################################################
 # [2.] Get the relevances for all edges ================================================================================
 ########################################################################################################################
-@relevances_app.route('/relevances_edges', methods=['GET'])
+@relevances_app.route('/relevances_edges', methods=['POST'])
 def get_relevances_edges():
     """
     Get the relevances of all edges
@@ -58,7 +74,22 @@ def get_relevances_edges():
     :return:
     """
 
-    return json.dumps(nodes_and_edges_relevances["graph_edges_relevances"])
+    # [1.] User specifies the node to explain --------------------------------------------------------------------------
+    req_data = request.get_json()
+    node_to_explain = req_data["node_to_explain"]
+
+    if not str(node_to_explain).isdigit():
+        return f"The node index must be a valid integer. Instead it is: {node_to_explain}"
+
+    selected_graph = dataset[graph_index]
+    if 0 <= node_to_explain < selected_graph.num_nodes:
+
+        # [2.] Compute and return relevances ---------------------------------------------------------------------------
+        nodes_and_edges_relevances = gnn_node_classification_explainer.node_explanation(dataset, node_to_explain)
+        return json.dumps(nodes_and_edges_relevances["graph_edges_relevances"])
+    else:
+        return f"The node index: {node_to_explain} is not compatible with the number of nodes " \
+               f"in the graph: {selected_graph.num_nodes}"
 
 
 ########################################################################################################################
@@ -90,9 +121,11 @@ def get_edge_feature_relevances():
 ########################################################################################################################
 if __name__ == "__main__":
 
-    # Perform the first task (atm: node classification) with the GNN ---------------------------------------------------
+    # [1.] Perform the first task (atm: node classification) with the GNN ----------------------------------------------
     # Get the relevances for each node and edge ------------------------------------------------------------------------
-    nodes_and_edges_relevances = node_classification(dataset)
+    graph_index = 0
+    gnn_node_classification_explainer = GNNNodeClassifierExplainer()
+    gnn_node_classification_explainer.node_classification(dataset, graph_index)
 
     relevances_app.run(debug=True)
 
