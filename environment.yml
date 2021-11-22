@@ -1,10 +1,13 @@
 name: gnn
 channels:
   - conda-forge
+  - pytorch
   - pyg
 dependencies:
   - python>=3.6
   - numpy
   - flask
   - pytorch
+  - torchvision
+  - cudatoolkit
   - pyg
