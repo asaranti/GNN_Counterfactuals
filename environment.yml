@@ -1,0 +1,10 @@
+name: gnn
+channels:
+  - conda-forge
+  - pyg
+dependencies:
+  - python>=3.6
+  - numpy
+  - flask
+  - pytorch
+  - pyg
