@@ -5,7 +5,13 @@
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2021-10-18
+
+    # global
+    TODO: Decide on datasets to use an put their names
+
+
 """
+import json
 
 from flask import Flask, request
 
@@ -27,6 +33,10 @@ app = Flask(__name__)
 @app.route('/index')
 def index():
     return "Hello Graphs!"
+
+
+# global
+dataset_names = ["TUDataset", "Other"]
 
 
 # Graphs dataset that was used in the GNN task -------------------------------------------------------------------------
@@ -265,6 +275,103 @@ def remove_feature_from_all_edges():
 
     return output_graph_json
 
+
+
+########################################################################################################################
+# [9.] Get all available dataset names =================================================================================
+########################################################################################################################
+@app.route('/data/dataset_name', methods=['GET'])
+def dataset_name():
+    """
+    Get the dataset_names for the UI
+    """
+    return json.dumps(dataset_names)
+
+
+########################################################################################################################
+# [10.] Get the actual dataset =========================================================================================
+########################################################################################################################
+@app.route('/data/dataset', methods=['GET'])
+def pre_defined_dataset():
+    """
+    Get the dataset for the UI
+    TODO: Dataset needs to be in the right format before actually reading it in to the shiny app
+    TODO: Need a if-statement for every dataset, or maybe a switch or something
+    """
+    dataset_name = request.args.get('dataset_name')
+
+    if dataset_name == "TUDataset":
+        graph_json = graph_to_json(dataset[graph_idx])
+    if dataset_name == "Other":
+        graph_json = graph_to_json(dataset[graph_idx])
+
+    return graph_json
+
+
+
+########################################################################################################################
+# [11.] Retrieve the modification history ==============================================================================
+########################################################################################################################
+@app.route('/modification_history', methods=['POST'])
+def modification_history():
+    """
+    This method returns the modification history action by action
+    Examples:
+    Added Edge: {'action': 'added', 'element': 'edge', 'edge': [{'from': '9606.ENSP00000303149', 'to': '9606.ENSP00000265334', 'id': 'bad27e58-4c70-11ec-8000-212eb812c854', 'rel_pos': 0, 'rel_pos_neg': 0, 'confidence': 0}]}
+    Deleted Edge: {'action': 'deleted', 'element': 'edge', 'id': 'b64ce0db-eade-11eb-ac79-0130365d7bd6'}
+    Added Node: {'action': 'added', 'element': 'node', 'node': [{'label': 'test', 'id': 'b62a6fbe-4c70-11ec-8000-212eb812c854', 'rel_pos': 0, 'rel_pos_neg': 0, 'TCGA.OR.A5J1': 0, 'TCGA.OR.A5J2': 0,...}]}
+    Deleted Node: {'action': 'deleted', 'element': 'node', 'id': '9606.ENSP00000337425'}
+
+    TODO: Concrete modifications on the graph need to be implemented
+    """
+
+    # retrieve modification history
+    mod_hist = request.get_json()
+
+    return mod_hist
+
+########################################################################################################################
+# [12.] Apply the predict() to an already trained GNN ==================================================================
+########################################################################################################################
+@app.route('/nn_predict', methods=['GET'])
+def nn_predict():
+    """
+    Apply a new prediction with the current graphs dataset
+
+    :return:
+
+    TODO: The prediction needs to be returned
+    """
+    graph_json = graph_to_json(dataset[graph_idx])
+
+    return graph_json
+
+########################################################################################################################
+# [13.] Apply the retrain() to an already trained GNN ==================================================================
+########################################################################################################################
+@app.route('/nn_retrain', methods=['GET'])
+def nn_retrain():
+    """
+    Apply a new retrain with the current graphs dataset
+
+    :return:
+
+    TODO: The retrained graph needs to be returned
+    """
+    graph_json = graph_to_json(dataset[graph_idx])
+
+    return graph_json
+
+########################################################################################################################
+# [14.] Backup =========================================================================================================
+########################################################################################################################
+@app.route('/backup', methods=['GET'])
+def backup():
+    """
+    Backup data and model (snapshot)
+
+    :return:
+    """
 
 ########################################################################################################################
 # MAIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
