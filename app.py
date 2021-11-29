@@ -127,13 +127,14 @@ def adding_node():
 ########################################################################################################################
 # [2.] Delete node =====================================================================================================
 ########################################################################################################################
-@app.route('/graph_delete_node/<int:deleted_node_index>', methods=['DELETE'])
-def delete_node(deleted_node_index: int):
+@app.route('/graph_delete_node', methods=['DELETE'])
+def delete_node():
     """
     Delete the node from the graph by index
 
     :param deleted_node_index: Deleted node index
     """
+    deleted_node_index = request.args.get('deleted_node_index')
 
     input_graph = dataset[graph_idx]
     output_graph = remove_node(input_graph, deleted_node_index)
@@ -170,14 +171,16 @@ def adding_edge():
 ########################################################################################################################
 # [4.] Delete edge =====================================================================================================
 ########################################################################################################################
-@app.route('/graph_delete_edge/<int:edge_index_left>/<int:edge_index_right>', methods=['DELETE'])
-def delete_edge(edge_index_left: int, edge_index_right: int):
+@app.route('/graph_delete_edge', methods=['DELETE'])
+def delete_edge():
     """
     Delete the edge from the graph by indexes of the graph nodes that it connects
 
     :param edge_index_left: Index of left node of the edge
     :param edge_index_right: Index of right node of the edge
     """
+    edge_index_left = request.args.get('edge_index_left')
+    edge_index_right = request.args.get('edge_index_right')
 
     input_graph = dataset[graph_idx]
     output_graph = remove_edge(input_graph, edge_index_left, edge_index_right)
@@ -291,7 +294,7 @@ def dataset_name():
 ########################################################################################################################
 # [10.] Get the actual dataset =========================================================================================
 ########################################################################################################################
-@app.route('/data/dataset', methods=['GET'])
+@app.route('/data/dataset/', methods=['GET'])
 def pre_defined_dataset():
     """
     Get the dataset for the UI
