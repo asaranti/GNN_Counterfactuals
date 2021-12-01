@@ -1,0 +1,110 @@
+"""
+    Format Transformation
+    From Pytorch to PPI
+
+    :author: Anna Saranti
+    :copyright: © 2021 HCI-KDD (ex-AI) group
+    :date: 2021-12-01
+"""
+
+import os
+import random
+
+import numpy as np
+import pandas as pd
+from torch_geometric.datasets import Planetoid
+
+from preprocessing.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
+
+########################################################################################################################
+# [0.] Three file names ================================================================================================
+########################################################################################################################
+pytorch_to_ppi_attributes_file = "pytorch_to_ppi_attributes.cct"
+pytorch_to_ppi_node_id_to_name_file = "pytorch_to_ppi_node_id_to_name.csv"
+pytorch_to_ppi_edges_file = "pytorch_to_ppi_edges.txt"
+
+########################################################################################################################
+# [1.] Import Pytorch dataset and transform the attributes =============================================================
+########################################################################################################################
+dataset = Planetoid(root='/tmp/Cora', name='Cora')
+graph = dataset[0]
+print(graph)
+
+attributes = graph.x.numpy()
+attributes_shape = attributes.shape
+nodes_nr = attributes_shape[0]
+features_nr = attributes_shape[1]
+
+print(f"Nodes nr: {nodes_nr}, features nr: {features_nr}")
+
+attributes_transpose = attributes.T
+
+feature_names_list = ['feature_id_' + str(x) for x in range(features_nr)]
+nodes_ids_list = ['node_id_' + str(x) for x in range(nodes_nr)]
+
+attributes_data_dict = {'attrib_name': feature_names_list}
+for node_nr in range(nodes_nr):
+    attributes_data_dict['node_id' + str(node_nr)] = list(attributes_transpose[:, node_nr])
+attributes_data_df = pd.DataFrame.from_dict(attributes_data_dict)
+# print(attributes_data_df.head(5))
+
+transformation_dataset_folder = os.path.join("data", "format_transformation")
+attributes_data_df.to_csv(os.path.join(transformation_dataset_folder, pytorch_to_ppi_attributes_file),
+                          index=False, sep='\t')
+
+########################################################################################################################
+# [2.] Create a file with the mapping of "node_id" to "node_name" ======================================================
+########################################################################################################################
+nodes_names_list = ['node_name_' + str(x) for x in range(nodes_nr)]
+random.shuffle(nodes_names_list)
+
+first_col_list = ['9606' for x in range(nodes_nr)]
+node_id_names_mapping_dict = {'first_col': first_col_list,
+                              'node_id': nodes_ids_list,
+                              'node_name': nodes_names_list}
+node_id_names_mapping_df = pd.DataFrame.from_dict(node_id_names_mapping_dict)
+
+node_id_to_name_file = os.path.join(transformation_dataset_folder, pytorch_to_ppi_node_id_to_name_file)
+node_id_to_name_header = '# NCBI taxid / display name / STRING 		\n'
+with open(node_id_to_name_file, 'w') as fp:
+    fp.write(node_id_to_name_header)
+    fp.close()
+
+node_id_names_mapping_df.to_csv(node_id_to_name_file,
+                                index=False, sep='\t', header=False, mode='a')
+
+########################################################################################################################
+# [3.] Create the edges file ===========================================================================================
+########################################################################################################################
+edges_file = os.path.join(transformation_dataset_folder, pytorch_to_ppi_edges_file)
+
+max_relevance_val = 100
+
+edge_indexes = graph.edge_index.numpy()
+edge_names_list = []
+for col_idx in range(edge_indexes.shape[1]):
+
+    edge_ids = edge_indexes[:, col_idx]
+    edge_names_list.append([nodes_names_list[edge_ids[0]],
+                            nodes_names_list[edge_ids[1]],
+                            str(random.randint(0, max_relevance_val))])
+
+edge_data_array = np.array(edge_names_list)
+
+edge_data_dict = {'protein1': edge_data_array[:, 0],
+                  'protein2': edge_data_array[:, 1],
+                  'combined_score': edge_data_array[:, 2]}
+edge_data_df = pd.DataFrame.from_dict(edge_data_dict)
+# print(edge_data_df.head(5))
+
+edge_data_df.to_csv(edges_file, index=False, sep=' ')
+
+########################################################################################################################
+# [4.] Re-import this to Pytorch format ================================================================================
+########################################################################################################################
+reimported_graph = transform_from_ppi_to_pytorch(os.path.join("data", "format_transformation"),
+                                                 pytorch_to_ppi_attributes_file,
+                                                 pytorch_to_ppi_node_id_to_name_file,
+                                                 pytorch_to_ppi_edges_file)
+
+print(f"Reimported graph: {reimported_graph}")
