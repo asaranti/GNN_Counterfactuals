@@ -39,7 +39,7 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
     # print(node_attributes_orig.head(5))
 
     # Not mandatory: remove "attribute_name" column before GNN training ------------------------------------------------
-    node_attributes = node_attributes_orig.drop(['attrib_name'], axis=1)
+    node_attributes = torch.tensor(node_attributes_orig.drop(['attrib_name'], axis=1).values)
 
     pytorch_to_ppi_attributes_file.close()
 
@@ -66,6 +66,7 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
     ####################################################################################################################
     # [3.] Edges =======================================================================================================
     ####################################################################################################################
+
     edge_idx_left = []
     edge_idx_right = []
 
@@ -136,12 +137,12 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
 ########################################################################################################################
 # [0.] Three file names ================================================================================================
 ########################################################################################################################
-dataset_folder = os.path.join("data", "Protein_Dataset")
-pytorch_ppi_attributes_file = "Human__TCGA_ACC__UNC__RNAseq__HiSeq_RNA__01_28_2016__BI__Gene__Firehose_RSEM_log2.cct"
-pytorch_ppi_node_id_to_name_file = "human.name_2_string.csv"
-pytorch_ppi_edges_file = "9606.protein.links.v11.0.txt"
+# dataset_folder = os.path.join("data", "Protein_Dataset")
+# pytorch_ppi_attributes_file = "Human__TCGA_ACC__UNC__RNAseq__HiSeq_RNA__01_28_2016__BI__Gene__Firehose_RSEM_log2.cct"
+# pytorch_ppi_node_id_to_name_file = "human.name_2_string.csv"
+# pytorch_ppi_edges_file = "9606.protein.links.v11.0.txt"
 
-transform_from_ppi_to_pytorch(dataset_folder,
-                              pytorch_ppi_attributes_file,
-                              pytorch_ppi_node_id_to_name_file,
-                              pytorch_ppi_edges_file)
+# transform_from_ppi_to_pytorch(dataset_folder,
+#                              pytorch_ppi_attributes_file,
+#                              pytorch_ppi_node_id_to_name_file,
+#                              pytorch_ppi_edges_file)
