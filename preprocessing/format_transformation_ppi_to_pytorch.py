@@ -36,17 +36,21 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
     pytorch_to_ppi_attributes_file = open(os.path.join(input_dataset_folder, pytorch_to_ppi_attributes_file), "r")
 
     node_attributes_orig = pd.read_csv(pytorch_to_ppi_attributes_file, sep='\t')
-    # print(node_attributes_orig.head(5))
 
     # Not mandatory: remove "attribute_name" column before GNN training ------------------------------------------------
-    node_attributes = torch.tensor(node_attributes_orig.drop(['attrib_name'], axis=1).values)
+    node_attributes_drop_attr_name_df = node_attributes_orig.drop(['attrib_name'], axis=1)
+    print(node_attributes_drop_attr_name_df.head(5))
+    node_feature_labels = node_attributes_drop_attr_name_df.columns.values
+    node_attributes = torch.tensor(node_attributes_drop_attr_name_df.values)
+    print(node_attributes_orig.shape, len(node_feature_labels))
 
     pytorch_to_ppi_attributes_file.close()
 
-    # # #
+    # Attributes names dictionary correspondence with row --------------------------------------------------------------
     attrib_name_list = node_attributes_orig['attrib_name'].tolist()
     row_indexes_list = list(range(0, len(attrib_name_list)))
     attrib_name_row_indexes_dict = dict(zip(attrib_name_list, row_indexes_list))
+    print(len(attrib_name_row_indexes_dict))
 
     ####################################################################################################################
     # [2.] Mapping for edges ===========================================================================================
@@ -63,18 +67,25 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
 
         line_cnt += 1
 
+    print(len(human_names_proteins))
+
     ####################################################################################################################
     # [3.] Edges =======================================================================================================
     ####################################################################################################################
-
     edge_idx_left = []
     edge_idx_right = []
 
     edge_attr = []
+    edge_ids = []
 
     protein_links = open(os.path.join(input_dataset_folder, pytorch_to_ppi_edges_file), "r")
     line_cnt = 0
+    edge_id = 0
     for line in protein_links:
+
+        if line_cnt == 0:
+            line_array = line.split(" ")
+            edge_attr_labels = [line_array[2].rstrip("\n")]
 
         if line_cnt >= 1:
 
@@ -86,7 +97,10 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
             protein_right_name = line_edges_array[1]
 
             # Protein left and protein right must have "human readable" names. If not the edge will not be added. ------
-            if protein_left_name in human_names_proteins.keys() and protein_right_name in human_names_proteins.keys():
+            protein_left_name_has_human_name = protein_left_name in human_names_proteins.keys()
+            protein_right_name_has_human_name = protein_right_name in human_names_proteins.keys()
+
+            if protein_left_name_has_human_name and protein_right_name_has_human_name:
 
                 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 # Using the Dataframe lasts longer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,11 +125,17 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
                     edge_idx_left.append(protein_left_idx)
                     edge_idx_right.append(protein_right_idx)
 
-            # 3.2. Create the edge attributes ==========================================================================
-            edge_attr.append([float(line_edges_array[2].rstrip('\n'))])
+                    # 3.2. Create the edge attributes ==================================================================
+                    edge_attr.append([float(line_edges_array[2].rstrip('\n'))])
 
-        # if line_cnt >= 100:
-        #    break
+                    # 3.3. Append the edge_id ==========================================================================
+                    edge_ids.append(f"edge_id_{edge_id}")
+                    edge_id += 1
+            else:
+                if not protein_left_name_has_human_name:
+                    print(f"Protein's name: {protein_left_name} not found in {pytorch_to_ppi_node_id_to_name_file}.")
+                if not protein_right_name_has_human_name:
+                    print(f"Protein's name : {protein_left_name} not found in {pytorch_to_ppi_node_id_to_name_file}.")
 
         line_cnt += 1
 
@@ -129,20 +149,16 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
     ####################################################################################################################
     # [4.] Graph =======================================================================================================
     ####################################################################################################################
-    protein_graph = Data(x=node_attributes, edge_index=edge_idx, edge_attr=edge_attr)
+    node_ids_list = [f"node_id_{x}" for x in range(0, len(attrib_name_list))]
+
+    print(len(attrib_name_list), len(node_ids_list), len(node_feature_labels), len(edge_ids), len(edge_attr_labels))
+    protein_graph = Data(x=node_attributes, edge_index=edge_idx, edge_attr=edge_attr, y=None, pos=None,
+                         node_labels=np.array(attrib_name_list),
+                         node_ids=np.array(node_ids_list),
+                         node_feature_labels=node_feature_labels,
+                         edge_ids=edge_ids,
+                         edge_attr_labels=edge_attr_labels,
+                         graph_id="graph_0"
+                         )
 
     return protein_graph
-
-
-########################################################################################################################
-# [0.] Three file names ================================================================================================
-########################################################################################################################
-# dataset_folder = os.path.join("data", "Protein_Dataset")
-# pytorch_ppi_attributes_file = "Human__TCGA_ACC__UNC__RNAseq__HiSeq_RNA__01_28_2016__BI__Gene__Firehose_RSEM_log2.cct"
-# pytorch_ppi_node_id_to_name_file = "human.name_2_string.csv"
-# pytorch_ppi_edges_file = "9606.protein.links.v11.0.txt"
-
-# transform_from_ppi_to_pytorch(dataset_folder,
-#                              pytorch_ppi_attributes_file,
-#                              pytorch_ppi_node_id_to_name_file,
-#                              pytorch_ppi_edges_file)
