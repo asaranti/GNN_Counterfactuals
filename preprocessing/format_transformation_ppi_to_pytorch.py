@@ -131,11 +131,11 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
                     # 3.3. Append the edge_id ==========================================================================
                     edge_ids.append(f"edge_id_{edge_id}")
                     edge_id += 1
-            else:
-                if not protein_left_name_has_human_name:
-                    print(f"Protein's name: {protein_left_name} not found in {pytorch_to_ppi_node_id_to_name_file}.")
-                if not protein_right_name_has_human_name:
-                    print(f"Protein's name : {protein_left_name} not found in {pytorch_to_ppi_node_id_to_name_file}.")
+            # else:
+            #    if not protein_left_name_has_human_name:
+            #        print(f"Protein's name: {protein_left_name} not found in {pytorch_to_ppi_node_id_to_name_file}.")
+            #    if not protein_right_name_has_human_name:
+            #        print(f"Protein's name : {protein_left_name} not found in {pytorch_to_ppi_node_id_to_name_file}.")
 
         line_cnt += 1
 

@@ -1,5 +1,5 @@
 """
-    Format Transformation Experiment Nr. 2
+    Format Transformation Experiment Nr. 1
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
@@ -9,7 +9,8 @@
 import os
 
 from preprocessing.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
-from preprocessing.format_transformation_ui_to_pytorch import transform_from_pytorch_to_ui
+from preprocessing.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from preprocessing.format_transformation_ui_to_pytorch import transform_from_ui_to_pytorch
 
 ########################################################################################################################
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph =========================================================
@@ -24,7 +25,6 @@ ppi_pytorch_graph = transform_from_ppi_to_pytorch(dataset_folder,
                                                   pytorch_ppi_attributes_file,
                                                   pytorch_ppi_node_id_to_name_file,
                                                   pytorch_ppi_edges_file)
-print(ppi_pytorch_graph)
 
 ########################################################################################################################
 # [2.] Transformation Experiment ::: From Pytorch_Graph to UI Format ===================================================
@@ -35,3 +35,12 @@ transform_from_pytorch_to_ui(ppi_pytorch_graph,
                              dataset_folder,
                              ui_pytorch_nodes_file_protein,
                              ui_pytorch_edges_file_protein)
+
+########################################################################################################################
+# [3.] Transformation Experiment ::: From UI Format to Pytorch_Graph ===================================================
+########################################################################################################################
+ui_pytorch_graph = transform_from_ui_to_pytorch(dataset_folder,
+                                                ui_pytorch_nodes_file_protein,
+                                                ui_pytorch_edges_file_protein)
+print(ui_pytorch_graph)
+
