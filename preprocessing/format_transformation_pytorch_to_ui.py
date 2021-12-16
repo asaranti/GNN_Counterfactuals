@@ -51,6 +51,7 @@ def transform_from_pytorch_to_ui(graph: Data,
     # [2.] Edges =======================================================================================================
     ####################################################################################################################
     edge_index = graph.edge_index.detach().cpu().numpy()
+    print(f"Edge index shape: {edge_index.shape}")
     edge_from_col_vals = []
     edge_to_col_vals = []
     for col_nr in range(edge_index.shape[1]):
@@ -75,12 +76,4 @@ def transform_from_pytorch_to_ui(graph: Data,
                                      index=False,
                                      quoting=csv.QUOTE_NONNUMERIC  # Add double quotes to anything that is non-numeric ~
                                      )
-
-
-########################################################################################################################
-# MAIN =================================================================================================================
-########################################################################################################################
-dataset_folder = os.path.join("data", "UI_Dataset")
-ui_pytorch_nodes_file = "nodelist.csv"
-ui_pytorch_edges_file = "edgelist.csv"
 

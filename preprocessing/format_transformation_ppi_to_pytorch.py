@@ -195,7 +195,7 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
 
     # [0.1.] Check if the graph is connected or can be split to several connected component ----------------------------
     protein_graph_all_networkx = to_networkx(protein_graph_all, to_undirected=True)
-    is_graph_connected = nx.is_connected(protein_graph_all_networkx)
+    # is_graph_connected = nx.is_connected(protein_graph_all_networkx)
     # print(f"Is the whole PPI graph connected? {is_graph_connected}")
 
     # [0.2.] Compute the adjacency matrix and then use this to the detection of connected components -------------------
@@ -219,6 +219,8 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
         node_sizes.append(len(node_indexes))
 
         x_cc = protein_graph_all.x[node_indexes]  # x ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        row_indexes_list = list(range(0, len(node_indexes)))
+        node_indexes_row_indexes_dict = dict(zip(node_indexes, row_indexes_list))
 
         if len(node_indexes) > 1:
 
@@ -227,9 +229,11 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
             edge_index_array_1d = edge_index_array_2d.reshape((1, 2*edge_index_array_2d.shape[1]), order='F')[0]
 
             indexes_of_cc_edge_elements = list(np.where(np.in1d(edge_index_array_1d, node_indexes))[0])
-            edge_index_selected_1d = edge_index_array_1d[indexes_of_cc_edge_elements]
-            edge_index_selected_2d = edge_index_selected_1d.reshape((2, int(edge_index_selected_1d.shape[0]/2)),
-                                                                    order='F')
+            edge_index_selected_1d = list(edge_index_array_1d[indexes_of_cc_edge_elements])
+            edge_index_selected_1d = np.array([node_indexes_row_indexes_dict[key] for key in edge_index_selected_1d])
+
+            edge_index_selected_2d = torch.tensor(edge_index_selected_1d.reshape(
+                (2, int(edge_index_selected_1d.shape[0]/2)), order='F'))
 
             # [1.3.] Further parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             indexes_cc_edge_ids = indexes_of_cc_edge_elements[::2]
@@ -242,8 +246,8 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
 
         else:
 
-            edge_index_selected_2d = np.empty([2, 0])
-            edge_attr_cc = np.empty([0, 1])
+            edge_index_selected_2d = torch.tensor(np.empty([2, 0]))
+            edge_attr_cc = torch.tensor(np.empty([0, 1]))
             edge_ids_cc = np.empty([])
             edge_attr_labels_cc = protein_graph_all.edge_attr_labels
 

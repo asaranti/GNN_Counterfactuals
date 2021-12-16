@@ -86,17 +86,3 @@ def transform_from_ui_to_pytorch(input_dataset_folder: str,
 
     return graph
 
-
-########################################################################################################################
-# MAIN =================================================================================================================
-########################################################################################################################
-# [A.] Forward transformation ------------------------------------------------------------------------------------------
-dataset_folder = os.path.join("data", "UI_Dataset")
-ui_pytorch_nodes_file_a = "nodelist.csv"
-ui_pytorch_edges_file_a = "edgelist.csv"
-
-# [B.] Backward transformation -----------------------------------------------------------------------------------------
-ui_pytorch_nodes_file_b = "nodelist_out.csv"
-ui_pytorch_edges_file_b = "edgelist_out.csv"
-computed_graph = transform_from_ui_to_pytorch(dataset_folder, ui_pytorch_nodes_file_a, ui_pytorch_edges_file_a)
-transform_from_pytorch_to_ui(computed_graph, dataset_folder, ui_pytorch_nodes_file_b, ui_pytorch_edges_file_b)

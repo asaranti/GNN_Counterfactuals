@@ -104,7 +104,7 @@ def transform_from_pytorch_to_ppi(graph: Data,
 
     edge_data_df.to_csv(edges_file, index=False, sep=' ')
 
-
+"""
 ########################################################################################################################
 # MAIN: Perform format transformations =================================================================================
 ########################################################################################################################
@@ -147,3 +147,4 @@ pytorch_to_ppi_cmp_3 = filecmp.cmp(os.path.join("data", "format_transformation_a
                                    os.path.join("data", "format_transformation_b", pytorch_ppi_edges_file))
 
 print(pytorch_to_ppi_cmp_1, pytorch_to_ppi_cmp_2, pytorch_to_ppi_cmp_3)
+"""
