@@ -21,11 +21,12 @@ pytorch_ppi_attributes_file = "Human__TCGA_ACC__UNC__RNAseq__HiSeq_RNA__01_28_20
 pytorch_ppi_node_id_to_name_file = "human.name_2_string.csv"
 pytorch_ppi_edges_file = "9606.protein.links.v11.0.txt"
 
-ppi_pytorch_graph = transform_from_ppi_to_pytorch(dataset_folder,
-                                                  pytorch_ppi_attributes_file,
-                                                  pytorch_ppi_node_id_to_name_file,
-                                                  pytorch_ppi_edges_file)
+protein_graph_list = transform_from_ppi_to_pytorch(dataset_folder,
+                                                   pytorch_ppi_attributes_file,
+                                                   pytorch_ppi_node_id_to_name_file,
+                                                   pytorch_ppi_edges_file)
 
+"""
 ########################################################################################################################
 # [2.] Transformation Experiment ::: From Pytorch_Graph to UI Format ===================================================
 ########################################################################################################################
@@ -43,4 +44,4 @@ ui_pytorch_graph = transform_from_ui_to_pytorch(dataset_folder,
                                                 ui_pytorch_nodes_file_protein,
                                                 ui_pytorch_edges_file_protein)
 print(ui_pytorch_graph)
-
+"""
