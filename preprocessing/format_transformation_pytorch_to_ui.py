@@ -51,7 +51,6 @@ def transform_from_pytorch_to_ui(graph: Data,
     # [2.] Edges =======================================================================================================
     ####################################################################################################################
     edge_index = graph.edge_index.detach().cpu().numpy()
-    print(f"Edge index shape: {edge_index.shape}")
     edge_from_col_vals = []
     edge_to_col_vals = []
     for col_nr in range(edge_index.shape[1]):
@@ -60,9 +59,6 @@ def transform_from_pytorch_to_ui(graph: Data,
 
         edge_from_col_vals.append(graph.node_ids[edge[0]])
         edge_to_col_vals.append(graph.node_ids[edge[1]])
-
-    # print(edge_from_col_vals)
-    # print(edge_to_col_vals)
 
     edge_data_dict = {"from": edge_from_col_vals, "to": edge_to_col_vals, "id": graph.edge_ids}
     edge_data_df = pd.DataFrame(data=edge_data_dict)

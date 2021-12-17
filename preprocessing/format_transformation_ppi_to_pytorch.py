@@ -43,10 +43,11 @@ def import_whole_ppi_data(input_dataset_folder: str,
     pytorch_to_ppi_attributes_file = open(os.path.join(input_dataset_folder, pytorch_to_ppi_attributes_file), "r")
 
     node_attributes_orig = pd.read_csv(pytorch_to_ppi_attributes_file, sep='\t')
+    print(node_attributes_orig.head(20))
 
     # Not mandatory: remove "attribute_name" column before GNN training ------------------------------------------------
     node_attributes_drop_attr_name_df = node_attributes_orig.drop(['attrib_name'], axis=1)
-    # print(node_attributes_drop_attr_name_df.head(5))
+    print(node_attributes_drop_attr_name_df.head(5))
     node_feature_labels = node_attributes_drop_attr_name_df.columns.values
     node_attributes = torch.tensor(node_attributes_drop_attr_name_df.values)
     # print(node_attributes_orig.shape, len(node_feature_labels))
@@ -216,6 +217,7 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
 
         # [1.1.] Return all indexes of the nodes that belong to the N-th component -------------------------------------
         node_indexes = [i for i, x in enumerate(graph_labels) if x == graph_component_idx]
+        print(f"Node indexes: {node_indexes}")
         node_sizes.append(len(node_indexes))
 
         x_cc = protein_graph_all.x[node_indexes]  # x ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
