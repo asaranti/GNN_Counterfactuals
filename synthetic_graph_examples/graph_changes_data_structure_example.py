@@ -6,6 +6,7 @@
     :date: 2021-12-17
 """
 
+from collections import OrderedDict
 import copy
 import re
 import random
@@ -48,7 +49,8 @@ for graph in graphs_list:
     patient_id = graph_id_comp_array[2]
     graph_id = graph_id_comp_array[3]
 
-    patient_dict = {graph_id: graph}
+    patient_dict = OrderedDict()
+    patient_dict[graph_id] = graph
     graph_adaptation_structure[patient_id] = patient_dict
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

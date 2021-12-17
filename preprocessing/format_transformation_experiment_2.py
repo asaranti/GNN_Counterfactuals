@@ -9,6 +9,7 @@
 import os
 
 from preprocessing.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from preprocessing.format_transformation_ui_to_pytorch import transform_from_ui_to_pytorch
 from synthetic_graph_examples.ba_graphs_generator import ba_graphs_gen
 
 ########################################################################################################################
@@ -31,8 +32,6 @@ dataset_folder = os.path.join("data", "BA_Dataset")
 graph_idx = 0
 for graph_idx in range(graphs_nr):
 
-    print(f"Transform the graph {graph_idx} to the UI format")
-
     transform_from_pytorch_to_ui(graphs_list[graph_idx],
                                  dataset_folder,
                                  f"ba_nodes_ui_format_{graph_idx}.csv",
@@ -43,5 +42,11 @@ for graph_idx in range(graphs_nr):
 ########################################################################################################################
 # [3.] UI to Pytorch transformation ====================================================================================
 ########################################################################################################################
-
+graph_idx = 0
+graph_back = transform_from_ui_to_pytorch(dataset_folder,
+                                          f"ba_nodes_ui_format_{graph_idx}.csv",
+                                          f"ba_edges_ui_format_{graph_idx}.csv"
+                                          )
+print(graphs_list[0])
+print(graph_back)
 
