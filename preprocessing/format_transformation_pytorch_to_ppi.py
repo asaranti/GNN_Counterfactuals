@@ -1,7 +1,6 @@
 """
     Format Transformation
     From Pytorch to PPI
-
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2021-12-01
@@ -27,7 +26,6 @@ def transform_from_pytorch_to_ppi(graph: Data,
                                   pytorch_to_ppi_edges_file: str):
     """
     Apply the transformation between PPI format to the Pytorch format
-
     :param graph: Input graph
     :param input_dataset_folder: Dataset folder where the files will be placed
     :param pytorch_to_ppi_attributes_file: Attributes file that will be written
@@ -104,14 +102,13 @@ def transform_from_pytorch_to_ppi(graph: Data,
 
     edge_data_df.to_csv(edges_file, index=False, sep=' ')
 
-
+"""
 ########################################################################################################################
 # MAIN: Perform format transformations =================================================================================
 ########################################################################################################################
 pytorch_ppi_attributes_file = "pytorch_to_ppi_attributes.cct"
 pytorch_ppi_node_id_to_name_file = "pytorch_to_ppi_node_id_to_name.csv"
 pytorch_ppi_edges_file = "pytorch_to_ppi_edges.txt"
-
 # [1.] Pytorch to ppi format ===========================================================================================
 dataset = Planetoid(root='/tmp/Cora', name='Cora')
 original_graph = dataset[0]
@@ -121,29 +118,24 @@ transform_from_pytorch_to_ppi(original_graph,
                               pytorch_ppi_attributes_file,
                               pytorch_ppi_node_id_to_name_file,
                               pytorch_ppi_edges_file)
-
 # [2.] Re-import this to Pytorch format ================================================================================
 reimported_graph = transform_from_ppi_to_pytorch(os.path.join("data", "format_transformation_a"),
                                                  pytorch_ppi_attributes_file,
                                                  pytorch_ppi_node_id_to_name_file,
                                                  pytorch_ppi_edges_file)
 print(f"Reimported graph: {reimported_graph}")
-
 # [3.] Pytorch to ppi Nr.2 =============================================================================================
 transform_from_pytorch_to_ppi(reimported_graph,
                               os.path.join("data", "format_transformation_b"),
                               pytorch_ppi_attributes_file,
                               pytorch_ppi_node_id_to_name_file,
                               pytorch_ppi_edges_file)
-
 # [4.] Compare the resulted files ======================================================================================
 pytorch_to_ppi_cmp_1 = filecmp.cmp(os.path.join("data", "format_transformation_a", pytorch_ppi_attributes_file),
                                    os.path.join("data", "format_transformation_b", pytorch_ppi_attributes_file))
-
 pytorch_to_ppi_cmp_2 = filecmp.cmp(os.path.join("data", "format_transformation_a", pytorch_ppi_node_id_to_name_file),
                                    os.path.join("data", "format_transformation_b", pytorch_ppi_node_id_to_name_file))
-
 pytorch_to_ppi_cmp_3 = filecmp.cmp(os.path.join("data", "format_transformation_a", pytorch_ppi_edges_file),
                                    os.path.join("data", "format_transformation_b", pytorch_ppi_edges_file))
-
 print(pytorch_to_ppi_cmp_1, pytorch_to_ppi_cmp_2, pytorch_to_ppi_cmp_3)
+"""

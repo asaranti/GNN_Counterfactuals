@@ -1,6 +1,5 @@
 """
     Format Transformation
-
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2021-11-22

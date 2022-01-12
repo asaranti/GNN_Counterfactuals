@@ -20,86 +20,27 @@ from torch_geometric.datasets import TUDataset
 
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
     add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
+
 from testing_utils.jsonification import graph_to_json
+
+from preprocessing.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
+from preprocessing.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+
+from synthetic_graph_examples.ba_graphs_generator import ba_graphs_gen
+import os
+import re
 
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
 app = Flask(__name__)
 
-
-# Start: Index ---------------------------------------------------------------------------------------------------------
-@app.route('/')
-@app.route('/index')
-def index():
-    return "Hello Graphs!"
-
-
 # global
-dataset_names = ["TUDataset", "Other"]
-
+dataset_names = ["Barabasi-Albert Dataset"]
+root_data_folder = os.getcwd()
 
 # Graphs dataset that was used in the GNN task -------------------------------------------------------------------------
 dataset = TUDataset(root='data/TUDataset', name='MUTAG')
-graph_idx = 0
-
-
-########################################################################################################################
-# [0.1.] Get the first graph (default) in JSON format ==================================================================
-########################################################################################################################
-@app.route('/first_graph', methods=['GET'])
-def get_first_graph():
-    """
-    Get the first graph as default
-
-    :return:
-    """
-
-    graph_json = graph_to_json(dataset[graph_idx])
-
-    return graph_json
-
-
-########################################################################################################################
-# [0.2.] Get the number of graphs in the dataset =======================================================================
-########################################################################################################################
-@app.route('/graph_dataset_size', methods=['GET'])
-def get_graph_dataset_size():
-    """
-    Get graphs dataset size
-
-    :return:
-    """
-
-    graphs_nr = len(dataset)
-
-    return f"The number of graphs in the dataset is: {graphs_nr}"
-
-
-########################################################################################################################
-# [0.3.] Get a selected graph in JSON format ===========================================================================
-########################################################################################################################
-@app.route('/select_graph', methods=['POST'])
-def select_graph():
-    """
-    Select the graph by index
-
-    :return:
-    """
-
-    graphs_nr = len(dataset)
-
-    # Get the index of the selected graph ------------------------------------------------------------------------------
-    req_data = request.get_json()
-    select_graph_idx = req_data["select_graph_idx"]
-
-    if 0 <= select_graph_idx < graphs_nr:
-        graph_idx = select_graph_idx
-        graph_json = graph_to_json(dataset[select_graph_idx])
-        return graph_json
-    else:
-        return f"The selected graph with index: {select_graph_idx} " \
-               f"is not compatible with the number of graphs in the dataset: {graphs_nr}"
 
 
 ########################################################################################################################
@@ -111,17 +52,29 @@ def adding_node():
     Add a new node and the JSON formatted part of its features
     """
 
-    input_graph = dataset[graph_idx]
-
     # Get the features of the node -------------------------------------------------------------------------------------
     req_data = request.get_json()
+
+    # graph and patient id
+    patient_id = req_data["patient_id"]
+    graph_id = req_data["graph_id"]
+    # input graph
+    input_graph = graph_data[patient_id][graph_id]
+
+    # node features
     node_features = np.array(req_data["features"]).reshape(-1, 1).T
 
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_node(input_graph, node_features)
-    output_graph_json = graph_to_json(output_graph)
+    # update graph id
+    graph_id = int(graph_id) + 1
+    # save graph
+    graph_data[str(patient_id)][str(graph_id)] = output_graph
 
-    return output_graph_json
+    # create graph in ui format
+    nodelist, edgelist = transform_from_pytorch_to_ui(output_graph)
+
+    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
 
 
 ########################################################################################################################
@@ -134,13 +87,31 @@ def delete_node():
 
     :param deleted_node_index: Deleted node index
     """
-    deleted_node_index = request.args.get('deleted_node_index')
 
-    input_graph = dataset[graph_idx]
-    output_graph = remove_node(input_graph, deleted_node_index)
-    output_graph_json = graph_to_json(output_graph)
+    # graph and patient id
+    patient_id = request.args.get("patient_id")
+    graph_id = request.args.get("graph_id")
 
-    return output_graph_json
+    # get node label
+    deleted_node_id = request.args.get('deleted_node_id')
+
+    # input graph
+    input_graph = graph_data[str(patient_id)][str(graph_id)]
+
+    # get node id from node label
+    deleted_node_id = np.where(input_graph.node_ids == deleted_node_id)
+
+    # delete node
+    output_graph = remove_node(input_graph, deleted_node_id)
+    # update graph id
+    graph_id = int(graph_id) + 1
+    # save graph
+    graph_data[str(patient_id)][str(graph_id)] = output_graph
+
+    # create graph in ui format
+    nodelist, edgelist = transform_from_pytorch_to_ui(output_graph)
+
+    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
 
 
 ########################################################################################################################
@@ -151,21 +122,34 @@ def adding_edge():
     """
     Add a new edge and the JSON formatted part of its features
     """
-
-    input_graph = dataset[graph_idx]
-
     # Get the edge's "docking" points and its features -----------------------------------------------------------------
     req_data = request.get_json()
 
+    # graph and patient id
+    patient_id = req_data["patient_id"]
+    graph_id = req_data["graph_id"]
+    # input graph
+    input_graph = graph_data[patient_id][graph_id]
+
+    # left and right node ids
     new_edge_index_left = req_data["new_edge_index_left"]
     new_edge_index_right = req_data["new_edge_index_right"]
+
+    # edge features
     edge_features = np.array(req_data["features"]).reshape(-1, 1).T
+
 
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_edge(input_graph, new_edge_index_left, new_edge_index_right, edge_features)
-    output_graph_json = graph_to_json(output_graph)
+    # update graph id
+    graph_id = int(graph_id) + 1
+    # save graph
+    graph_data[str(patient_id)][str(graph_id)] = output_graph
 
-    return output_graph_json
+    # create graph in ui format
+    nodelist, edgelist = transform_from_pytorch_to_ui(output_graph)
+
+    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
 
 
 ########################################################################################################################
@@ -179,15 +163,216 @@ def delete_edge():
     :param edge_index_left: Index of left node of the edge
     :param edge_index_right: Index of right node of the edge
     """
-    edge_index_left = request.args.get('edge_index_left')
-    edge_index_right = request.args.get('edge_index_right')
 
-    input_graph = dataset[graph_idx]
+    # graph and patient id
+    patient_id = request.args.get("patient_id")
+    graph_id = request.args.get("graph_id")
+
+    # left and right node id
+    edge_id_left = request.args.get('edge_index_left')
+    edge_id_right = request.args.get('edge_index_right')
+    # input graph
+    input_graph = graph_data[patient_id][graph_id]
+    # get node ids from node labels
+    edge_index_left = np.where(input_graph.node_ids == edge_id_left)
+    edge_index_right = np.where(input_graph.node_ids == edge_id_right)
+
+    # remove edge
     output_graph = remove_edge(input_graph, edge_index_left, edge_index_right)
-    output_graph_json = graph_to_json(output_graph)
+    # update graph id
+    graph_id = int(graph_id) + 1
+    # save graph
+    graph_data[str(patient_id)][str(graph_id)] = output_graph
 
-    return output_graph_json
+    # create graph in ui format
+    nodelist, edgelist = transform_from_pytorch_to_ui(output_graph)
 
+    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+
+
+########################################################################################################################
+# [5.] Get all available dataset names =================================================================================
+########################################################################################################################
+@app.route('/data/dataset_name', methods=['GET'])
+def dataset_name():
+    """
+    Get the dataset_names for the UI
+    """
+    return json.dumps(dataset_names)
+
+########################################################################################################################
+# [6.] Get all available dataset names =================================================================================
+########################################################################################################################
+@app.route('/data/patient_name', methods=['GET'])
+def patient_name():
+    """
+    Initializes the dataset and gets list of patient names (graph_ids)
+    """
+
+    # get dataset_name
+    dataset_name = request.args.get('dataset_name')
+
+    # get patient ids corresponding to dataset
+    if dataset_name == "Protein Dataset":
+        patients_names = ["patient_0"]
+    if dataset_name == "Barabasi-Albert Dataset":
+        # create the example graphs
+        graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
+
+        # init the structure
+        global graph_data
+        graph_data = {}
+        graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
+
+        for graph in graphs_list:
+            # 2.1. Use the graph_id to "position" the graph into the "graph_adaptation_structure" ------------------------------
+            graph_id_composed = graph.graph_id
+            pattern = re.compile(graph_id_composed_regex)
+            graph_id_matches = bool(pattern.match(graph_id_composed))
+
+            assert graph_id_matches, f"The graph's id {graph_id_composed} does not match " \
+                                     f"the required pattern: {graph_id_composed_regex}"
+
+            # 2.2. Create the initial "graph_adaptation_structure" -------------------------------------------------------------
+            graph_id_comp_array = graph_id_composed.split("_")
+            patient_id = graph_id_comp_array[2]
+            graph_id = graph_id_comp_array[3]
+
+            patient_dict = {graph_id: graph}
+            graph_data[patient_id] = patient_dict
+
+        # create list of patient names from amount of graphs in dataset
+        patients_names = ['Patient ' + i for i in map(str, np.arange(0, len(graph_data)).tolist())]
+
+    return json.dumps(patients_names)
+
+
+########################################################################################################################
+# [7.] Get the actual dataset =========================================================================================
+########################################################################################################################
+@app.route('/data/dataset/', methods=['GET'])
+def pre_defined_dataset():
+    """
+    Get the dataset information for the UI
+    """
+
+    # get dataset_name and patient ID for
+    dataset_name = request.args.get('dataset_name')
+    patient_id = request.args.get('patient_id')
+    graph_id = request.args.get("graph_id")
+
+    #if dataset_name == "Protein Dataset":
+    #    dataset_folder = os.path.join(root_data_folder, "data", "Protein_Dataset")
+    #    pytorch_ppi_attributes_file = "Human__TCGA_ACC__UNC__RNAseq__HiSeq_RNA__01_28_2016__BI__Gene__Firehose_RSEM_log2.cct"
+    #    pytorch_ppi_node_id_to_name_file = "human.name_2_string.csv"
+    #    pytorch_ppi_edges_file = "9606.protein.links.v11.0.txt"
+
+        # perform ppi tp pytorch transformation
+    #    pytorch_graph = transform_from_ppi_to_pytorch(dataset_folder,
+    #                                 pytorch_ppi_attributes_file,
+    #                                 pytorch_ppi_node_id_to_name_file,
+    #                                 pytorch_ppi_edges_file)
+
+        # perform pytorch to ui transformation
+    #    nodelist, edgelist = transform_from_pytorch_to_ui(pytorch_graph, os.path.join(root_data_folder, "data", "UI_Dataset"),
+    #                                                      "nodelist.csv", "edgelist.csv")
+    if dataset_name == "Barabasi-Albert Dataset":
+        # get graph corresponding to graph id and patient id and transform to UI format
+        selected_graph = graph_data[str(patient_id)][str(graph_id)]
+        nodelist, edgelist = transform_from_pytorch_to_ui(selected_graph)
+
+    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+
+
+########################################################################################################################
+# [8.] Get all available dataset names =================================================================================
+########################################################################################################################
+@app.route('/data/performance_values', methods=['GET'])
+def performance_values():
+    """
+    Get the names of all patients
+
+    TODO: Get actual prediction scores
+    """
+
+    # get prediction scores
+    sens = 31.41
+    spec = 27.18
+    tp = 30
+    tn = 20
+    fp = 5
+    fn = 0
+
+    return json.dumps([tn, fp, fn, tp, sens, spec])
+
+
+########################################################################################################################
+# [9.] Apply the predict() to an already trained GNN ==================================================================
+########################################################################################################################
+@app.route('/nn_predict', methods=['GET'])
+def nn_predict():
+    """
+    Apply a new prediction with the current graphs dataset
+
+    :return:
+
+    TODO: The prediction needs to be returned
+    """
+    # graph and patient id
+    patient_id = request.args.get("patient_id")
+    graph_id = request.args.get("graph_id")
+
+    # input graph
+    input_graph = graph_data[patient_id][graph_id]
+
+    # create graph in ui format
+    nodelist, edgelist = transform_from_pytorch_to_ui(input_graph)
+
+    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+
+########################################################################################################################
+# [10.] Apply the retrain() to an already trained GNN ==================================================================
+########################################################################################################################
+@app.route('/nn_retrain', methods=['GET'])
+def nn_retrain():
+    """
+    Apply a new retrain with the current graphs dataset
+
+    :return:
+
+    TODO: The retrained graph needs to be returned
+    """
+    # graph and patient id
+    patient_id = request.args.get("patient_id")
+    graph_id = request.args.get("graph_id")
+
+    # input graph
+    input_graph = graph_data[patient_id][graph_id]
+
+    # create graph in ui format
+    nodelist, edgelist = transform_from_pytorch_to_ui(input_graph)
+
+    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+
+
+
+
+
+
+
+
+### Don't know if needed
+
+########################################################################################################################
+# [11.] Backup =========================================================================================================
+########################################################################################################################
+@app.route('/backup', methods=['GET'])
+def backup():
+    """
+    Backup data and model (snapshot)
+
+    :return:
+    """
 
 ########################################################################################################################
 # [5.] Add feature to all nodes ========================================================================================
@@ -278,103 +463,6 @@ def remove_feature_from_all_edges():
 
     return output_graph_json
 
-
-
-########################################################################################################################
-# [9.] Get all available dataset names =================================================================================
-########################################################################################################################
-@app.route('/data/dataset_name', methods=['GET'])
-def dataset_name():
-    """
-    Get the dataset_names for the UI
-    """
-    return json.dumps(dataset_names)
-
-
-########################################################################################################################
-# [10.] Get the actual dataset =========================================================================================
-########################################################################################################################
-@app.route('/data/dataset/', methods=['GET'])
-def pre_defined_dataset():
-    """
-    Get the dataset for the UI
-    TODO: Dataset needs to be in the right format before actually reading it in to the shiny app
-    TODO: Need a if-statement for every dataset, or maybe a switch or something
-    """
-    dataset_name = request.args.get('dataset_name')
-
-    if dataset_name == "TUDataset":
-        graph_json = graph_to_json(dataset[graph_idx])
-    if dataset_name == "Other":
-        graph_json = graph_to_json(dataset[graph_idx])
-
-    return graph_json
-
-
-
-########################################################################################################################
-# [11.] Retrieve the modification history ==============================================================================
-########################################################################################################################
-@app.route('/modification_history', methods=['POST'])
-def modification_history():
-    """
-    This method returns the modification history action by action
-    Examples:
-    Added Edge: {'action': 'added', 'element': 'edge', 'edge': [{'from': '9606.ENSP00000303149', 'to': '9606.ENSP00000265334', 'id': 'bad27e58-4c70-11ec-8000-212eb812c854', 'rel_pos': 0, 'rel_pos_neg': 0, 'confidence': 0}]}
-    Deleted Edge: {'action': 'deleted', 'element': 'edge', 'id': 'b64ce0db-eade-11eb-ac79-0130365d7bd6'}
-    Added Node: {'action': 'added', 'element': 'node', 'node': [{'label': 'test', 'id': 'b62a6fbe-4c70-11ec-8000-212eb812c854', 'rel_pos': 0, 'rel_pos_neg': 0, 'TCGA.OR.A5J1': 0, 'TCGA.OR.A5J2': 0,...}]}
-    Deleted Node: {'action': 'deleted', 'element': 'node', 'id': '9606.ENSP00000337425'}
-
-    TODO: Concrete modifications on the graph need to be implemented
-    """
-
-    # retrieve modification history
-    mod_hist = request.get_json()
-
-    return mod_hist
-
-########################################################################################################################
-# [12.] Apply the predict() to an already trained GNN ==================================================================
-########################################################################################################################
-@app.route('/nn_predict', methods=['GET'])
-def nn_predict():
-    """
-    Apply a new prediction with the current graphs dataset
-
-    :return:
-
-    TODO: The prediction needs to be returned
-    """
-    graph_json = graph_to_json(dataset[graph_idx])
-
-    return graph_json
-
-########################################################################################################################
-# [13.] Apply the retrain() to an already trained GNN ==================================================================
-########################################################################################################################
-@app.route('/nn_retrain', methods=['GET'])
-def nn_retrain():
-    """
-    Apply a new retrain with the current graphs dataset
-
-    :return:
-
-    TODO: The retrained graph needs to be returned
-    """
-    graph_json = graph_to_json(dataset[graph_idx])
-
-    return graph_json
-
-########################################################################################################################
-# [14.] Backup =========================================================================================================
-########################################################################################################################
-@app.route('/backup', methods=['GET'])
-def backup():
-    """
-    Backup data and model (snapshot)
-
-    :return:
-    """
 
 ########################################################################################################################
 # MAIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

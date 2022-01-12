@@ -1,7 +1,6 @@
 """
     Format Transformation
     From Pytorch to UI
-
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2021-12-06
@@ -14,13 +13,9 @@ import pandas as pd
 from torch_geometric.data import Data
 
 
-def transform_from_pytorch_to_ui(graph: Data,
-                                 input_dataset_folder: str,
-                                 ui_to_pytorch_nodes_file: str,
-                                 ui_to_pytorch_edges_file: str):
+def transform_from_pytorch_to_ui(graph: Data):
     """
     Apply the transformation between the Pytorch format to UI format
-
     :param graph: Graph data
     :param input_dataset_folder: Dataset folder where the files lie
     :param ui_to_pytorch_nodes_file: Nodes file
@@ -42,10 +37,7 @@ def transform_from_pytorch_to_ui(graph: Data,
     node_attributes_df = node_attributes_df[node_attributes_column_values]
     # print(node_attributes_df.head(5))
 
-    node_attributes_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_nodes_file),
-                              index=False,
-                              quoting=csv.QUOTE_NONNUMERIC  # Add double quotes to anything that is non-numeric ~~~~~~~~
-                              )
+
 
     ####################################################################################################################
     # [2.] Edges =======================================================================================================
@@ -60,9 +52,6 @@ def transform_from_pytorch_to_ui(graph: Data,
         edge_from_col_vals.append(graph.node_ids[edge[0]])
         edge_to_col_vals.append(graph.node_ids[edge[1]])
 
-    # print(edge_from_col_vals)
-    # print(edge_to_col_vals)
-
     edge_data_dict = {"from": edge_from_col_vals, "to": edge_to_col_vals, "id": graph.edge_ids}
     edge_data_df = pd.DataFrame(data=edge_data_dict)
 
@@ -71,16 +60,4 @@ def transform_from_pytorch_to_ui(graph: Data,
     edge_attributes_concat_df = pd.concat([edge_data_df, edge_attributes_df], axis=1)
     # print(edge_attributes_concat_df.head(5))
 
-    edge_attributes_concat_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_edges_file),
-                                     index=False,
-                                     quoting=csv.QUOTE_NONNUMERIC  # Add double quotes to anything that is non-numeric ~
-                                     )
-
-
-########################################################################################################################
-# MAIN =================================================================================================================
-########################################################################################################################
-dataset_folder = os.path.join("data", "UI_Dataset")
-ui_pytorch_nodes_file = "nodelist.csv"
-ui_pytorch_edges_file = "edgelist.csv"
-
+    return node_attributes_df, edge_attributes_concat_df
