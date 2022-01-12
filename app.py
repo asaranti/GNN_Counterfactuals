@@ -64,6 +64,7 @@ def adding_node():
     # node features
     node_features = np.array(req_data["features"]).reshape(-1, 1).T
 
+
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_node(input_graph, node_features)
     # update graph id
@@ -163,7 +164,6 @@ def delete_edge():
     :param edge_index_left: Index of left node of the edge
     :param edge_index_right: Index of right node of the edge
     """
-
     # graph and patient id
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
@@ -178,6 +178,7 @@ def delete_edge():
     edge_index_right = np.where(input_graph.node_ids == edge_id_right)
 
     # remove edge
+
     output_graph = remove_edge(input_graph, edge_index_left, edge_index_right)
     # update graph id
     graph_id = int(graph_id) + 1
@@ -353,6 +354,7 @@ def nn_retrain():
     nodelist, edgelist = transform_from_pytorch_to_ui(input_graph)
 
     return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+
 
 
 
