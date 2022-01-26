@@ -11,6 +11,7 @@
 
 
 """
+import copy
 import json
 
 from flask import Flask, request
@@ -56,10 +57,10 @@ def adding_node():
     req_data = request.get_json()
 
     # graph and patient id
-    patient_id = req_data["patient_id"]
-    graph_id = req_data["graph_id"]
+    patient_id = req_data['patient_id']
+    graph_id = req_data['graph_id']
     # input graph
-    input_graph = graph_data[patient_id][graph_id]
+    input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # node features
     node_features = np.array(req_data["features"]).reshape(-1, 1).T
@@ -67,15 +68,10 @@ def adding_node():
 
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_node(input_graph, node_features)
-    # update graph id
-    graph_id = int(graph_id) + 1
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
 
-    # create graph in ui format
-    nodelist, edgelist = transform_from_pytorch_to_ui(output_graph)
-
-    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+    return "done"
 
 
 ########################################################################################################################
@@ -90,8 +86,8 @@ def delete_node():
     """
 
     # graph and patient id
-    patient_id = request.args.get("patient_id")
-    graph_id = request.args.get("graph_id")
+    patient_id = request.args.get('patient_id')
+    graph_id = request.args.get('graph_id')
 
     # get node label
     deleted_node_id = request.args.get('deleted_node_id')
@@ -104,15 +100,11 @@ def delete_node():
 
     # delete node
     output_graph = remove_node(input_graph, deleted_node_id)
-    # update graph id
-    graph_id = int(graph_id) + 1
+
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
 
-    # create graph in ui format
-    nodelist, edgelist = transform_from_pytorch_to_ui(output_graph)
-
-    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+    return "done"
 
 
 ########################################################################################################################
@@ -127,10 +119,10 @@ def adding_edge():
     req_data = request.get_json()
 
     # graph and patient id
-    patient_id = req_data["patient_id"]
-    graph_id = req_data["graph_id"]
+    patient_id = req_data['patient_id']
+    graph_id = req_data['graph_id']
     # input graph
-    input_graph = graph_data[patient_id][graph_id]
+    input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # left and right node ids
     new_edge_index_left = req_data["new_edge_index_left"]
@@ -142,15 +134,11 @@ def adding_edge():
 
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_edge(input_graph, new_edge_index_left, new_edge_index_right, edge_features)
-    # update graph id
-    graph_id = int(graph_id) + 1
+
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
 
-    # create graph in ui format
-    nodelist, edgelist = transform_from_pytorch_to_ui(output_graph)
-
-    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+    return "done"
 
 
 ########################################################################################################################
@@ -165,30 +153,25 @@ def delete_edge():
     :param edge_index_right: Index of right node of the edge
     """
     # graph and patient id
-    patient_id = request.args.get("patient_id")
-    graph_id = request.args.get("graph_id")
+    patient_id = request.args.get('patient_id')
+    graph_id = request.args.get('graph_id')
 
     # left and right node id
     edge_id_left = request.args.get('edge_index_left')
     edge_id_right = request.args.get('edge_index_right')
     # input graph
-    input_graph = graph_data[patient_id][graph_id]
+    input_graph = graph_data[str(patient_id)][str(graph_id)]
     # get node ids from node labels
     edge_index_left = np.where(input_graph.node_ids == edge_id_left)
     edge_index_right = np.where(input_graph.node_ids == edge_id_right)
 
     # remove edge
-
     output_graph = remove_edge(input_graph, edge_index_left, edge_index_right)
-    # update graph id
-    graph_id = int(graph_id) + 1
+
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
 
-    # create graph in ui format
-    nodelist, edgelist = transform_from_pytorch_to_ui(output_graph)
-
-    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+    return "done"
 
 
 ########################################################################################################################
@@ -260,7 +243,7 @@ def pre_defined_dataset():
     # get dataset_name and patient ID for
     dataset_name = request.args.get('dataset_name')
     patient_id = request.args.get('patient_id')
-    graph_id = request.args.get("graph_id")
+    graph_id = request.args.get('graph_id')
 
     #if dataset_name == "Protein Dataset":
     #    dataset_folder = os.path.join(root_data_folder, "data", "Protein_Dataset")
@@ -326,6 +309,7 @@ def nn_predict():
     # input graph
     input_graph = graph_data[patient_id][graph_id]
 
+
     # create graph in ui format
     nodelist, edgelist = transform_from_pytorch_to_ui(input_graph)
 
@@ -356,7 +340,39 @@ def nn_retrain():
     return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
 
 
+########################################################################################################################
+# [11.] Create Deep Copy of graph for modifications ====================================================================
+########################################################################################################################
+@app.route('/deep_copy', methods=['POST'])
+def deep_copy():
+    """
+    Apply a new retrain with the current graphs dataset
 
+    :return:
+    """
+    # Get patient id and graph id -----------------------------------------------------------------
+    req_data = request.get_json()
+
+    # graph and patient id
+    patient_id = req_data["patient_id"]
+    graph_id = req_data["graph_id"]
+
+    # input graph
+    input_graph = graph_data[str(patient_id)][str(graph_id)]
+    print(input_graph)
+    # update graph id
+    graph_id = int(graph_id) + 1
+
+    # create deep_copy
+    deep_cpy = copy.deepcopy(input_graph)
+
+    # update graph id feature
+    deep_cpy.graph_id = f"graph_id_{patient_id}_{graph_id}"
+
+    # save graph
+    graph_data[str(patient_id)][str(graph_id)] = deep_cpy
+
+    return "done"
 
 
 
