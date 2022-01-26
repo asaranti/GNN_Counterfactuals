@@ -392,7 +392,23 @@ def highest_graph_id():
 
     return json.dumps([amount_graphs])
 
+########################################################################################################################
+# [13.] Delete Patient Graph from Dictionary ====================================================================
+########################################################################################################################
+@app.route('/data/graph/', methods=['DELETE'])
+def graph():
+    """
+    Remove latest graph of specified patient
+    """
 
+    # graph and patient id
+    patient_id = request.args.get('patient_id')
+    graph_id = request.args.get('graph_id')
+
+    # delete graph
+    del graph_data[str(patient_id)][str(graph_id)]
+
+    return "done"
 
 
 
