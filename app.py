@@ -374,6 +374,23 @@ def deep_copy():
 
     return "done"
 
+########################################################################################################################
+# [12.] Get highest Graph ID of selected Patient ====================================================================
+########################################################################################################################
+@app.route('/data/highest_graph_id/', methods=['GET'])
+def highest_graph_id():
+    """
+    Get highest Graph ID of selected Patient
+    """
+
+    # get dataset_name and patient ID for
+    patient_id = request.args.get('patient_id')
+    # get all graphs of this patient
+    selected_graphs = graph_data[str(patient_id)]
+    # count how many graphs (the indexes start with 0 so subtract length by 1)
+    amount_graphs = len(selected_graphs.keys())-1
+
+    return json.dumps([amount_graphs])
 
 
 
