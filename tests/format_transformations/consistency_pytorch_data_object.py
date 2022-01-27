@@ -8,14 +8,11 @@
 """
 
 import os
-import time
 import unittest
 
 from HTMLTestRunner import HTMLTestRunner
 
-from preprocessing.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
-from preprocessing.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
-from preprocessing.format_transformation_ui_to_pytorch import transform_from_ui_to_pytorch
+from preprocessing.format_transformations.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
 
 
 class DataConsistency(unittest.TestCase):

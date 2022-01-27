@@ -13,8 +13,6 @@ import pandas as pd
 import torch
 from torch_geometric.data import Data
 
-from preprocessing.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
-
 
 def transform_from_ui_to_pytorch(input_dataset_folder: str,
                                  ui_to_pytorch_nodes_file: str,
