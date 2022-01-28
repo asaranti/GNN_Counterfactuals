@@ -26,5 +26,3 @@ protein_graph_list = import_random_kirc_data(dataset_folder,
                                              pytorch_random_kirc_methy_attribute_file,
                                              pytorch_random_kirc_edges_file,
                                              pytorch_random_kirc_target_file)
-
-

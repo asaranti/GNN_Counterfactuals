@@ -10,6 +10,7 @@
 import os
 
 import networkx as nx
+from networkx.algorithms.components import connected_components
 import numpy as np
 import pandas as pd
 import torch
@@ -21,7 +22,7 @@ def import_random_kirc_data(input_dataset_folder: str,
                             pytorch_random_kirc_mRNA_attribute_file: str,
                             pytorch_random_kirc_methy_attribute_file: str,
                             pytorch_random_kirc_edges_file: str,
-                            pytorch_random_kirc_label_file: str):
+                            pytorch_random_kirc_label_file: str) -> list:
     """
     Import the data from random_kirc dataset and transform them to the pytorch format
 
@@ -33,6 +34,8 @@ def import_random_kirc_data(input_dataset_folder: str,
     :param pytorch_random_kirc_edges_file: File containing the edges between nodes. It is the same for each graph
     :param pytorch_random_kirc_label_file: File containing the label of each graph (used in a graph classification
     task)
+
+    :return: List of all graphs
     """
 
     ####################################################################################################################
@@ -43,12 +46,25 @@ def import_random_kirc_data(input_dataset_folder: str,
     pytorch_random_kirc_mRNA_attribute_file = os.path.join(input_dataset_folder,
                                                            pytorch_random_kirc_mRNA_attribute_file)
     node_attribute_mRNA_orig = pd.read_csv(pytorch_random_kirc_mRNA_attribute_file, sep=' ')
-    print(node_attribute_mRNA_orig)
+    mRNA_nan_values = node_attribute_mRNA_orig.isnull().sum().sum()
+    assert mRNA_nan_values == 0, f"The number of NaN values in the features must be 0, " \
+                                 f"instead it is: {mRNA_nan_values}"
 
     pytorch_random_kirc_methy_attribute_file = os.path.join(input_dataset_folder,
                                                             pytorch_random_kirc_methy_attribute_file)
     node_attribute_methy_orig = pd.read_csv(pytorch_random_kirc_methy_attribute_file, sep=' ')
-    print(node_attribute_methy_orig)
+
+    # Check and deal with NaNs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    methy_nan_values = node_attribute_methy_orig.isnull().sum().sum()
+    # assert methy_nan_values == 0, f"The number of NaN values in the features must be 0, " \
+    #                              f"instead it is: {methy_nan_values}"
+
+    node_attribute_methy_orig = node_attribute_methy_orig.fillna(node_attribute_methy_orig.mean())
+
+    # node_attribute_methy_orig_nan = node_attribute_methy_orig.isnull()
+    # column_has_nan = node_attribute_methy_orig_nan.any(axis=0)
+    # columns_with_nan = node_attribute_methy_orig[column_has_nan]
+    # print(node_attribute_methy_orig.shape, columns_with_nan.shape)
 
     # Check if the node names in the two pandas dataframes are equal ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     node_names_mRNA_attribute_list = list(node_attribute_mRNA_orig.columns)
@@ -72,7 +88,7 @@ def import_random_kirc_data(input_dataset_folder: str,
         feature_methy = node_attribute_methy_orig.iloc[row_nr].values
 
         node_attributes = np.vstack((feature_mRNA.T, feature_methy.T)).T
-        node_attributes_list.append(torch.tensor(node_attributes))
+        node_attributes_list.append(torch.tensor(node_attributes, dtype=torch.float32))
 
     ####################################################################################################################
     # [2.] Edges =======================================================================================================
@@ -81,7 +97,7 @@ def import_random_kirc_data(input_dataset_folder: str,
     # [2.1.]Create a dictiionary from node names to node numbering ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     row_indexes_list = list(range(0, len(node_names_mRNA_attribute_list)))
     node_name_row_indexes_dict = dict(zip(node_names_mRNA_attribute_list, row_indexes_list))
-    print(node_name_row_indexes_dict)
+    # print(node_name_row_indexes_dict)
 
     # [2.2.] Iterate over edges ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     line_cnt = 0
@@ -98,6 +114,8 @@ def import_random_kirc_data(input_dataset_folder: str,
 
             # [2.3.] Create the edge attributes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             combined_score = float(line_array[3].replace('\n', ''))
+            if combined_score < 995:
+                continue
             edge_attr.append(combined_score)
 
             # [2.4.] Create the edge indexes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,7 +133,7 @@ def import_random_kirc_data(input_dataset_folder: str,
 
         line_cnt += 1
 
-    print(f"Nr. edges: {len(edge_attr)}")
+    print(f"Nr. edges in orig: {len(edges_left_indexes)}")
 
     edge_idx = torch.tensor([edges_left_indexes, edges_right_indexes], dtype=torch.long)
     edge_attr = torch.tensor(np.array(edge_attr), dtype=torch.float64)
@@ -135,14 +153,16 @@ def import_random_kirc_data(input_dataset_folder: str,
     graph_all = []
     for row_nr in range(nr_of_graphs):
 
+        # print(f"Graph Nr.: {row_nr}")
+
         graph_id = graph_ids_mRNA_list[row_nr]
         label = random_kirc_target_orig[graph_id].values[0]
 
-        graph = Data(
+        graph_orig = Data(
             x=node_attributes_list[row_nr],
             edge_index=edge_idx,
             edge_attr=edge_attr,
-            y=label,
+            y=torch.tensor([label]),
             pos=None,
             node_labels=np.array(node_names_mRNA_attribute_list),
             node_ids=np.array(node_ids_list),
@@ -150,11 +170,48 @@ def import_random_kirc_data(input_dataset_folder: str,
             edge_ids=edge_ids,
             edge_attr_labels=["combined_score"],
             graph_id=graph_id
-            )
+        )
 
         # Check if the graph is connected ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # graph_nx = to_networkx(graph, to_undirected=True)
         # graph_is_connected = nx.is_connected(graph_nx)
         # print(f"Graph is connected: {graph_is_connected}")
 
-        graph_all.append(graph)
+        # Compute the connected components and select the biggest graph ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        graph_nx = to_networkx(graph_orig, to_undirected=True)
+        cc_graphs = connected_components(graph_nx)
+        largest_cc_graph = list(max(cc_graphs, key=len))
+
+        node_attributes_cc = node_attributes_list[row_nr][largest_cc_graph]
+
+        nodes_indexes_list = list(range(0, len(largest_cc_graph)))
+        node_reindexing_dict = dict(zip(largest_cc_graph, nodes_indexes_list))
+
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        edge_idx_array = edge_idx.cpu().detach().numpy()
+        edge_idx_cc_left_list = []
+        edge_idx_cc_right_list = []
+        for edge_index in range(edge_idx_array.shape[1]):
+
+            edge_left = int(edge_idx_array[0, edge_index])
+            edge_right = int(edge_idx_array[1, edge_index])
+
+            if edge_left in largest_cc_graph and edge_right in largest_cc_graph:
+                edge_idx_cc_left_list.append(node_reindexing_dict[edge_left])
+                edge_idx_cc_right_list.append(node_reindexing_dict[edge_right])
+
+        edge_idx_cc = torch.tensor([edge_idx_cc_left_list, edge_idx_cc_right_list], dtype=torch.long)
+
+        # print(edge_idx_cc)
+        # print(f"Nr. edges in cc: {len(edge_idx_cc_left_list)}")
+
+        graph_cc = Data(
+            x=node_attributes_cc,
+            edge_index=edge_idx_cc,
+            y=torch.tensor([label]),
+        )
+
+        print(graph_cc)
+        graph_all.append(graph_cc)
+
+    return graph_all
