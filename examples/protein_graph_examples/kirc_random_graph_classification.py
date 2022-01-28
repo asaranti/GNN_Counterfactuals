@@ -80,9 +80,9 @@ for step, data in enumerate(train_loader):
 # [3.] Graph Classification ============================================================================================
 ########################################################################################################################
 num_classes = 2
-model = GCN(num_node_features=num_features, hidden_channels=5, num_classes=num_classes)
+model = GCN(num_node_features=num_features, hidden_channels=200, num_classes=num_classes)
 print(model)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 criterion = torch.nn.CrossEntropyLoss()
 
 
@@ -121,7 +121,7 @@ def test(loader):
 
 
 # Training for some epochs +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-epochs_nr = 10
+epochs_nr = 50
 for epoch in range(1, epochs_nr + 1):
 
     print(f"Epoch: {epoch}")
