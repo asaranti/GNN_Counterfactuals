@@ -59,20 +59,20 @@ def adding_node():
     # graph and patient id
     patient_id = req_data['patient_id']
     graph_id = req_data['graph_id']
+    node_label = req_data['label']
+    node_id = req_data['id']
     # input graph
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # node features
     node_features = np.array(req_data["features"]).reshape(-1, 1).T
 
-
     # Add the node with its features -----------------------------------------------------------------------------------
-    output_graph = add_node(input_graph, node_features)
+    output_graph = add_node(input_graph, node_features, node_label, node_id)
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
 
     return "done"
-
 
 ########################################################################################################################
 # [2.] Delete node =====================================================================================================
@@ -96,7 +96,7 @@ def delete_node():
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # get node id from node label
-    deleted_node_id = np.where(input_graph.node_ids == deleted_node_id)
+    deleted_node_id = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(deleted_node_id)])
 
     # delete node
     output_graph = remove_node(input_graph, deleted_node_id)
@@ -125,12 +125,13 @@ def adding_edge():
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # left and right node ids
-    new_edge_index_left = req_data["new_edge_index_left"]
-    new_edge_index_right = req_data["new_edge_index_right"]
+    edge_index_left = req_data["new_edge_index_left"]
+    edge_index_right = req_data["new_edge_index_right"]
+    new_edge_index_left = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_index_left)])
+    new_edge_index_right = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_index_right)])
 
     # edge features
     edge_features = np.array(req_data["features"]).reshape(-1, 1).T
-
 
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_edge(input_graph, new_edge_index_left, new_edge_index_right, edge_features)
@@ -162,8 +163,8 @@ def delete_edge():
     # input graph
     input_graph = graph_data[str(patient_id)][str(graph_id)]
     # get node ids from node labels
-    edge_index_left = np.where(input_graph.node_ids == edge_id_left)
-    edge_index_right = np.where(input_graph.node_ids == edge_id_right)
+    edge_index_left = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_id_left)])
+    edge_index_right = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_id_right)])
 
     # remove edge
     output_graph = remove_edge(input_graph, edge_index_left, edge_index_right)
@@ -209,7 +210,7 @@ def patient_name():
         graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
 
         for graph in graphs_list:
-            # 2.1. Use the graph_id to "position" the graph into the "graph_adaptation_structure" ------------------------------
+            # 2.1. Use the graph_id to "position" the graph into the "graph_adaptation_structure" ----------------------
             graph_id_composed = graph.graph_id
             pattern = re.compile(graph_id_composed_regex)
             graph_id_matches = bool(pattern.match(graph_id_composed))
@@ -217,10 +218,16 @@ def patient_name():
             assert graph_id_matches, f"The graph's id {graph_id_composed} does not match " \
                                      f"the required pattern: {graph_id_composed_regex}"
 
-            # 2.2. Create the initial "graph_adaptation_structure" -------------------------------------------------------------
+            # 2.2. Create the initial "graph_adaptation_structure" -----------------------------------------------------
             graph_id_comp_array = graph_id_composed.split("_")
             patient_id = graph_id_comp_array[2]
             graph_id = graph_id_comp_array[3]
+
+            # 2.3. Add dict for node_ids -------------------------------------------------------------------------------
+            dict_node_ids = {}
+            for i in range(0, len(graph.node_ids)):
+                dict_node_ids[i] = graph.node_ids[i]
+            graph.node_ids = dict_node_ids
 
             patient_dict = {graph_id: graph}
             graph_data[patient_id] = patient_dict
@@ -309,7 +316,6 @@ def nn_predict():
     # input graph
     input_graph = graph_data[patient_id][graph_id]
 
-
     # create graph in ui format
     nodelist, edgelist = transform_from_pytorch_to_ui(input_graph)
 
@@ -359,7 +365,6 @@ def deep_copy():
 
     # input graph
     input_graph = graph_data[str(patient_id)][str(graph_id)]
-    print(input_graph)
     # update graph id
     graph_id = int(graph_id) + 1
 
