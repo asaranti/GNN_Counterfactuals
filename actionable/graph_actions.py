@@ -23,6 +23,8 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
 
     :param input_graph: Input graph
     :param node_features: A numpy row containing the node features
+    :param label: Node label, which will be added
+    :param node_id: Node id, which will be added
 
     :return: The updated graph
     """
@@ -67,7 +69,8 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
     return output_graph
 
 
-def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) -> torch_geometric.data.data.Data:
+def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
+                label: str) -> torch_geometric.data.data.Data:
     """
     Remove one node from the graph according to its index.
     It is presupposed that the node index is valid.
@@ -88,6 +91,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) ->
 
     :param input_graph: Input graph
     :param node_index: Node index for removal
+    :param label: Node label for removal
 
     :return: The updated graph
     """
@@ -100,6 +104,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) ->
     # [1.] The corresponding line needs to be removed from the "x" field of the Data class, ----------------------------
     #      corresponding to node features. -----------------------------------------------------------------------------
     input_graph_x = input_graph.x.numpy()
+    removed_node_label = input_graph.node_ids[node_index]
     output_graph_x = np.delete(input_graph_x, node_index, 0)
     del input_graph.node_ids[node_index]
 
@@ -109,7 +114,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) ->
 
     output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
     output_graph_edge_attr = copy.deepcopy(input_graph.edge_attr)
-    output_graph_node_labels = np.delete(input_graph.node_labels, node_index)
+    output_graph_node_labels = np.delete(input_graph.node_labels, np.argwhere(input_graph.node_labels == label))
 
     # [4.] The field "y" must not be deleted. --------------------------------------------------------------------------
     #      Nothing to do here

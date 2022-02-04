@@ -88,18 +88,17 @@ def delete_node():
     # graph and patient id
     patient_id = request.args.get('patient_id')
     graph_id = request.args.get('graph_id')
-
-    # get node label
     deleted_node_id = request.args.get('deleted_node_id')
+    deleted_node_label = request.args.get('deleted_node_label')
 
     # input graph
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
-    # get node id from node label
+    # get node id from node ids
     deleted_node_id = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(deleted_node_id)])
 
     # delete node
-    output_graph = remove_node(input_graph, deleted_node_id)
+    output_graph = remove_node(input_graph, deleted_node_id, deleted_node_label)
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
