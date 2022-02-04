@@ -17,6 +17,8 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx
 
+from utils.graph_utilities import compare_graphs_topology
+
 
 def import_random_kirc_data(input_dataset_folder: str,
                             pytorch_random_kirc_mRNA_attribute_file: str,
@@ -163,7 +165,7 @@ def import_random_kirc_data(input_dataset_folder: str,
         graph_orig = Data(
             x=node_attributes_list[row_nr],
             edge_index=edge_idx,
-            edge_attr=edge_attr,
+            edge_attr=None,  # edge_attr,
             y=torch.tensor([label]),
             pos=None,
             node_labels=np.array(node_names_mRNA_attribute_list),
@@ -174,11 +176,7 @@ def import_random_kirc_data(input_dataset_folder: str,
             graph_id=graph_id
         )
 
-        # Check if the graph is connected ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # graph_nx = to_networkx(graph, to_undirected=True)
-        # graph_is_connected = nx.is_connected(graph_nx)
-        # print(f"Graph is connected: {graph_is_connected}")
-
+        """
         # Compute the connected components and select the biggest graph ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         graph_nx = to_networkx(graph_orig, to_undirected=True)
         cc_graphs = connected_components(graph_nx)
@@ -214,7 +212,17 @@ def import_random_kirc_data(input_dataset_folder: str,
             y=torch.tensor([label]),
         )
 
-        # print(graph_cc)
-        graph_all.append(graph_cc)
+        print(graph_cc.y)
+        """
+
+        # Check if the graph is connected ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # graph_nx = to_networkx(graph_orig, to_undirected=True)
+        # graph_is_connected = nx.is_connected(graph_nx)
+        # print(f"Graph is connected: {graph_is_connected}")
+
+        graph_all.append(graph_orig)
+
+    # Make check that all graphs have the same topology ----------------------------------------------------------------
+    compare_graphs_topology(graph_all)
 
     return graph_all

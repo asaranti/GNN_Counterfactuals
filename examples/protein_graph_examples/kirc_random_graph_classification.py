@@ -1,5 +1,5 @@
 """
-    Graph classification of KIRC RANDOM dataset
+    Graph classification of KIRC RANDOM dataset #TUDataset
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
@@ -24,7 +24,7 @@ from sklearn.preprocessing import StandardScaler
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph =========================================================
 ########################################################################################################################
 
-dataset_folder = os.path.join("data", "KIRC_RANDOM")
+dataset_folder = os.path.join("data", "KIRC_RANDOM", "kirc_random_orig")
 pytorch_random_kirc_edges_file = "KIDNEY_RANDOM_PPI.txt"
 pytorch_random_kirc_mRNA_attribute_file = "KIDNEY_RANDOM_mRNA_FEATURES.txt"
 pytorch_random_kirc_methy_attribute_file = "KIDNEY_RANDOM_Methy_FEATURES.txt"

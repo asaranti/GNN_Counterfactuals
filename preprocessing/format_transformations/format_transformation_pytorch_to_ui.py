@@ -63,13 +63,24 @@ def transform_from_pytorch_to_ui(graph: Data,
     edge_data_dict = {"from": edge_from_col_vals, "to": edge_to_col_vals, "id": graph.edge_ids}
     edge_data_df = pd.DataFrame(data=edge_data_dict)
 
-    edge_attributes_df = pd.DataFrame(data=graph.edge_attr.detach().cpu().numpy(),
-                                      columns=graph.edge_attr_labels)
-    edge_attributes_concat_df = pd.concat([edge_data_df, edge_attributes_df], axis=1)
-    # print(edge_attributes_concat_df.head(5))
+    if graph.edge_attr is None:
 
-    edge_attributes_concat_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_edges_file),
-                                     index=False,
-                                     quoting=csv.QUOTE_NONNUMERIC  # Add double quotes to anything that is non-numeric ~
-                                     )
+        # csv.QUOTE_NONNUMERIC: Add double quotes to anything that is non-numeric ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        edge_data_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_edges_file),
+                            index=False,
+                            quoting=csv.QUOTE_NONNUMERIC
+                            )
+
+    else:
+
+        edge_attributes_df = pd.DataFrame(data=graph.edge_attr.detach().cpu().numpy(),
+                                          columns=graph.edge_attr_labels)
+        edge_attributes_concat_df = pd.concat([edge_data_df, edge_attributes_df], axis=1)
+        # print(edge_attributes_concat_df.head(5))
+
+        # csv.QUOTE_NONNUMERIC: Add double quotes to anything that is non-numeric ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        edge_attributes_concat_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_edges_file),
+                                         index=False,
+                                         quoting=csv.QUOTE_NONNUMERIC
+                                         )
 

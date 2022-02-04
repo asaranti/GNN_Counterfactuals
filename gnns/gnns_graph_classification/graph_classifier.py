@@ -24,7 +24,7 @@ print()
 print(f'Dataset: {dataset}:')
 print('====================')
 print(f'Number of graphs: {len(dataset)}')
-print(f'Number of features: {dataset.num_features}')
+print(f'Number of node features: {dataset.num_features}')
 print(f'Number of classes: {dataset.num_classes}')
 
 input_graph = dataset[0]  # Get the first graph object ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
