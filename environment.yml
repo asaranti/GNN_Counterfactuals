@@ -4,10 +4,10 @@ channels:
   - pytorch
   - pyg
 dependencies:
-  - python>=3.6
+  - python=3.8
   - numpy
   - flask
-  - pytorch
+  - pytorch=1.9
   - torchvision
-  - cudatoolkit
+  - cudatoolkit=11.1
   - pyg

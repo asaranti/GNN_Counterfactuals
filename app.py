@@ -15,19 +15,19 @@ import copy
 import json
 import uuid
 
-from flask import Flask, request, redirect, url_for
-from flask_uuid import FlaskUUID
+from flask import Flask, request
 
 import numpy as np
-from torch_geometric.datasets import TUDataset
+# from torch_geometric.datasets import TUDataset
 
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
     add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
 
 from testing_utils.jsonification import graph_to_json
 
-from preprocessing.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
-from preprocessing.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from preprocessing.format_transfortmations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from preprocessing.format_transfortmations.format_transformation_random_kirc_to_pytorch import import_random_kirc_data
+
 
 from synthetic_graph_examples.ba_graphs_generator import ba_graphs_gen
 import os
@@ -37,15 +37,13 @@ import re
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
 app = Flask(__name__)
-FlaskUUID(app)
 
 # global
-dataset_names = ["Barabasi-Albert Dataset"]
-root_data_folder = os.getcwd()
+dataset_names = ["Barabasi-Albert Dataset", "Kirc Dataset"]
+graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
 
-# Graphs dataset that was used in the GNN task -------------------------------------------------------------------------
-dataset = TUDataset(root='data/TUDataset', name='MUTAG')
-
+# Graphs dataset paths -------------------------------------------------------------------------
+kirc_data_path = os.path.join("E:\\", "Uni", "Doktor-Goettingen", "Data", "kirc_random_orig")
 
 ########################################################################################################################
 # [0.] Generate Token for current session ==============================================================================
@@ -214,23 +212,61 @@ def patient_name(token):
     """
     Initializes the dataset and gets list of patient names (graph_ids)
     """
-
     # get dataset_name
     dataset_name = request.args.get('dataset_name')
 
+    # init the structure
+    global token_graph_data
+    token_graph_data = {}
+    graph_data = {}
+
     # get patient ids corresponding to dataset
-    if dataset_name == "Protein Dataset":
-        patients_names = ["patient_0"]
     if dataset_name == "Barabasi-Albert Dataset":
-        # create the example graphs
+
+
+        # get list of all graphs in pytorch format
         graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
 
-        # init the structure
-        global token_graph_data
-        token_graph_data = {}
-        graph_data = {}
-        graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
+        # turn list into dictionary format
+        for graph in graphs_list:
+            # 2.1. Use the graph_id to "position" the graph into the "graph_adaptation_structure" ----------------------
+            graph_id_composed = graph.graph_id
+            pattern = re.compile(graph_id_composed_regex)
+            graph_id_matches = bool(pattern.match(graph_id_composed))
 
+            assert graph_id_matches, f"The graph's id {graph_id_composed} does not match " \
+                                     f"the required pattern: {graph_id_composed_regex}"
+
+            # 2.2. Create the initial "graph_adaptation_structure" -----------------------------------------------------
+            graph_id_comp_array = graph_id_composed.split("_")
+            patient_id = graph_id_comp_array[2]
+            graph_id = graph_id_comp_array[3]
+
+            # 2.3. Add dict for node_ids -------------------------------------------------------------------------------
+            dict_node_ids = {}
+            for i in range(0, len(graph.node_ids)):
+                dict_node_ids[i] = graph.node_ids[i]
+            graph.node_ids = dict_node_ids
+
+            patient_dict = {graph_id: graph}
+            graph_data[patient_id] = patient_dict
+
+        # create list of patient names from amount of graphs in dataset
+        patients_names = ['Patient ' + i for i in map(str, np.arange(0, len(graph_data)).tolist())]
+
+        # save graph and session id
+        token_graph_data[str(token)] = graph_data
+
+    if dataset_name == "Kirc Dataset":
+
+        # get list of all graphs in pytorch format
+        graphs_list = import_random_kirc_data(kirc_data_path,
+                                             "KIDNEY_RANDOM_mRNA_FEATURES.txt",
+                                             "KIDNEY_RANDOM_Methy_FEATURES.txt",
+                                             "KIDNEY_RANDOM_PPI.txt",
+                                             "KIDNEY_RANDOM_TARGET.txt")
+
+        # turn list into dictionary format
         for graph in graphs_list:
             # 2.1. Use the graph_id to "position" the graph into the "graph_adaptation_structure" ----------------------
             graph_id_composed = graph.graph_id
@@ -277,22 +313,13 @@ def pre_defined_dataset(token):
     patient_id = request.args.get('patient_id')
     graph_id = request.args.get('graph_id')
 
-    #if dataset_name == "Protein Dataset":
-    #    dataset_folder = os.path.join(root_data_folder, "data", "Protein_Dataset")
-    #    pytorch_ppi_attributes_file = "Human__TCGA_ACC__UNC__RNAseq__HiSeq_RNA__01_28_2016__BI__Gene__Firehose_RSEM_log2.cct"
-    #    pytorch_ppi_node_id_to_name_file = "human.name_2_string.csv"
-    #    pytorch_ppi_edges_file = "9606.protein.links.v11.0.txt"
-
-        # perform ppi tp pytorch transformation
-    #    pytorch_graph = transform_from_ppi_to_pytorch(dataset_folder,
-    #                                 pytorch_ppi_attributes_file,
-    #                                 pytorch_ppi_node_id_to_name_file,
-    #                                 pytorch_ppi_edges_file)
-
-        # perform pytorch to ui transformation
-    #    nodelist, edgelist = transform_from_pytorch_to_ui(pytorch_graph, os.path.join(root_data_folder, "data", "UI_Dataset"),
-    #                                                      "nodelist.csv", "edgelist.csv")
     if dataset_name == "Barabasi-Albert Dataset":
+        # get graph corresponding to graph id and patient id and transform to UI format
+        graph_data = token_graph_data[str(token)]
+        selected_graph = graph_data[str(patient_id)][str(graph_id)]
+        nodelist, edgelist = transform_from_pytorch_to_ui(selected_graph)
+
+    if dataset_name == "Kirc Dataset":
         # get graph corresponding to graph id and patient id and transform to UI format
         graph_data = token_graph_data[str(token)]
         selected_graph = graph_data[str(patient_id)][str(graph_id)]

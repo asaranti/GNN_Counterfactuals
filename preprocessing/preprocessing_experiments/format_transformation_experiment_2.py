@@ -14,7 +14,7 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_networkx
 
-from preprocessing.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from preprocessing.format_transfortmations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
 
 ########################################################################################################################
 # [1.] BA graphs generation ============================================================================================

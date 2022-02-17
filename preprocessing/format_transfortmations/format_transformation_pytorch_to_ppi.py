@@ -6,17 +6,12 @@
     :date: 2021-12-01
 """
 
-import filecmp
 from math import log
 import os
-import random
 
 import numpy as np
 import pandas as pd
 from torch_geometric.data import Data
-from torch_geometric.datasets import Planetoid
-
-from preprocessing.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
 
 
 def transform_from_pytorch_to_ppi(graph: Data,

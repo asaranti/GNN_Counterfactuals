@@ -28,7 +28,7 @@ def transform_from_pytorch_to_ui(graph: Data):
     node_attributes_df = pd.DataFrame(graph.x.detach().cpu().numpy(), columns=graph.node_feature_labels)
 
     node_attributes_df["label"] = graph.node_labels
-    node_attributes_df["id"] = graph.node_ids.values()
+    node_attributes_df["id"] = graph.node_ids
 
     node_attributes_column_values = list(node_attributes_df.columns.values)
     del node_attributes_column_values[-2:]
@@ -36,6 +36,7 @@ def transform_from_pytorch_to_ui(graph: Data):
 
     node_attributes_df = node_attributes_df[node_attributes_column_values]
     # print(node_attributes_df.head(5))
+
 
     ####################################################################################################################
     # [2.] Edges =======================================================================================================
@@ -53,9 +54,14 @@ def transform_from_pytorch_to_ui(graph: Data):
     edge_data_dict = {"from": edge_from_col_vals, "to": edge_to_col_vals, "id": graph.edge_ids}
     edge_data_df = pd.DataFrame(data=edge_data_dict)
 
-    edge_attributes_df = pd.DataFrame(data=graph.edge_attr.detach().cpu().numpy(),
-                                      columns=graph.edge_attr_labels)
-    edge_attributes_concat_df = pd.concat([edge_data_df, edge_attributes_df], axis=1)
-    # print(edge_attributes_concat_df.head(5))
+    if graph.edge_attr is None:
+
+        edge_attributes_concat_df = edge_data_df
+
+    else:
+
+        edge_attributes_df = pd.DataFrame(data=graph.edge_attr.detach().cpu().numpy(),
+                                          columns=graph.edge_attr_labels)
+        edge_attributes_concat_df = pd.concat([edge_data_df, edge_attributes_df], axis=1)
 
     return node_attributes_df, edge_attributes_concat_df
