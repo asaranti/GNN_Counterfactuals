@@ -14,11 +14,14 @@
 import copy
 import json
 import uuid
+import time
+import atexit
 
 from flask import Flask, request
 
 import numpy as np
 # from torch_geometric.datasets import TUDataset
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
     add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
@@ -41,9 +44,13 @@ app = Flask(__name__)
 # global
 dataset_names = ["Barabasi-Albert Dataset", "Kirc Dataset"]
 graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
+root_data_folder = os.getcwd()
+# interval to delete old sessions: 1 hour (hour * min * sec * ms)
+INTERVAL = 1 * 60 * 60 * 1000
+user_last_updated = {}
 
 # Graphs dataset paths -------------------------------------------------------------------------
-kirc_data_path = os.path.join("E:\\", "Uni", "Doktor-Goettingen", "Data", "kirc_random_orig")
+kirc_data_path = os.path.join("/home/alessa/Documents/FeatureCloud/",  "kirc_random_orig")
 
 ########################################################################################################################
 # [0.] Generate Token for current session ==============================================================================
@@ -72,7 +79,7 @@ def adding_node(token):
     node_label = req_data['label']
     node_id = req_data['id']
     # input graph
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # node features
@@ -82,7 +89,8 @@ def adding_node(token):
     output_graph = add_node(input_graph, node_features, node_label, node_id)
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
-    token_graph_data[str(token)] = graph_data
+    user_graph_data[str(token)] = graph_data
+    user_last_updated[str(token)] = round(time.time() * 1000)
 
     return "done"
 
@@ -104,7 +112,7 @@ def delete_node(token):
     deleted_node_label = request.args.get('deleted_node_label')
 
     # input graph
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # get node id from node ids
@@ -115,7 +123,8 @@ def delete_node(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
-    token_graph_data[str(token)] = graph_data
+    user_graph_data[str(token)] = graph_data
+    user_last_updated[str(token)] = round(time.time() * 1000)
 
     return "done"
 
@@ -135,7 +144,7 @@ def adding_edge(token):
     patient_id = req_data['patient_id']
     graph_id = req_data['graph_id']
     # input graph
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # left and right node ids
@@ -152,7 +161,8 @@ def adding_edge(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
-    token_graph_data[str(token)] = graph_data
+    user_graph_data[str(token)] = graph_data
+    user_last_updated[str(token)] = round(time.time() * 1000)
 
     return "done"
 
@@ -176,7 +186,7 @@ def delete_edge(token):
     edge_id_left = request.args.get('edge_index_left')
     edge_id_right = request.args.get('edge_index_right')
     # input graph
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
     # get node ids from node labels
     edge_index_left = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_id_left)])
@@ -187,7 +197,8 @@ def delete_edge(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
-    token_graph_data[str(token)] = graph_data
+    user_graph_data[str(token)] = graph_data
+    user_last_updated[str(token)] = round(time.time() * 1000)
 
     return "done"
 
@@ -216,14 +227,12 @@ def patient_name(token):
     dataset_name = request.args.get('dataset_name')
 
     # init the structure
-    global token_graph_data
-    token_graph_data = {}
+    global user_graph_data
+    user_graph_data = {}
     graph_data = {}
 
     # get patient ids corresponding to dataset
     if dataset_name == "Barabasi-Albert Dataset":
-
-
         # get list of all graphs in pytorch format
         graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
 
@@ -253,9 +262,6 @@ def patient_name(token):
 
         # create list of patient names from amount of graphs in dataset
         patients_names = ['Patient ' + i for i in map(str, np.arange(0, len(graph_data)).tolist())]
-
-        # save graph and session id
-        token_graph_data[str(token)] = graph_data
 
     if dataset_name == "Kirc Dataset":
 
@@ -293,8 +299,11 @@ def patient_name(token):
         # create list of patient names from amount of graphs in dataset
         patients_names = ['Patient ' + i for i in map(str, np.arange(0, len(graph_data)).tolist())]
 
-        # save graph and session id
-        token_graph_data[str(token)] = graph_data
+    # save graph and session id
+    user_graph_data[str(token)] = graph_data
+
+    # save user id (token) and last updated time in ms
+    user_last_updated[str(token)] = round(time.time() * 1000)
 
     return json.dumps(patients_names)
 
@@ -315,13 +324,13 @@ def pre_defined_dataset(token):
 
     if dataset_name == "Barabasi-Albert Dataset":
         # get graph corresponding to graph id and patient id and transform to UI format
-        graph_data = token_graph_data[str(token)]
+        graph_data = user_graph_data[str(token)]
         selected_graph = graph_data[str(patient_id)][str(graph_id)]
         nodelist, edgelist = transform_from_pytorch_to_ui(selected_graph)
 
     if dataset_name == "Kirc Dataset":
         # get graph corresponding to graph id and patient id and transform to UI format
-        graph_data = token_graph_data[str(token)]
+        graph_data = user_graph_data[str(token)]
         selected_graph = graph_data[str(patient_id)][str(graph_id)]
         nodelist, edgelist = transform_from_pytorch_to_ui(selected_graph)
 
@@ -367,7 +376,7 @@ def nn_predict(token):
     graph_id = request.args.get("graph_id")
 
     # input graph
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     input_graph = graph_data[patient_id][graph_id]
 
     # create graph in ui format
@@ -393,7 +402,7 @@ def nn_retrain(token):
     graph_id = request.args.get("graph_id")
 
     # input graph
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     input_graph = graph_data[patient_id][graph_id]
 
     # create graph in ui format
@@ -420,7 +429,7 @@ def deep_copy(token):
     graph_id = req_data["graph_id"]
 
     # input graph
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
     # update graph id
     graph_id = int(graph_id) + 1
@@ -433,7 +442,7 @@ def deep_copy(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = deep_cpy
-    token_graph_data[str(token)] = graph_data
+    user_graph_data[str(token)] = graph_data
 
     return "done"
 
@@ -449,7 +458,7 @@ def highest_graph_id(token):
     # get dataset_name and patient ID for
     patient_id = request.args.get('patient_id')
     # get all graphs of this patient
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     selected_graphs = graph_data[str(patient_id)]
     # count how many graphs (the indexes start with 0 so subtract length by 1)
     amount_graphs = len(selected_graphs.keys())-1
@@ -470,11 +479,38 @@ def graph(token):
     graph_id = request.args.get('graph_id')
 
     # delete graph
-    graph_data = token_graph_data[str(token)]
+    graph_data = user_graph_data[str(token)]
     del graph_data[str(patient_id)][str(graph_id)]
 
     return "done"
 
+
+########################################################################################################################
+# [14.] Callback Interval to remove outdated session graphs ============================================================
+########################################################################################################################
+def remove_session_graphs():
+    """
+    Remove graphs from outdated user sessions (last update > 1 hour)
+    """
+    # get time in ms
+    current_time = round(time.time() * 1000)
+    keys_to_remove = []
+
+    if len(user_last_updated) == 0:
+        return
+
+    # find outdated session: last modification > 1 hour (INTERVAL)
+    for key, value in user_last_updated.items():
+        if value + INTERVAL <= current_time:
+            keys_to_remove.append(key)
+
+    # remove all graphs and session of the outdated session
+    if len(keys_to_remove) > 0:
+        for key in keys_to_remove:
+            for graph in user_graph_data[key]:
+                del graph
+            del user_graph_data[key]
+            del user_last_updated[key]
 
 
 ### Don't know if needed
@@ -584,4 +620,13 @@ def remove_feature_from_all_edges(token):
 # MAIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
 if __name__ == "__main__":
+    # scheduler to update / remove sessions (every hour)
+    time_in_hours = INTERVAL / 60 / 60 / 1000
+    scheduler = BackgroundScheduler(timezone="Europe/Vienna")
+    scheduler.add_job(func=remove_session_graphs, trigger="interval", hours=time_in_hours)
+    scheduler.start()
+
     app.run(debug=True)
+
+    # Shut down the scheduler when exiting the app
+    atexit.register(lambda: scheduler.shutdown())

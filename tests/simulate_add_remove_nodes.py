@@ -42,7 +42,7 @@ def add_nodes_simulation(input_graph: torch_geometric.data.data.Data):
     for node_addition_action in range(node_addition_actions_nr):
 
         node_features = np.random.randn(1, node_features_nr)
-        updated_graph = add_node(updated_graph, node_features)
+        updated_graph = add_node(updated_graph, node_features, "")
 
     # [1.] What should change ------------------------------------------------------------------------------------------
     assert updated_graph.x.shape[0] == input_graph.x.shape[0] + node_addition_actions_nr, \
