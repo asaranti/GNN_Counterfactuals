@@ -50,7 +50,7 @@ INTERVAL = 1 * 60 * 60 * 1000
 user_last_updated = {}
 
 # Graphs dataset paths -------------------------------------------------------------------------
-kirc_data_path = os.path.join("/home/alessa/Documents/FeatureCloud/",  "kirc_random_orig")
+kirc_data_path = os.path.join("E:\\Uni\\Doktor-Goettingen\\Data\\kirc_random_orig")
 
 ########################################################################################################################
 # [0.] Generate Token for current session ==============================================================================

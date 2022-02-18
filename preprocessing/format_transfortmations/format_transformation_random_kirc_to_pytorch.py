@@ -6,6 +6,7 @@
     :date: 2021-01-27
 """
 
+from collections import Counter
 import os
 
 import networkx as nx
@@ -16,7 +17,8 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx
 
-#from utils.graph_utilities import compare_graphs_topology
+#from plots.utilities_visualization import histogram_viz
+#from utils.graph_utilities import compare_graphs_topology, compare_node_features_values
 
 
 def import_random_kirc_data(input_dataset_folder: str,
@@ -93,7 +95,7 @@ def import_random_kirc_data(input_dataset_folder: str,
     # [2.] Edges =======================================================================================================
     ####################################################################################################################
 
-    # [2.1.]Create a dictiionary from node names to node numbering ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # [2.1.]Create a dictionary from node names to node numbering ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     row_indexes_list = list(range(0, len(node_names_mRNA_attribute_list)))
     node_name_row_indexes_dict = dict(zip(node_names_mRNA_attribute_list, row_indexes_list))
     # print(node_name_row_indexes_dict)
@@ -113,7 +115,7 @@ def import_random_kirc_data(input_dataset_folder: str,
 
             # [2.3.] Create the edge attributes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             combined_score = float(line_array[3].replace('\n', ''))
-            if combined_score < 995:
+            if combined_score < 900:
                 continue
             edge_attr.append(combined_score)
 
@@ -126,11 +128,14 @@ def import_random_kirc_data(input_dataset_folder: str,
                 node_left_idx = node_name_row_indexes_dict[node_left_name]
                 node_right_idx = node_name_row_indexes_dict[node_right_name]
 
-                edges_left_indexes.append(node_left_idx)
-                edges_right_indexes.append(node_right_idx)
+                if not (node_left_idx in edges_left_indexes and node_right_idx in edges_right_indexes) and \
+                   not (node_left_idx in edges_right_indexes and node_right_idx in edges_left_indexes):
 
-                # [2.5.] Get the edge_ids ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                edge_ids.append(line_array[0])
+                    edges_left_indexes.append(node_left_idx)
+                    edges_right_indexes.append(node_right_idx)
+
+                    # [2.5.] Get the edge_ids ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                    edge_ids.append(line_array[0])
 
         line_cnt += 1
 
@@ -154,7 +159,7 @@ def import_random_kirc_data(input_dataset_folder: str,
     graph_all = []
     for row_nr in range(nr_of_graphs):
 
-        # print(f"Graph Nr.: {row_nr}")
+        print(f"Graph Nr.: {row_nr}")
 
         graph_id = graph_ids_mRNA_list[row_nr]
         label = random_kirc_target_orig[graph_id].values[0]
@@ -170,47 +175,116 @@ def import_random_kirc_data(input_dataset_folder: str,
             node_feature_labels=node_feature_labels,
             edge_ids=edge_ids,
             edge_attr_labels=["combined_score"],
-            graph_id=f"graph_id_{row_nr}_0"
+            graph_id=f"graph id{row_nr}_0"
         )
 
-        """
-        # Compute the connected components and select the biggest graph ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        graph_nx = to_networkx(graph_orig, to_undirected=True)
-        cc_graphs = connected_components(graph_nx)
-        largest_cc_graph = list(max(cc_graphs, key=len))
-        node_attributes_cc = node_attributes_list[row_nr][largest_cc_graph]
-        nodes_indexes_list = list(range(0, len(largest_cc_graph)))
-        node_reindexing_dict = dict(zip(largest_cc_graph, nodes_indexes_list))
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-        edge_idx_array = edge_idx.cpu().detach().numpy()
-        edge_idx_cc_left_list = []
-        edge_idx_cc_right_list = []
-        for edge_index in range(edge_idx_array.shape[1]):
-            edge_left = int(edge_idx_array[0, edge_index])
-            edge_right = int(edge_idx_array[1, edge_index])
-            if edge_left in largest_cc_graph and edge_right in largest_cc_graph and \
-                    edge_left in node_reindexing_dict and edge_right in node_reindexing_dict:
-                edge_idx_cc_left_list.append(node_reindexing_dict[edge_left])
-                edge_idx_cc_right_list.append(node_reindexing_dict[edge_right])
-        edge_idx_cc = torch.tensor([edge_idx_cc_left_list, edge_idx_cc_right_list], dtype=torch.long)
-        # print(edge_idx_cc)
-        # print(f"Nr. edges in cc: {len(edge_idx_cc_left_list)}")
-        graph_cc = Data(
-            x=node_attributes_cc,
-            edge_index=edge_idx_cc,
-            y=torch.tensor([label]),
-        )
-        print(graph_cc.y)
-        """
+        graph_cc = select_max_cc(graph_orig, node_attributes_list, row_nr)
 
-        # Check if the graph is connected ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # graph_nx = to_networkx(graph_orig, to_undirected=True)
-        # graph_is_connected = nx.is_connected(graph_nx)
-        # print(f"Graph is connected: {graph_is_connected}")
+        graph_all.append(graph_cc)
 
-        graph_all.append(graph_orig)
-
-    # Make check that all graphs have the same topology ----------------------------------------------------------------
+    ####################################################################################################################
+    # [5.] Apply some checks and statistics on the graphs ==============================================================
+    ####################################################################################################################
+    # [5.1.] Make check that all graphs have the same topology ---------------------------------------------------------
     #compare_graphs_topology(graph_all)
 
+    # [5.2.] Compare the distribution of the node features -------------------------------------------------------------
+    #compare_node_features_values(graph_all)
+
+    # [5.3.] Check the percentage of each class ------------------------------------------------------------------------
+    # TODO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
     return graph_all
+
+
+def select_max_cc(graph_orig: Data, node_attributes_list: list,  row_nr: int) \
+        -> Data:
+    """
+    Select maximum connected component
+    :param graph_orig: Original graph
+    :param node_attributes_list:
+    :param row_nr: Row number
+    """
+
+    ####################################################################################################################
+    # [1.] Compute the connected components and select the biggest sub-graph ===========================================
+    ####################################################################################################################
+    graph_nx = to_networkx(graph_orig, to_undirected=True)
+    cc_graphs = connected_components(graph_nx)
+    largest_cc_graph = list(max(cc_graphs, key=len))
+
+    # cc_graphs_list = [len(c) for c in sorted(cc_graphs, key=len, reverse=True)]
+    # print(f"Number of connected components: {len(cc_graphs_list)}")
+
+    # cc_graphs_counter_dict = dict(Counter(cc_graphs_list))
+    # print(f"Graphs counter: {cc_graphs_counter_dict}")
+    # histogram_viz(cc_graphs_counter_dict)
+
+    # [2.] Select the nodes and corresponding attributes ===============================================================
+    node_attributes_cc = node_attributes_list[row_nr][largest_cc_graph]
+    nodes_indexes_list = list(range(0, len(largest_cc_graph)))
+    node_reindexing_dict = dict(zip(largest_cc_graph, nodes_indexes_list))
+
+    # [3.] Select the edges indexes ====================================================================================
+    edge_idx_array = graph_orig.edge_index.cpu().detach().numpy()
+    edge_idx_tuples_list = list(zip(edge_idx_array[0], edge_idx_array[1]))
+
+    edge_idx_cc_left_list = []
+    edge_idx_cc_right_list = []
+    edge_ids = graph_orig.edge_ids
+    edge_ids_cc = []
+    for edge_index in range(edge_idx_array.shape[1]):
+
+        edge_left = int(edge_idx_array[0, edge_index])
+        edge_right = int(edge_idx_array[1, edge_index])
+
+        if edge_left in largest_cc_graph and edge_right in largest_cc_graph and \
+                edge_left in node_reindexing_dict and edge_right in node_reindexing_dict:
+
+            # [3.1.] Edge indexes (re-indexed) -------------------------------------------------------------------------
+            node_reindexed_left = node_reindexing_dict[edge_left]
+            node_reindexed_right = node_reindexing_dict[edge_right]
+            edge_idx_cc_left_list.append(node_reindexed_left)
+            edge_idx_cc_right_list.append(node_reindexed_right)
+
+            # [3.2.] Edge indexes (re-indexed) -------------------------------------------------------------------------
+            if (edge_left, edge_right) in edge_idx_tuples_list:
+                edge_number_idx = edge_idx_tuples_list.index((edge_left, edge_right))
+                edge_ids_cc.append(edge_ids[edge_number_idx])
+            elif (edge_right, edge_left) in edge_idx_tuples_list:
+                edge_number_idx = edge_idx_tuples_list.index((edge_right, edge_left))
+                edge_ids_cc.append(edge_ids[edge_number_idx])
+            else:
+                assert False, f"Your code has a bug!!! The egde: {node_reindexed_left, node_reindexed_right} " \
+                              f"or its opposite, was not found!"
+
+    edge_idx_cc = torch.tensor([edge_idx_cc_left_list, edge_idx_cc_right_list], dtype=torch.long)
+
+    # print(f"Nr. nodes in cc: {node_attributes_cc.shape[0]}")
+    # print(f"Nr. edges in cc: {len(edge_idx_cc_left_list)}")
+
+    # [4.] Larger connected component ==================================================================================
+    graph_cc_node_labels = graph_orig.node_labels[largest_cc_graph]
+    graph_cc_node_ids = graph_orig.node_ids[largest_cc_graph]
+
+    graph_cc = Data(
+        x=node_attributes_cc,
+        edge_index=edge_idx_cc,
+        edge_attr=None,
+        y=graph_orig.y,
+        pos=graph_orig.pos,
+        node_labels=graph_cc_node_labels,
+        node_ids=graph_cc_node_ids,
+        node_feature_labels=graph_orig.node_feature_labels,
+        edge_ids=edge_ids_cc,
+        edge_attr_labels=graph_orig.edge_attr_labels,
+        graph_id=graph_orig.graph_id
+    )
+
+    # [5.] Check if the graph is connected =============================================================================
+    # graph_cc_nx = to_networkx(graph_cc, to_undirected=True)
+    # graph_is_connected = nx.is_connected(graph_cc_nx)
+    # print(f"Graph is connected: {graph_is_connected}")
+    print("-----------------------------------------------------------------------------------------------------------")
+
+    return graph_cc
