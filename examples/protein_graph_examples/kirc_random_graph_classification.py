@@ -7,6 +7,7 @@
 """
 
 import os
+import pickle
 import random
 
 import numpy as np
@@ -15,6 +16,7 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
 from sklearn.preprocessing import minmax_scale
 
+from gnns.gnns_graph_classification.gnn_train_test_methods import train, test
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from preprocessing.format_transformations.format_transformation_random_kirc_to_pytorch import import_random_kirc_data
 from sklearn.preprocessing import StandardScaler
@@ -23,18 +25,9 @@ from sklearn.preprocessing import StandardScaler
 ########################################################################################################################
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph =========================================================
 ########################################################################################################################
+dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
+dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
-dataset_folder = os.path.join("data", "KIRC_RANDOM", "kirc_random_orig")
-pytorch_random_kirc_edges_file = "KIDNEY_RANDOM_PPI.txt"
-pytorch_random_kirc_mRNA_attribute_file = "KIDNEY_RANDOM_mRNA_FEATURES.txt"
-pytorch_random_kirc_methy_attribute_file = "KIDNEY_RANDOM_Methy_FEATURES.txt"
-pytorch_random_kirc_target_file = "KIDNEY_RANDOM_TARGET.txt"
-
-dataset = import_random_kirc_data(dataset_folder,
-                                  pytorch_random_kirc_mRNA_attribute_file,
-                                  pytorch_random_kirc_methy_attribute_file,
-                                  pytorch_random_kirc_edges_file,
-                                  pytorch_random_kirc_target_file)
 
 ########################################################################################################################
 # [2.] Data Preparation ================================================================================================
@@ -49,7 +42,7 @@ for graph in dataset:
     # scaler = StandardScaler()
     # scaler.fit(x_features_array)
     # x_features_transformed = scaler.transform(x_features_array)
-    x_features_transformed = minmax_scale(x_features_array, feature_range=(-1, 1))
+    x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
     graph.x = torch.tensor(x_features_transformed)
 
 # [2.2.] Split training/validation/test set ----------------------------------------------------------------------------
@@ -80,56 +73,28 @@ for step, data in enumerate(train_loader):
 # [3.] Graph Classification ============================================================================================
 ########################################################################################################################
 num_classes = 2
-model = GCN(num_node_features=num_features, hidden_channels=200, num_classes=num_classes)
+model = GCN(num_node_features=num_features, hidden_channels=64, num_classes=num_classes)
 print(model)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 criterion = torch.nn.CrossEntropyLoss()
 
-
-def train():
-    """
-    Train ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    model.train()
-
-    for data in train_loader:                               # Iterate in batches over the training dataset.
-
-        out = model(data.x, data.edge_index, data.batch)    # Perform a single forward pass.
-        loss = criterion(out, data.y)                       # Compute the loss.
-        pred = out.argmax(dim=1)
-
-        loss.backward()                                     # Derive gradients.
-        optimizer.step()                                    # Update parameters based on gradients.
-        optimizer.zero_grad()                               # Clear gradients.
-
-
-def test(loader):
-    """
-    Test ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    model.eval()
-
-    correct = 0
-    for data in loader:                                     # Iterate in batches over the training/test dataset.
-        out = model(data.x, data.edge_index, data.batch)
-        pred = out.argmax(dim=1)                            # Use the class with highest probability.
-
-        correct += int((pred == data.y).sum())              # Check against ground-truth labels.
-    return correct / len(loader.dataset)                    # Derive ratio of correct predictions.
-
-
-# Training for some epochs +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-epochs_nr = 50
+# Training for some epochs ---------------------------------------------------------------------------------------------
+epochs_nr = 20
 for epoch in range(1, epochs_nr + 1):
 
     print(f"Epoch: {epoch}")
 
-    train()
-    train_acc = test(train_loader)
-    test_acc = test(test_loader)
+    train(model, train_loader, optimizer, criterion)
+    train_acc = test(model, train_loader)
+    test_acc = test(model, test_loader)
 
-    print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
+    print(f'Epoch: {epoch:03d}, Tra+in Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
     print("-------------------------------------------------------------------------")
+
+########################################################################################################################
+# [4.] Store the GNN ===================================================================================================
+########################################################################################################################
+gnn_storage_folder = os.path.join("data", "output", "gnns")
+gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+torch.save(model, gnn_model_file_path)
 

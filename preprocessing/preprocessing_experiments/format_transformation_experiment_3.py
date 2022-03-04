@@ -8,6 +8,7 @@
 """
 
 import os
+import pickle
 
 import torch
 
@@ -70,16 +71,23 @@ for graph_idx in range(len(protein_graph_list)):
     # graph_visualization_complex(graph, graph_idx)
 
 ########################################################################################################################
-# [3.] From Pytorch_Graph to UI Format =================================================================================
+# [3.] Store the Pytorch Dataset =======================================================================================
 ########################################################################################################################
-dataset_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_ui")
+dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
+with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'wb') as f:
+    pickle.dump(protein_graph_list, f)
+
+########################################################################################################################
+# [4.] From Pytorch_Graph to UI Format =================================================================================
+########################################################################################################################
+dataset_ui_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_ui")
 
 graphs_nr = len(protein_graph_list)
 graph_idx = 0
 for graph_idx in range(graphs_nr):
 
     transform_from_pytorch_to_ui(protein_graph_list[graph_idx],
-                                 dataset_folder,
+                                 dataset_ui_folder,
                                  f"kirc_random_nodes_ui_format_{graph_idx}.csv",
                                  f"kirc_random_egdes_ui_format_{graph_idx}.csv")
 
