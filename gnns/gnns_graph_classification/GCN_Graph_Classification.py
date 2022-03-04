@@ -34,6 +34,9 @@ class GCN(torch.nn.Module):
         self.conv1 = GCNConv(num_node_features, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, hidden_channels)
         self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        # self.conv4 = GCNConv(hidden_channels, hidden_channels)
+        # self.conv5 = GCNConv(hidden_channels, hidden_channels)
+        # self.conv6 = GCNConv(hidden_channels, hidden_channels)
 
         self.lin = Linear(hidden_channels, num_classes)
 
@@ -53,12 +56,19 @@ class GCN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         x = x.relu()
         x = self.conv3(x, edge_index)
+        x = x.relu()
+
+        # x = self.conv4(x, edge_index)
+        # x = x.relu()
+        # x = self.conv5(x, edge_index)
+        # x = x.relu()
+        # x = self.conv6(x, edge_index)
 
         # 2. Readout layer ---------------------------------------------------------------------------------------------
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
 
         # 3. Apply a final classifier ----------------------------------------------------------------------------------
-        x = F.dropout(x, p=0.5, training=self.training)
+        x = F.dropout(x, p=0.2, training=self.training)
         x = self.lin(x)
 
         return x

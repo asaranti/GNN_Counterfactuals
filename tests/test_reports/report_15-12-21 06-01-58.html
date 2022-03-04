@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test report</title>
+    <meta name="generator" content="HTMLTestRunner 1.0.15"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" href="stylesheet.css">
+    <script src="script.js"></script>
+</head>
+<body>
+<div class='heading'>
+    <h1 style="margin-left:1ex;">Test report</h1>
+    
+    <p class='attribute'><strong>Start Time : </strong> 2021-12-15 18:01:58</p>
+    
+    <p class='attribute'><strong>Duration : </strong> 0:00:53.284689</p>
+    
+    <p class='attribute'><strong>Status : </strong> Pass 2</p>
+    
+    <p class='attribute'><strong>Descrition : </strong> HTMLTestReport</p>
+    
+</div>
+<div>
+    <p id='show_detail_line'><b>Show</b>
+        <button><a href='javascript:showCase(0)' style="color:#660066;">Summary</a></button>
+        <button><a href='javascript:showCase(1)' style="color:#660066;">Failed</a></button>
+        <button><a href='javascript:showCase(2)' style="color:#660066;">All</a></button>
+    </p>
+    <table id='result_table'>
+        <colgroup>
+            <col align='left'/>
+            <col align='right'/>
+            <col align='right'/>
+            <col align='right'/>
+            <col align='right'/>
+            <col align='right'/>
+        </colgroup>
+        <tr id='header_row'>
+            <td>Test Group/Test case</td>
+            <td>Count</td>
+            <td>Pass</td>
+            <td>Fail</td>
+            <td>Error</td>
+            <td>View</td>
+        </tr>
+        
+        <tr class='passClass' style="font-weight:bold;color:white;">
+            <td><a href="javascript:showClassDetail('c1','2')">tests.format_transformations.consistency_pytorch_data_object.DataConsistency</a></td>
+            <td>2</td>
+            <td>2</td>
+            <td>0</td>
+            <td>0</td>
+            <td>
+                <button><a href="javascript:showClassDetail('c1','2')"
+                           style="color:#660066;">Detail</a></button>
+            </td>
+        </tr>
+        
+        <tr id="pt1.1" class='hiddenRow'>
+            <td class='passCase'>
+                <div class='testcase'>
+                    <a class="popup_link" onfocus='this.blur();'
+                       href="javascript:showTestDetail('div_pt1.1')">test_nodes_nr: Test the nodes number consistency over all internal data structures of the pytorch Data object</a>
+                </div>
+            </td>
+            <td colspan='5' align='center'>
+                <div>
+                    <!--css div popup start-->
+                    <button>
+                        <a class="popup_link" onfocus='this.blur();'
+                           href="javascript:showTestDetail('div_pt1.1')" style="color:#660066;">
+                            PASS
+                        </a></button>
+                    <div id='div_pt1.1' class="popup_window">
+                        <div style='text-align: right; color:red;cursor:pointer'>
+                            <a onfocus='this.blur();'
+                               onclick="document.getElementById('div_pt1.1').style.display = 'none'; "
+                               style="color:red;">
+                                [x]</a>
+                        </div>
+                        <pre>2021-12-15 18:01:58.239709 :    TCGA.OR.A5J1  TCGA.OR.A5J2  ...  TCGA.PK.A5HA  TCGA.PK.A5HB
+                             0        4.1152        3.4058  ...        9.4739        7.2609
+                             1        0.0000        0.0000  ...        0.0000        1.1394
+                             2        4.1931        2.7305  ...        5.2455        2.8905
+                             3        7.5188        7.9078  ...        6.8989        6.6760
+                             4        5.8010        0.0000  ...        0.0000        0.4865
+                             
+                             [5 rows x 79 columns]
+2021-12-15 18:01:58.240606 : (19340, 80)
+2021-12-15 18:01:58.240619 : 79
+2021-12-15 18:01:58.242298 : 19340
+2021-12-15 18:01:58.250031 : 19095
+2021-12-15 18:02:22.971065 : 19340
+2021-12-15 18:02:22.971084 : 19340
+2021-12-15 18:02:22.971087 : 79
+2021-12-15 18:02:22.971089 : 10208768
+2021-12-15 18:02:22.971092 : 1
+</pre>
+                        <pre style="color: red;"></pre>
+                    </div>
+                    <!--css div popup end-->
+                </div>
+            </td>
+        </tr>
+        
+        <tr id="pt1.2" class='hiddenRow'>
+            <td class='passCase'>
+                <div class='testcase'>
+                    <a class="popup_link" onfocus='this.blur();'
+                       href="javascript:showTestDetail('div_pt1.2')">test_node_attr_nr: Test the nodes attributes number consistency over all internal data structures of the pytorch Data object</a>
+                </div>
+            </td>
+            <td colspan='5' align='center'>
+                <div>
+                    <!--css div popup start-->
+                    <button>
+                        <a class="popup_link" onfocus='this.blur();'
+                           href="javascript:showTestDetail('div_pt1.2')" style="color:#660066;">
+                            PASS
+                        </a></button>
+                    <div id='div_pt1.2' class="popup_window">
+                        <div style='text-align: right; color:red;cursor:pointer'>
+                            <a onfocus='this.blur();'
+                               onclick="document.getElementById('div_pt1.2').style.display = 'none'; "
+                               style="color:red;">
+                                [x]</a>
+                        </div>
+                        <pre>2021-12-15 18:02:23.193236 :    TCGA.OR.A5J1  TCGA.OR.A5J2  ...  TCGA.PK.A5HA  TCGA.PK.A5HB
+                             0        4.1152        3.4058  ...        9.4739        7.2609
+                             1        0.0000        0.0000  ...        0.0000        1.1394
+                             2        4.1931        2.7305  ...        5.2455        2.8905
+                             3        7.5188        7.9078  ...        6.8989        6.6760
+                             4        5.8010        0.0000  ...        0.0000        0.4865
+                             
+                             [5 rows x 79 columns]
+2021-12-15 18:02:23.194256 : (19340, 80)
+2021-12-15 18:02:23.194270 : 79
+2021-12-15 18:02:23.196032 : 19340
+2021-12-15 18:02:23.204055 : 19095
+2021-12-15 18:02:51.299697 : 19340
+2021-12-15 18:02:51.299715 : 19340
+2021-12-15 18:02:51.299718 : 79
+2021-12-15 18:02:51.299721 : 10208768
+2021-12-15 18:02:51.299724 : 1
+</pre>
+                        <pre style="color: red;"></pre>
+                    </div>
+                    <!--css div popup end-->
+                </div>
+            </td>
+        </tr>
+        
+        
+
+        <tr id='total_row'>
+            <td>Total</td>
+            <td>2</td>
+            <td>2</td>
+            <td>0</td>
+            <td>0</td>
+            <td>&nbsp;</td>
+        </tr>
+    </table>
+</div>
+<br><br>
+<div id='ending'><b>Time Elapsed: </b>0:00:53.284689</div>
+</body>
+</html>
