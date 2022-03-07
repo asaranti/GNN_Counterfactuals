@@ -44,13 +44,16 @@ app = Flask(__name__)
 # global
 dataset_names = ["Barabasi-Albert Dataset", "Kirc Dataset"]
 graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
-root_data_folder = os.getcwd()
+root_folder = os.path.dirname(os.path.abspath(__file__))
 # interval to delete old sessions: 1 hour (hour * min * sec * ms)
 INTERVAL = 1 * 60 * 60 * 1000
 user_last_updated = {}
 
 # Graphs dataset paths -------------------------------------------------------------------------
-kirc_data_path = os.path.join("E:\\Uni\\Doktor-Goettingen\\Data\\kirc_random_orig")
+#print(root_folder)
+data_folder = os.path.join(root_folder, "data")
+kirc_data_path = os.path.join(data_folder, "kirc_random_orig")
+#print(kirc_data_path)
 
 ########################################################################################################################
 # [0.] Generate Token for current session ==============================================================================
@@ -154,7 +157,10 @@ def adding_edge(token):
     new_edge_index_right = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_index_right)])
 
     # edge features
-    edge_features = np.array(req_data["features"]).reshape(-1, 1).T
+    try:
+        edge_features = np.array(req_data["features"]).reshape(-1, 1).T
+    except KeyError:
+        edge_features = None
 
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_edge(input_graph, new_edge_index_left, new_edge_index_right, edge_features)
