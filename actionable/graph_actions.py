@@ -197,16 +197,16 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
     # [1.] Add the node's features -------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None and input_graph.edge_attr.numpy() is not None:
         input_graph_edge_attr = input_graph.edge_attr.numpy()
+
         assert input_graph_edge_attr.shape[1] == new_edge_attr.shape[1], \
             f"The shape of the features of the new edge: {new_edge_attr.shape[1]} must conform to the shape " \
             f"of the features of the rest of the edges: {input_graph_edge_attr.shape[1]}. " \
             f"The graph must be homogeneous."
         output_graph_edge_attr = torch.from_numpy(np.row_stack((input_graph_edge_attr, new_edge_attr)))
+    elif new_edge_attr is not None:
+        output_graph_edge_attr = torch.from_numpy(np.array([new_edge_attr]))
     else:
-        if new_edge_attr is not None:
-            output_graph_edge_attr = torch.from_numpy(np.array([new_edge_attr]))
-        else:
-            output_graph_edge_attr = None
+        output_graph_edge_attr = None
 
     # [3.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
