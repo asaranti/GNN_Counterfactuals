@@ -104,7 +104,6 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
     # [1.] The corresponding line needs to be removed from the "x" field of the Data class, ----------------------------
     #      corresponding to node features. -----------------------------------------------------------------------------
     input_graph_x = input_graph.x.numpy()
-    removed_node_label = input_graph.node_ids[node_index]
     output_graph_x = np.delete(input_graph_x, node_index, 0)
     del input_graph.node_ids[node_index]
 
@@ -166,7 +165,6 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
         f"with the number of nodes {input_graph.num_nodes}"
 
     # [1.] Check that the nodes specified by the input indexes are not already connected -------------------------------
-    output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
     input_graph_edge_index = input_graph.edge_index.numpy()
     output_graph_edge_ids = copy.deepcopy(input_graph.edge_ids)
 
@@ -195,7 +193,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
                                                              [new_edge_index_right]]))
 
     # [1.] Add the node's features -------------------------------------------------------------------------------------
-    if input_graph.edge_attr is not None and input_graph.edge_attr.numpy() is not None:
+    if input_graph.edge_attr is not None and new_edge_attr is not None:
         input_graph_edge_attr = input_graph.edge_attr.numpy()
 
         assert input_graph_edge_attr.shape[1] == new_edge_attr.shape[1], \
@@ -440,7 +438,6 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data, remove
     """
 
     # [1.] Check that the index of the deleted feature is valid --------------------------------------------------------
-    output_graph_edge_attr = copy.deepcopy(input_graph.edge_attr)
     if input_graph.edge_attr is not None:
 
         input_graph_edge_attr = input_graph.edge_attr.numpy()

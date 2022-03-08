@@ -50,10 +50,8 @@ INTERVAL = 1 * 60 * 60 * 1000
 user_last_updated = {}
 
 # Graphs dataset paths -------------------------------------------------------------------------
-#print(root_folder)
 data_folder = os.path.join(root_folder, "data")
 kirc_data_path = os.path.join(data_folder, "kirc_random_orig")
-#print(kirc_data_path)
 
 ########################################################################################################################
 # [0.] Generate Token for current session ==============================================================================

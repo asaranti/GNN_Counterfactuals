@@ -8,16 +8,16 @@
 
 import copy
 import random
+import pytest
 
 import networkx as nx
 import numpy as np
 import torch
 import torch_geometric
-from torch_geometric.datasets import Planetoid
-from torch_geometric.transforms import NormalizeFeatures
 from torch_geometric.utils.convert import to_networkx
 
 from actionable.graph_actions import add_edge, remove_edge
+from testing_utils.testing_data_generation import generate_data_set
 
 
 def add_edges_simulation(input_graph: torch_geometric.data.data.Data):
@@ -56,15 +56,22 @@ def add_edges_simulation(input_graph: torch_geometric.data.data.Data):
             graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
                                         list(zip(updated_graph_edge_index_left, updated_graph_edge_index_right))))
 
-        if edge_index_left != edge_index_right and (edge_index_left, edge_index_right) not in graph_edge_pairs:
+        if edge_index_left != edge_index_right and (edge_index_left, edge_index_right) not in graph_edge_pairs\
+                and (edge_index_right, edge_index_left) not in graph_edge_pairs:
             updated_graph = add_edge(updated_graph, edge_index_left, edge_index_right, edge_features)
             added_edges += 1
 
     # [1.] What should change ------------------------------------------------------------------------------------------
+    # 1.1. Number of edges must equal actions --------------------------------------------------------------------------
     assert updated_graph.edge_stores[0].num_edges == input_graph.edge_stores[0].num_edges + added_edges, \
         f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
         f" must equal to the number of edges " \
         f"in the input graph {input_graph.edge_stores[0].num_edges} and added edges {added_edges}."
+
+    # 1.2. Number of edges -------------------------------------------------------------------------------------
+    if input_graph.edge_attr is not None:
+        assert input_graph.edge_attr.shape[0] < updated_graph.edge_attr.shape[0], \
+            f"The number of edges of the input graph must be less than the one of the updated graph."
 
     # [2.] What should stay constant -----------------------------------------------------------------------------------
     # 2.1. Number of nodes ---------------------------------------------------------------------------------------------
@@ -78,12 +85,13 @@ def add_edges_simulation(input_graph: torch_geometric.data.data.Data):
 
     # 2.3. Edge features -----------------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None:
-        assert torch.equal(input_graph.edge_attr, updated_graph.edge_attr), \
+        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
             f"The edges of the input graph must be the same as the one of the updated graph."
 
     # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    assert torch.equal(input_graph.y, updated_graph.y), \
-        f"The classes/labels of the input graph must be the same as the one of the updated graph."
+    if input_graph.y is not None:
+        assert torch.equal(input_graph.y, updated_graph.y), \
+            f"The classes/labels of the input graph must be the same as the one of the updated graph."
 
 
 def add_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data):
@@ -143,6 +151,7 @@ def add_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data):
                 failed_attempts += 1
 
     # [1.] What should change ------------------------------------------------------------------------------------------
+    # 1.1. Number of edges must equal actions --------------------------------------------------------------------------
     assert updated_graph.edge_stores[0].num_edges == input_graph.edge_stores[0].num_edges + added_edges, \
         f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
         f" must equal to the number of edges " \
@@ -151,6 +160,11 @@ def add_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data):
     assert edge_addition_actions_nr == added_edges + failed_attempts, \
         f"The number of actions {edge_addition_actions_nr} must equal to the number of valid attempts  " \
         f"{added_edges} and failed attempts {failed_attempts}."
+
+    # 1.2. Number of edges -------------------------------------------------------------------------------------
+    if input_graph.edge_attr is not None:
+        assert input_graph.edge_attr.shape[0] < updated_graph.edge_attr.shape[0], \
+            f"The number of edges of the input graph must be less than the one of the updated graph."
 
     # [2.] What should stay constant -----------------------------------------------------------------------------------
     # 2.1. Number of nodes ---------------------------------------------------------------------------------------------
@@ -164,12 +178,13 @@ def add_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data):
 
     # 2.3. Edge features -----------------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None:
-        assert torch.equal(input_graph.edge_attr, updated_graph.edge_attr), \
+        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
             f"The edges of the input graph must be the same as the one of the updated graph."
 
     # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    assert torch.equal(input_graph.y, updated_graph.y), \
-        f"The classes/labels of the input graph must be the same as the one of the updated graph."
+    if input_graph.y is not None:
+        assert torch.equal(input_graph.y, updated_graph.y), \
+            f"The classes/labels of the input graph must be the same as the one of the updated graph."
 
 
 def remove_edges_simulation(input_graph: torch_geometric.data.data.Data):
@@ -207,6 +222,7 @@ def remove_edges_simulation(input_graph: torch_geometric.data.data.Data):
             removed_edges += 1
 
     # [1.] What should change ------------------------------------------------------------------------------------------
+    # 1.1. Number of edges must equal actions --------------------------------------------------------------------------
     assert updated_graph.edge_stores[0].num_edges == input_graph.edge_stores[0].num_edges - removed_edges, \
         f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
         f" must equal to the number of edges " \
@@ -224,12 +240,13 @@ def remove_edges_simulation(input_graph: torch_geometric.data.data.Data):
 
     # 2.3. Edge features -----------------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None:
-        assert torch.equal(input_graph.edge_attr, updated_graph.edge_attr), \
+        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
             f"The edges of the input graph must be the same as the one of the updated graph."
 
     # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    assert torch.equal(input_graph.y, updated_graph.y), \
-        f"The classes/labels of the input graph must be the same as the one of the updated graph."
+    if input_graph.y is not None:
+        assert torch.equal(input_graph.y, updated_graph.y), \
+            f"The classes/labels of the input graph must be the same as the one of the updated graph."
 
 
 def remove_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data):
@@ -262,14 +279,15 @@ def remove_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data)
             failed_attempts += 1
 
     # [1.] What should change ------------------------------------------------------------------------------------------
+    # 1.1. Number of edges must equal actions --------------------------------------------------------------------------
     assert updated_graph.edge_stores[0].num_edges == input_graph.edge_stores[0].num_edges - removed_edges, \
         f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
         f" must equal to the number of edges " \
         f"in the input graph {input_graph.edge_stores[0].num_edges} and removed edges {removed_edges}."
 
     assert edge_removal_actions_nr == removed_edges + failed_attempts, \
-        f"The number of actions {edge_addition_actions_nr} must equal to the number of valid attempts  " \
-        f"{removed_edges} and failed attempts {failed_removals}."
+        f"The number of actions {edge_removal_actions_nr} must equal to the number of valid attempts  " \
+        f"{removed_edges} and failed attempts {failed_attempts}."
 
     # [2.] What should stay constant -----------------------------------------------------------------------------------
     # 2.1. Number of nodes ---------------------------------------------------------------------------------------------
@@ -283,12 +301,13 @@ def remove_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data)
 
     # 2.3. Edge features -----------------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None:
-        assert torch.equal(input_graph.edge_attr, updated_graph.edge_attr), \
+        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
             f"The edges of the input graph must be the same as the one of the updated graph."
 
     # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    assert torch.equal(input_graph.y, updated_graph.y), \
-        f"The classes/labels of the input graph must be the same as the one of the updated graph."
+    if input_graph.y is not None:
+        assert torch.equal(input_graph.y, updated_graph.y), \
+            f"The classes/labels of the input graph must be the same as the one of the updated graph."
 
 
 def remove_edges_simulation_all(input_graph: torch_geometric.data.data.Data):
@@ -331,7 +350,7 @@ def remove_edges_simulation_all(input_graph: torch_geometric.data.data.Data):
 
     # 2.3. Edge features -----------------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None:
-        assert torch.equal(input_graph.edge_attr, updated_graph.edge_attr), \
+        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
             f"The edges of the input graph must be the same as the one of the updated graph."
 
     # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
@@ -349,17 +368,35 @@ def remove_edges_simulation_all(input_graph: torch_geometric.data.data.Data):
 ########################################################################################################################
 
 # [1.] Graphs dataset that was used in the GNN task --------------------------------------------------------------------
-dataset = Planetoid(root='data/Planetoid', name='Cora', transform=NormalizeFeatures())
+dataset_names = ["Barabasi-Albert Dataset", "Kirc Dataset"]
 
-# [2.] Perform the first task (atm: node classification) with the GNN --------------------------------------------------
-graph_idx = 0
-selected_graph = dataset[graph_idx]  # Get the selected graph object. --------------------------------------------------
 
-# [3.] Make some edge additions ----------------------------------------------------------------------------------------
-add_edges_simulation(selected_graph)
-add_edges_simulation_invalid(selected_graph)
+def simulate_actions(dataset_name):
+    dataset = generate_data_set(dataset_name)
 
-# [4.] Remove edges ----------------------------------------------------------------------------------------------------
-remove_edges_simulation(selected_graph)
-remove_edges_simulation_invalid(selected_graph)
-remove_edges_simulation_all(selected_graph)
+    # [2.] Perform the first task (atm: node classification) with the GNN ----------------------------------------------
+    graph_idx = 0
+    patient_graph = dataset[str(graph_idx)]
+    selected_graph = patient_graph[str(graph_idx)]  # Get the selected graph object. -----------------------------------
+
+    # Add y to Barabasi dataset ----------------------------------------------------------------------------------------
+    if dataset_name == dataset_names[0]:
+        selected_graph.y = torch.from_numpy(np.array([1, 2, 3]))
+
+    # [3.] Make some edge additions ------------------------------------------------------------------------------------
+    add_edges_simulation(selected_graph)
+    add_edges_simulation_invalid(selected_graph)
+
+    # [4.] Remove edges ------------------------------------------------------------------------------------------------
+    remove_edges_simulation(selected_graph)
+    remove_edges_simulation_invalid(selected_graph)
+    remove_edges_simulation_all(selected_graph)
+
+
+def test_barabasi_simulation():
+    simulate_actions(dataset_names[0])
+
+
+def test_kirc_simulation():
+    simulate_actions(dataset_names[1])
+

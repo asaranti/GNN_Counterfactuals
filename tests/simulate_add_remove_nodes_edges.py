@@ -8,15 +8,16 @@
 
 import copy
 import random
+import pytest
 
 import numpy as np
 import torch
 import torch_geometric
-from torch_geometric.datasets import Planetoid
 from torch_geometric.transforms import NormalizeFeatures
 
 from actionable.graph_actions import add_edge, remove_edge
 from actionable.graph_actions import add_node, remove_node
+from testing_utils.testing_data_generation import generate_data_set
 
 
 def add_remove_nodes_edges_simulation_valid(input_graph: torch_geometric.data.data.Data):
@@ -36,6 +37,8 @@ def add_remove_nodes_edges_simulation_valid(input_graph: torch_geometric.data.da
     added_edges = 0
     graph_edge_pairs = 0
 
+    failed_node_removals = 0
+
     updated_graph = copy.deepcopy(input_graph)
     for action in range(addition_actions_nr):
         max_number_nodes = updated_graph.node_stores[0].num_nodes
@@ -48,7 +51,7 @@ def add_remove_nodes_edges_simulation_valid(input_graph: torch_geometric.data.da
             edge_features = None
 
         # 1.1 node additions -------------------------------------------------------------------------------------------
-        updated_graph = add_node(updated_graph, node_features)
+        updated_graph = add_node(updated_graph, node_features, "", "node_" + str(action))
 
         # 1.2 edge additions -------------------------------------------------------------------------------------------
         updated_graph_edge_index = updated_graph.edge_index.numpy()
@@ -58,7 +61,8 @@ def add_remove_nodes_edges_simulation_valid(input_graph: torch_geometric.data.da
             graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
                                         list(zip(updated_graph_edge_index_left, updated_graph_edge_index_right))))
 
-        if edge_index_left != edge_index_right and (edge_index_left, edge_index_right) not in graph_edge_pairs:
+        if edge_index_left != edge_index_right and (edge_index_left, edge_index_right) not in graph_edge_pairs\
+                and (edge_index_right, edge_index_left) not in graph_edge_pairs:
             updated_graph = add_edge(updated_graph, edge_index_left, edge_index_right, edge_features)
             added_edges += 1
 
@@ -71,12 +75,16 @@ def add_remove_nodes_edges_simulation_valid(input_graph: torch_geometric.data.da
         max_number_nodes = updated_graph.x.shape[0]
         edge_index_left = np.random.randint(max_number_nodes)
         edge_index_right = np.random.randint(max_number_nodes)
-        node_index = np.random.randint(max_number_nodes)
+        node_index = np.random.randint(0, max_number_nodes)
 
-        # 2.1 node additions -----------------------------------------------------------------------------------------
-        updated_graph = remove_node(updated_graph, node_index)
+        # 2.1 node removals --------------------------------------------------------------------------------------------
+        try:
+            label = updated_graph.node_labels[node_index]
+            updated_graph = remove_node(updated_graph, node_index, label)
+        except (KeyError, IndexError) as e:
+            failed_node_removals += 1
 
-        # 2.2 edge additions -----------------------------------------------------------------------------------------
+        # 2.2 edge removals --------------------------------------------------------------------------------------------
         updated_graph_edge_index = updated_graph.edge_index.numpy()
         updated_graph_edge_index_left = list(updated_graph_edge_index[0, :])
         updated_graph_edge_index_right = list(updated_graph_edge_index[1, :])
@@ -89,10 +97,10 @@ def add_remove_nodes_edges_simulation_valid(input_graph: torch_geometric.data.da
             removed_edges += 1
 
     # [1.] What should change ------------------------------------------------------------------------------------------
-    assert updated_graph.x.shape[0] == input_graph.x.shape[0] + addition_actions_nr - removal_actions_nr, \
+    assert updated_graph.x.shape[0] == input_graph.x.shape[0] + addition_actions_nr - removal_actions_nr + failed_node_removals, \
         f"The number of nodes in the updated graph {updated_graph.x.shape[0]} must equal to the number of nodes" \
         f"in the input graph {input_graph.x.shape[0]} and added nodes {addition_actions_nr} minus removed nodes " \
-        f"{removal_actions_nr}."
+        f"{removal_actions_nr} (+ number of failed node removals {failed_node_removals})."
 
     assert updated_graph.x.shape[0] >= 1, \
         f"The minimal number of nodes in the updated graph {updated_graph.x.shape[0]} must be 1."
@@ -114,23 +122,41 @@ def add_remove_nodes_edges_simulation_valid(input_graph: torch_geometric.data.da
 
     # 2.3. Edge features -----------------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None:
-        assert torch.equal(input_graph.edge_attr, updated_graph.edge_attr), \
+        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
             f"The edges of the input graph must be the same as the one of the updated graph."
 
     # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
     assert torch.equal(input_graph.y, updated_graph.y), \
         f"The classes/labels of the input graph must be the same as the one of the updated graph."
 
+
 ########################################################################################################################
 # MAIN =================================================================================================================
 ########################################################################################################################
 
 # [1.] Graphs dataset that was used in the GNN task --------------------------------------------------------------------
-dataset = Planetoid(root='data/Planetoid', name='Cora', transform=NormalizeFeatures())
+dataset_names = ["Barabasi-Albert Dataset", "Kirc Dataset"]
 
-# [2.] Perform the first task (atm: node classification) with the GNN --------------------------------------------------
-graph_idx = 0
-selected_graph = dataset[graph_idx]  # Get the selected graph object. --------------------------------------------------
 
-# [3.] Make changes ----------------------------------------------------------------------------------------------------
-add_remove_nodes_edges_simulation_valid(selected_graph)
+def simulate_actions(dataset_name):
+    dataset = generate_data_set(dataset_name)
+
+    # [2.] Perform the first task (atm: node classification) with the GNN ----------------------------------------------
+    graph_idx = 0
+    patient_graph = dataset[str(graph_idx)]
+    selected_graph = patient_graph[str(graph_idx)]  # Get the selected graph object. -----------------------------------
+
+    # Add y to Barabasi dataset ----------------------------------------------------------------------------------------
+    if dataset_name == dataset_names[0]:
+        selected_graph.y = torch.from_numpy(np.array([1, 2, 3]))
+
+    # [3.] Make changes ------------------------------------------------------------------------------------------------
+    add_remove_nodes_edges_simulation_valid(selected_graph)
+
+
+def test_barabasi_simulation():
+    simulate_actions(dataset_names[0])
+
+
+def test_kirc_simulation():
+    simulate_actions(dataset_names[1])
