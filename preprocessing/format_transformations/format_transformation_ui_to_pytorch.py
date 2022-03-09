@@ -83,4 +83,3 @@ def transform_from_ui_to_pytorch(input_dataset_folder: str,
                  edge_ids=edge_ids, edge_attr_labels=edge_attr_labels)
 
     return graph
-

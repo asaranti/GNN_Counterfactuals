@@ -14,7 +14,8 @@ import torch_geometric
 from torch_geometric.data import Data
 
 
-def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.array) -> torch_geometric.data.data.Data:
+def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.array,
+             label: str, node_id: str) -> torch_geometric.data.data.Data:
     """
     Add node with its features. No edges are added at this point.
     If there are already nodes with specified features, then the size of the new node's feature array
@@ -22,6 +23,8 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
 
     :param input_graph: Input graph
     :param node_features: A numpy row containing the node features
+    :param label: Node label, which will be added
+    :param node_id: Node id, which will be added
 
     :return: The updated graph
     """
@@ -46,16 +49,28 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
     output_pos = input_graph.pos
 
     # [3.] Output graph ------------------------------------------------------------------------------------------------
+    new_node_id = list(input_graph.node_ids.keys())[-1] + 1
+    input_graph.node_ids[new_node_id] = node_id
+    output_graph_node_labels = np.append(input_graph.node_labels, label)
+
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
                         y=input_graph.y,
+                        node_labels=output_graph_node_labels,
+                        node_ids=input_graph.node_ids,
+                        node_feature_labels=input_graph.node_feature_labels,
+                        edge_ids=input_graph.edge_ids,
+                        edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
+                        graph_id=input_graph.graph_id,
                         dtype=torch.long)
+
     return output_graph
 
 
-def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) -> torch_geometric.data.data.Data:
+def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
+                label: str) -> torch_geometric.data.data.Data:
     """
     Remove one node from the graph according to its index.
     It is presupposed that the node index is valid.
@@ -76,6 +91,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) ->
 
     :param input_graph: Input graph
     :param node_index: Node index for removal
+    :param label: Node label for removal
 
     :return: The updated graph
     """
@@ -89,41 +105,15 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) ->
     #      corresponding to node features. -----------------------------------------------------------------------------
     input_graph_x = input_graph.x.numpy()
     output_graph_x = np.delete(input_graph_x, node_index, 0)
+    del input_graph.node_ids[node_index]
 
     # [2.] All edges in which the node participates need to be deleted. ------------------------------------------------
     #      The corresponding pairs in the "edge_index" need to be removed. ---------------------------------------------
-    input_graph_edge_index = input_graph.edge_index.numpy()
+    #      This part is done via the UI.
 
     output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
     output_graph_edge_attr = copy.deepcopy(input_graph.edge_attr)
-
-    if input_graph_edge_index is not None:
-
-        input_graph_edge_index_left = list(input_graph_edge_index[0, :])
-        input_graph_edge_index_right = list(input_graph_edge_index[1, :])
-
-        if len(input_graph_edge_index_left) > 0 and len(input_graph_edge_index_right) > 0:
-
-            left_indices = [i for i, x in enumerate(input_graph_edge_index_left) if x == (node_index - 1)]
-            right_indices = [i for i, x in enumerate(input_graph_edge_index_right) if x == (node_index - 1)]
-
-            all_indices = list(set(left_indices + right_indices))
-            all_indices.sort()
-            all_indices.reverse()
-
-            for removing_edge_index in all_indices:
-                del input_graph_edge_index_left[removing_edge_index]
-                del input_graph_edge_index_right[removing_edge_index]
-
-            output_graph_edge_index = torch.from_numpy(np.row_stack((input_graph_edge_index_left,
-                                                                     input_graph_edge_index_right)))
-
-            # [3.] The features of all the edges that are deleted in the previous step ---------------------------------
-            #          must also be deleted. ---------------------------------------------------------------------------
-            input_graph_edge_attr = input_graph.edge_attr.numpy()
-            for removing_edge_index in all_indices:
-                input_graph_edge_attr = np.delete(input_graph_edge_attr, removing_edge_index, 0)
-            output_graph_edge_attr = torch.from_numpy(input_graph_edge_attr)
+    output_graph_node_labels = np.delete(input_graph.node_labels, np.argwhere(input_graph.node_labels == label))
 
     # [4.] The field "y" must not be deleted. --------------------------------------------------------------------------
     #      Nothing to do here
@@ -136,8 +126,15 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int) ->
                         edge_index=output_graph_edge_index,
                         edge_attr=output_graph_edge_attr,
                         y=input_graph.y,
+                        node_labels=output_graph_node_labels,
+                        node_ids=input_graph.node_ids,
+                        node_feature_labels=input_graph.node_feature_labels,
+                        edge_ids=input_graph.edge_ids,
+                        edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
+                        graph_id=input_graph.graph_id,
                         dtype=torch.long)
+
     return output_graph
 
 
@@ -160,16 +157,16 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
 
     # [0.] Check that nodes exist in the graph and check that the index of the left and right node is valid ------------
     assert input_graph.x is not None, "No nodes saved in the graphs, the \"x\" field is None"
-    assert 0 <= new_edge_index_left < input_graph.num_nodes, \
+    assert 0 <= new_edge_index_left, \
         f"The index of the node {new_edge_index_left} is not in accordance " \
         f"with the number of nodes {input_graph.num_nodes}"
-    assert 0 <= new_edge_index_right < input_graph.num_nodes, \
+    assert 0 <= new_edge_index_right, \
         f"The index of the node {new_edge_index_right} is not in accordance " \
         f"with the number of nodes {input_graph.num_nodes}"
 
     # [1.] Check that the nodes specified by the input indexes are not already connected -------------------------------
-    output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
     input_graph_edge_index = input_graph.edge_index.numpy()
+    output_graph_edge_ids = copy.deepcopy(input_graph.edge_ids)
 
     if input_graph_edge_index is not None:
 
@@ -187,6 +184,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
         # Add edge in the graph edge index ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
         input_graph_edge_index_left.append(new_edge_index_left)
         input_graph_edge_index_right.append(new_edge_index_right)
+        output_graph_edge_ids = np.append(output_graph_edge_ids, f"{new_edge_index_left}_{new_edge_index_right}")
 
         output_graph_edge_index = torch.from_numpy(np.row_stack((input_graph_edge_index_left,
                                                                  input_graph_edge_index_right)))
@@ -195,15 +193,18 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
                                                              [new_edge_index_right]]))
 
     # [1.] Add the node's features -------------------------------------------------------------------------------------
-    input_graph_edge_attr = input_graph.edge_attr.numpy()
-    if input_graph_edge_attr is not None:
+    if input_graph.edge_attr is not None and new_edge_attr is not None:
+        input_graph_edge_attr = input_graph.edge_attr.numpy()
+
         assert input_graph_edge_attr.shape[1] == new_edge_attr.shape[1], \
             f"The shape of the features of the new edge: {new_edge_attr.shape[1]} must conform to the shape " \
             f"of the features of the rest of the edges: {input_graph_edge_attr.shape[1]}. " \
             f"The graph must be homogeneous."
         output_graph_edge_attr = torch.from_numpy(np.row_stack((input_graph_edge_attr, new_edge_attr)))
-    else:
+    elif new_edge_attr is not None:
         output_graph_edge_attr = torch.from_numpy(np.array([new_edge_attr]))
+    else:
+        output_graph_edge_attr = None
 
     # [3.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
@@ -213,8 +214,15 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
                         edge_index=output_graph_edge_index,
                         edge_attr=output_graph_edge_attr,
                         y=input_graph.y,
+                        node_labels=input_graph.node_labels,
+                        node_ids=input_graph.node_ids,
+                        node_feature_labels=input_graph.node_feature_labels,
+                        edge_ids=output_graph_edge_ids,
+                        edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
+                        graph_id=input_graph.graph_id,
                         dtype=torch.long)
+
     return output_graph
 
 
@@ -234,6 +242,7 @@ def remove_edge(input_graph: torch_geometric.data.data.Data, edge_index_left: in
     # [1.] Check that the nodes specified by the input indexes are not already connected -------------------------------
     output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
     output_graph_edge_attr = copy.deepcopy(input_graph.edge_attr)
+    output_graph_edge_ids = copy.deepcopy(input_graph.edge_ids)
 
     input_graph_edge_index = input_graph.edge_index.numpy()
 
@@ -260,10 +269,14 @@ def remove_edge(input_graph: torch_geometric.data.data.Data, edge_index_left: in
 
         output_graph_edge_index = torch.from_numpy(np.row_stack((input_graph_edge_index_left,
                                                                  input_graph_edge_index_right)))
+        output_graph_edge_ids = np.delete(output_graph_edge_ids, index_of_pair_to_delete)
 
-        input_graph_edge_attr = input_graph.edge_attr.numpy()
-        input_graph_edge_attr = np.delete(input_graph_edge_attr, index_of_pair_to_delete, 0)
-        output_graph_edge_attr = torch.from_numpy(input_graph_edge_attr)
+        if input_graph.edge_attr is not None:
+            input_graph_edge_attr = input_graph.edge_attr.numpy()
+            input_graph_edge_attr = np.delete(input_graph_edge_attr, index_of_pair_to_delete, 0)
+            output_graph_edge_attr = torch.from_numpy(input_graph_edge_attr)
+        else:
+            output_graph_edge_attr = None
 
     # [3.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
@@ -273,7 +286,13 @@ def remove_edge(input_graph: torch_geometric.data.data.Data, edge_index_left: in
                         edge_index=output_graph_edge_index,
                         edge_attr=output_graph_edge_attr,
                         y=input_graph.y,
+                        node_labels=input_graph.node_labels,
+                        node_ids=input_graph.node_ids,
+                        node_feature_labels=input_graph.node_feature_labels,
+                        edge_ids=output_graph_edge_ids,
+                        edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
+                        graph_id=input_graph.graph_id,
                         dtype=torch.long)
     return output_graph
 
@@ -309,8 +328,15 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data, new_input
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
                         y=input_graph.y,
+                        node_labels=input_graph.node_labels,
+                        node_ids=input_graph.node_ids,
+                        node_feature_labels=input_graph.node_feature_labels,
+                        edge_ids=input_graph.edge_ids,
+                        edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
+                        graph_id=input_graph.graph_id,
                         dtype=torch.long)
+
     return output_graph
 
 
@@ -345,7 +371,13 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, remove
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
                         y=input_graph.y,
+                        node_labels=input_graph.node_labels,
+                        node_ids=input_graph.node_ids,
+                        node_feature_labels=input_graph.node_feature_labels,
+                        edge_ids=input_graph.edge_ids,
+                        edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
+                        graph_id=input_graph.graph_id,
                         dtype=torch.long)
     return output_graph
 
@@ -380,8 +412,15 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data, new_input
                         edge_index=input_graph.edge_index,
                         edge_attr=output_graph_edge_attr,
                         y=input_graph.y,
+                        node_labels=input_graph.node_labels,
+                        node_ids=input_graph.node_ids,
+                        node_feature_labels=input_graph.node_feature_labels,
+                        edge_ids=input_graph.edge_ids,
+                        edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
+                        graph_id=input_graph.graph_id,
                         dtype=torch.long)
+
     return output_graph
 
 
@@ -399,7 +438,6 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data, remove
     """
 
     # [1.] Check that the index of the deleted feature is valid --------------------------------------------------------
-    output_graph_edge_attr = copy.deepcopy(input_graph.edge_attr)
     if input_graph.edge_attr is not None:
 
         input_graph_edge_attr = input_graph.edge_attr.numpy()
@@ -410,6 +448,8 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data, remove
             f"number of features {edge_attributes_nr}"
 
         output_graph_edge_attr = torch.from_numpy(np.delete(input_graph_edge_attr, removed_edge_attribute_idx, 1))
+    else:
+        output_graph_edge_attr = None
 
     # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
@@ -419,7 +459,13 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data, remove
                         edge_index=input_graph.edge_index,
                         edge_attr=output_graph_edge_attr,
                         y=input_graph.y,
+                        node_labels=input_graph.node_labels,
+                        node_ids=input_graph.node_ids,
+                        node_feature_labels=input_graph.node_feature_labels,
+                        edge_ids=input_graph.edge_ids,
+                        edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
+                        graph_id=input_graph.graph_id,
                         dtype=torch.long)
-    return output_graph
 
+    return output_graph

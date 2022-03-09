@@ -49,4 +49,3 @@ graph_back = transform_from_ui_to_pytorch(dataset_folder,
                                           )
 print(graphs_list[0])
 print(graph_back)
-

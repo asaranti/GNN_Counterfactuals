@@ -178,7 +178,7 @@ def import_random_kirc_data(input_dataset_folder: str,
             node_feature_labels=node_feature_labels,
             edge_ids=edge_ids,
             edge_attr_labels=["combined_score"],
-            graph_id=f"graph id{row_nr}_0"
+            graph_id=f"graph_id_{row_nr}_0"
         )
 
         graph_cc = select_max_cc(graph_orig, node_attributes_list, row_nr)
