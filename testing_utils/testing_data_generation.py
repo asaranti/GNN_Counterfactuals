@@ -8,6 +8,7 @@
 
 import re
 import os
+import pickle
 from pathlib import Path
 
 from examples.synthetic_graph_examples.ba_graphs_generator import ba_graphs_gen
@@ -16,9 +17,7 @@ from preprocessing.format_transformations.format_transformation_random_kirc_to_p
 dataset_names = ["Barabasi-Albert Dataset", "Kirc Dataset"]
 graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
 path = Path(__file__).parent.parent
-data_path = os.path.join(path.absolute(), "data")
-kirc_data_path = os.path.join(data_path, "kirc_random_orig")
-
+data_folder = os.path.join(path.absolute(), "data")
 
 def generate_data_set(dataset_name):
     """
@@ -29,11 +28,9 @@ def generate_data_set(dataset_name):
     if dataset_name == dataset_names[0]:
         graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
     elif dataset_name == dataset_names[1]:
-        graphs_list = import_random_kirc_data(kirc_data_path,
-                                              "KIDNEY_RANDOM_mRNA_FEATURES.txt",
-                                              "KIDNEY_RANDOM_Methy_FEATURES.txt",
-                                              "KIDNEY_RANDOM_PPI.txt",
-                                              "KIDNEY_RANDOM_TARGET.txt")
+        dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
+        with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
+            graphs_list = pickle.load(f)
 
     # turn list into dictionary format
     for graph in graphs_list:

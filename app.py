@@ -14,6 +14,7 @@ import atexit
 import os
 import re
 import numpy as np
+import pickle
 
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -50,7 +51,7 @@ user_last_updated = {}
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
-kirc_data_path = os.path.join(data_folder, "kirc_random_orig")
+
 
 ########################################################################################################################
 # [0.] Generate Token for current session ==============================================================================
@@ -94,68 +95,38 @@ def patient_name(token):
         # get list of all graphs in pytorch format
         graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
 
-        # turn list into dictionary format
-        for graph in graphs_list:
-            # 2.1. Use the graph_id to "position" the graph into the "graph_adaptation_structure" ----------------------
-            graph_id_composed = graph.graph_id
-            pattern = re.compile(graph_id_composed_regex)
-            graph_id_matches = bool(pattern.match(graph_id_composed))
-
-            assert graph_id_matches, f"The graph's id {graph_id_composed} does not match " \
-                                     f"the required pattern: {graph_id_composed_regex}"
-
-            # 2.2. Create the initial "graph_adaptation_structure" -----------------------------------------------------
-            graph_id_comp_array = graph_id_composed.split("_")
-            patient_id = graph_id_comp_array[2]
-            graph_id = graph_id_comp_array[3]
-
-            # 2.3. Add dict for node_ids -------------------------------------------------------------------------------
-            dict_node_ids = {}
-            for i in range(0, len(graph.node_ids)):
-                dict_node_ids[i] = graph.node_ids[i]
-            graph.node_ids = dict_node_ids
-
-            patient_dict = {graph_id: graph}
-            graph_data[patient_id] = patient_dict
-
-        # create list of patient names from amount of graphs in dataset
-        patients_names = ['Patient ' + i for i in map(str, np.arange(0, len(graph_data)).tolist())]
-
-    if dataset_name == "Kirc Dataset":
-
+    elif dataset_name == "Kirc Dataset":
         # get list of all graphs in pytorch format
-        graphs_list = import_random_kirc_data(kirc_data_path,
-                                             "KIDNEY_RANDOM_mRNA_FEATURES.txt",
-                                             "KIDNEY_RANDOM_Methy_FEATURES.txt",
-                                             "KIDNEY_RANDOM_PPI.txt",
-                                             "KIDNEY_RANDOM_TARGET.txt")
+        dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
+        with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
+            graphs_list = pickle.load(f)
 
-        # turn list into dictionary format
-        for graph in graphs_list:
-            # 2.1. Use the graph_id to "position" the graph into the "graph_adaptation_structure" ----------------------
-            graph_id_composed = graph.graph_id
-            pattern = re.compile(graph_id_composed_regex)
-            graph_id_matches = bool(pattern.match(graph_id_composed))
+    # turn list into dictionary format
+    for graph in graphs_list:
+        # 2.1. Use the graph_id to "position" the graph into the "graph_adaptation_structure" ----------------------
+        graph_id_composed = graph.graph_id
+        pattern = re.compile(graph_id_composed_regex)
+        graph_id_matches = bool(pattern.match(graph_id_composed))
 
-            assert graph_id_matches, f"The graph's id {graph_id_composed} does not match " \
-                                     f"the required pattern: {graph_id_composed_regex}"
+        assert graph_id_matches, f"The graph's id {graph_id_composed} does not match " \
+                                 f"the required pattern: {graph_id_composed_regex}"
 
-            # 2.2. Create the initial "graph_adaptation_structure" -----------------------------------------------------
-            graph_id_comp_array = graph_id_composed.split("_")
-            patient_id = graph_id_comp_array[2]
-            graph_id = graph_id_comp_array[3]
+        # 2.2. Create the initial "graph_adaptation_structure" -----------------------------------------------------
+        graph_id_comp_array = graph_id_composed.split("_")
+        patient_id = graph_id_comp_array[2]
+        graph_id = graph_id_comp_array[3]
 
-            # 2.3. Add dict for node_ids -------------------------------------------------------------------------------
-            dict_node_ids = {}
-            for i in range(0, len(graph.node_ids)):
-                dict_node_ids[i] = graph.node_ids[i]
-            graph.node_ids = dict_node_ids
+        # 2.3. Add dict for node_ids -------------------------------------------------------------------------------
+        dict_node_ids = {}
+        for i in range(0, len(graph.node_ids)):
+            dict_node_ids[i] = graph.node_ids[i]
+        graph.node_ids = dict_node_ids
 
-            patient_dict = {graph_id: graph}
-            graph_data[patient_id] = patient_dict
+        patient_dict = {graph_id: graph}
+        graph_data[patient_id] = patient_dict
 
-        # create list of patient names from amount of graphs in dataset
-        patients_names = ['Patient ' + i for i in map(str, np.arange(0, len(graph_data)).tolist())]
+    # create list of patient names from amount of graphs in dataset
+    patients_names = ['Patient ' + i for i in map(str, np.arange(0, len(graph_data)).tolist())]
 
     # save graph and session id
     user_graph_data[str(token)] = graph_data
@@ -180,20 +151,10 @@ def pre_defined_dataset(token):
     patient_id = request.args.get('patient_id')
     graph_id = request.args.get('graph_id')
 
-    # folders
-    dataset_folder = os.path.join("data", "Dataset")
-
-    if dataset_name == "Barabasi-Albert Dataset":
-        # get graph corresponding to graph id and patient id and transform to UI format
-        graph_data = user_graph_data[str(token)]
-        selected_graph = graph_data[str(patient_id)][str(graph_id)]
-        nodelist, edgelist = transform_from_pytorch_to_ui(selected_graph, "", "", "")
-
-    if dataset_name == "Kirc Dataset":
-        # get graph corresponding to graph id and patient id and transform to UI format
-        graph_data = user_graph_data[str(token)]
-        selected_graph = graph_data[str(patient_id)][str(graph_id)]
-        nodelist, edgelist = transform_from_pytorch_to_ui(selected_graph, "", "", "")
+    # get graph corresponding to graph id and patient id and transform to UI format
+    graph_data = user_graph_data[str(token)]
+    selected_graph = graph_data[str(patient_id)][str(graph_id)]
+    nodelist, edgelist = transform_from_pytorch_to_ui(selected_graph, "", "", "")
 
     return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
 
@@ -471,7 +432,27 @@ def highest_graph_id(token):
 
 
 ########################################################################################################################
-# [13.] Callback Interval to remove outdated session graphs ============================================================
+# [13.] Delete Patient Graph from Dictionary ====================================================================
+########################################################################################################################
+@app.route('/<uuid:token>/data/graph/', methods=['DELETE'])
+def graph(token):
+    """
+    Remove latest graph of specified patient
+    """
+
+    # graph and patient id
+    patient_id = request.args.get('patient_id')
+    graph_id = request.args.get('graph_id')
+
+    # delete graph
+    graph_data = user_graph_data[str(token)]
+    del graph_data[str(patient_id)][str(graph_id)]
+
+    return "done"
+
+
+########################################################################################################################
+# [14.] Callback Interval to remove outdated session graphs ============================================================
 ########################################################################################################################
 def remove_session_graphs():
     """
@@ -621,7 +602,7 @@ def remove_feature_from_all_edges(token):
 # MAIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
 if __name__ == "__main__":
-    # scheduler to update / remove sessions (every hour)
+    # scheduler to update / remove sessions (every 5 hours)
     time_in_hours = INTERVAL / 60 / 60 / 1000
     scheduler = BackgroundScheduler(timezone="Europe/Vienna")
     scheduler.add_job(func=remove_session_graphs, trigger="interval", hours=time_in_hours)
