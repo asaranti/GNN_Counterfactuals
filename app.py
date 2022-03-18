@@ -496,6 +496,53 @@ def init_gnn(token):
 
     return "done"
 
+
+########################################################################################################################
+# [16.] Get Node importances ===========================================================================================
+########################################################################################################################
+@app.route('/<uuid:token>/importances/nodes', methods=['GET'])
+def node_importance(token):
+    """
+    Calculate node importance for patient graph
+    return: list of importances and corresponding node ids
+    """
+
+    # graph and patient id
+    patient_id = request.args.get("patient_id")
+    graph_id = request.args.get("graph_id")
+
+    # input graph
+    graph_data = user_graph_data[str(token)]
+    input_graph = graph_data[patient_id][graph_id]
+
+
+    return "done"
+
+########################################################################################################################
+# [17.] Get Node importances ===========================================================================================
+########################################################################################################################
+@app.route('/<uuid:token>/importances/edges', methods=['GET'])
+def edge_importance(token):
+    """
+    Calculate edge importance for patient graph
+    return: list of importances and corresponding edge ids
+    """
+
+    # graph and patient id
+    patient_id = request.args.get("patient_id")
+    graph_id = request.args.get("graph_id")
+
+    # input graph
+    graph_data = user_graph_data[str(token)]
+    input_graph = graph_data[patient_id][graph_id]
+
+
+    return "done"
+
+
+
+
+
 ### Don't know if needed
 
 ########################################################################################################################
