@@ -478,6 +478,17 @@ def remove_session_graphs():
             del user_graph_data[key]
             del user_last_updated[key]
 
+########################################################################################################################
+# [15.] Initial training of GNN ========================================================================================
+########################################################################################################################
+@app.route('/<uuid:token>/gnn', methods=['POST'])
+def init_gnn(token):
+    """
+    Train initial GNN
+    Save GNN and performance scores in global variables
+    """
+
+    return "done"
 
 ### Don't know if needed
 
