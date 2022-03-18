@@ -312,15 +312,7 @@ def performance_values(token):
     TODO: Get actual prediction scores
     """
 
-    # get prediction scores
-    sens = 31.41
-    spec = 27.18
-    tp = 30
-    tn = 20
-    fp = 5
-    fn = 0
-
-    return json.dumps([tn, fp, fn, tp, sens, spec])
+    return json.dumps(perf_values)
 
 
 ########################################################################################################################
@@ -487,6 +479,20 @@ def init_gnn(token):
     Train initial GNN
     Save GNN and performance scores in global variables
     """
+
+
+
+    # save performance values in global variable
+    global perf_values
+
+    # these are placeholder values
+    sens = 31.41
+    spec = 27.18
+    tp = 30
+    tn = 20
+    fp = 5
+    fn = 0
+    perf_values = [tn, fp, fn, tp, sens, spec]
 
     return "done"
 
