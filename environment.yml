@@ -7,8 +7,8 @@ dependencies:
   - python=3.8
   - numpy
   - flask
-  - pytorch=1.11.0
+  - pytorch=1.9
   - torchvision
-  - cudatoolkit=11.3
+  - cudatoolkit=11.1
   - pyg
   - apscheduler
