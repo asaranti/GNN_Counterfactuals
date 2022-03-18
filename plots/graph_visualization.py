@@ -43,7 +43,7 @@ def graph_visualization_complex(graph_data: torch_geometric.data.data.Data, grap
     p_figure.add_tools(node_hover_tool, BoxZoomTool(), ResetTool())
 
     # [4.] Transform the network for HTML output -----------------------------------------------------------------------
-    output_data_path = os.path.join(os.path.join("data", "output", "KIRC_RANDOM", "plots"))
+    output_data_path = os.path.join(os.path.join("data", "output", "KIRC_RANDOM", "plots", "graph_plots"))
     output_file(os.path.join(output_data_path, f"graph_{graph_idx}.html"))
     show(p_figure)
 
@@ -69,7 +69,7 @@ def graph_viz(graph_data: torch_geometric.data.data.Data, graph_idx: int):
     )
     # plt.show()
 
-    output_data_path = os.path.join(os.path.join("data", "output", "KIRC_RANDOM", "plots"))
+    output_data_path = os.path.join(os.path.join("data", "output", "KIRC_RANDOM", "plots", "graph_plots"))
     fig.savefig(os.path.join(output_data_path,  f"graph_{graph_idx}.png"))
 
     plt.close()

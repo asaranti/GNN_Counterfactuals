@@ -49,6 +49,7 @@ def import_random_kirc_data(input_dataset_folder: str,
 
     pytorch_random_kirc_mRNA_attribute_file = os.path.join(input_dataset_folder,
                                                            pytorch_random_kirc_mRNA_attribute_file)
+
     node_attribute_mRNA_orig = pd.read_csv(pytorch_random_kirc_mRNA_attribute_file, sep=' ')
     mRNA_nan_values = node_attribute_mRNA_orig.isnull().sum().sum()
     assert mRNA_nan_values == 0, f"The number of NaN values in the features must be 0, " \

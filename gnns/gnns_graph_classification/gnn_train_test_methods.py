@@ -23,6 +23,8 @@ def train(model: GCN, train_loader: DataLoader, optimizer, criterion):
     :param criterion: Loss criterion for the GNN training
     """
 
+    device = 'cuda:0'
+
     model.train()
 
     for data in train_loader:                               # Iterate in batches over the training dataset.
@@ -48,9 +50,11 @@ def test(model: GCN, test_loader: DataLoader):
     model.eval()
 
     correct = 0
-    for data in test_loader:                                     # Iterate in batches over the training/test dataset.
+    for data in test_loader:                                    # Iterate in batches over the training/test dataset.
         out = model(data.x, data.edge_index, data.batch)
-        pred = out.argmax(dim=1)                            # Use the class with highest probability.
+        pred = out.argmax(dim=1)                                # Use the class with highest probability.
 
-        correct += int((pred == data.y).sum())              # Check against ground-truth labels.
-    return correct / len(test_loader.dataset)                    # Derive ratio of correct predictions.
+        correct += int((pred == data.y).sum())                  # Check against ground-truth labels.
+
+    accuracy_ratio = correct / len(test_loader.dataset)         # Derive ratio of correct predictions.
+    return accuracy_ratio

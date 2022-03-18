@@ -40,29 +40,30 @@ class GCN(torch.nn.Module):
 
         self.lin = Linear(hidden_channels, num_classes)
 
-    def forward(self, x, edge_index, batch):
+    def forward(self, x, edge_index, batch, edge_weight=None):
         """
         Forward
 
         :param x:
         :param edge_index:
         :param batch:
+        :param edge_weight:
         :return:
         """
 
         # 1. Obtain node embeddings ------------------------------------------------------------------------------------
-        x = self.conv1(x, edge_index)
+        x = self.conv1(x, edge_index, edge_weight)
         x = x.relu()
-        x = self.conv2(x, edge_index)
+        x = self.conv2(x, edge_index, edge_weight)
         x = x.relu()
-        x = self.conv3(x, edge_index)
+        x = self.conv3(x, edge_index, edge_weight)
         x = x.relu()
 
-        # x = self.conv4(x, edge_index)
+        # x = self.conv4(x, edge_index, edge_weight)
         # x = x.relu()
-        # x = self.conv5(x, edge_index)
+        # x = self.conv5(x, edge_index, edge_weight)
         # x = x.relu()
-        # x = self.conv6(x, edge_index)
+        # x = self.conv6(x, edge_index, edge_weight)
 
         # 2. Readout layer ---------------------------------------------------------------------------------------------
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
