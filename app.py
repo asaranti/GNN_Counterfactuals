@@ -6,6 +6,8 @@
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2021-10-18
 """
+import random
+
 import copy
 import json
 import uuid
@@ -515,8 +517,15 @@ def node_importance(token):
     graph_data = user_graph_data[str(token)]
     input_graph = graph_data[patient_id][graph_id]
 
+    # get node ids
+    node_ids = list(input_graph.node_ids.values())
 
-    return "done"
+    # get random positive relevance values
+    rel_pos = [random.randint(0, 100) for p in range(0, len(node_ids))]
+    # get random positive and negative relevance values
+    rel_pos_neg = [random.randint(-100, 100) for p in range(0, len(node_ids))]
+
+    return json.dumps([node_ids, rel_pos, rel_pos_neg])
 
 ########################################################################################################################
 # [17.] Get Edge importances ===========================================================================================
@@ -536,8 +545,15 @@ def edge_importance(token):
     graph_data = user_graph_data[str(token)]
     input_graph = graph_data[patient_id][graph_id]
 
+    # get node ids
+    edge_ids = list(input_graph.edge_ids)
+    
+    # get random positive relevance values
+    rel_pos = [random.randint(0, 100) for p in range(0, len(edge_ids))]
+    # get random positive and negative relevance values
+    rel_pos_neg = [random.randint(-100, 100) for p in range(0, len(edge_ids))]
 
-    return "done"
+    return json.dumps([edge_ids, rel_pos, rel_pos_neg])
 
 
 
