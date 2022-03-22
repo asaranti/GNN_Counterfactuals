@@ -310,8 +310,6 @@ def delete_edge(token):
 def performance_values(token):
     """
     Get the prediction scores
-
-    TODO: Get actual prediction scores
     """
 
     return json.dumps(perf_values)
@@ -320,53 +318,51 @@ def performance_values(token):
 ########################################################################################################################
 # [9.] Apply the predict() to an already trained GNN ===================================================================
 ########################################################################################################################
-@app.route('/<uuid:token>/nn_predict', methods=['GET'])
+@app.route('/<uuid:token>/nn_predict', methods=['POST'])
 def nn_predict(token):
     """
     Apply a new prediction with the current graphs dataset
 
     :return:
 
-    TODO: The prediction needs to be returned
+    TODO: Prediction of Graph with GNN need to be done
+    TODO: What do we actually return here? Updated calculation of relevance values will ba done via "node_importance()"
+          and "edge_importance()" functions.
     """
+    # Get patient id and graph id -----------------------------------------------------------------
+    req_data = request.get_json()
+
     # graph and patient id
-    patient_id = request.args.get("patient_id")
-    graph_id = request.args.get("graph_id")
+    patient_id = req_data["patient_id"]
+    graph_id = req_data["graph_id"]
 
     # input graph
     graph_data = user_graph_data[str(token)]
-    input_graph = graph_data[patient_id][graph_id]
+    input_graph = graph_data[str(patient_id)][str(graph_id)]
 
-    # create graph in ui format
-    nodelist, edgelist = transform_from_pytorch_to_ui(input_graph, "", "", "")
 
-    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+    return "done"
 
 
 ########################################################################################################################
 # [10.] Apply the retrain() to an already trained GNN ==================================================================
 ########################################################################################################################
-@app.route('/<uuid:token>/nn_retrain', methods=['GET'])
+@app.route('/<uuid:token>/nn_retrain', methods=['POST'])
 def nn_retrain(token):
     """
     Apply a new retrain with the current graphs dataset
 
     :return:
 
-    TODO: The retrained graph needs to be returned
+    TODO: GNN needs to be retrained on the latest graphs of every patient
+    TODO: Performance values need to be saved in "perf_values" variable
     """
-    # graph and patient id
-    patient_id = request.args.get("patient_id")
-    graph_id = request.args.get("graph_id")
 
-    # input graph
-    graph_data = user_graph_data[str(token)]
-    input_graph = graph_data[patient_id][graph_id]
 
-    # create graph in ui format
-    nodelist, edgelist = transform_from_pytorch_to_ui(input_graph, "", "", "")
+    # these are placeholder values
+    perf_values = [20, 5, 0, 30, 31.41, 27.18]  # [tn, fp, fn, tp, sens, spec]
 
-    return json.dumps([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+    return "done"
 
 
 ########################################################################################################################
@@ -480,21 +476,16 @@ def init_gnn(token):
     """
     Train initial GNN
     Save GNN and performance scores in global variables
+
+    TODO: GNN needs to be trained on graph dataset
+    TODO: Performance values need to be saved in "perf_values" variable
     """
-
-
 
     # save performance values in global variable
     global perf_values
 
     # these are placeholder values
-    sens = 31.41
-    spec = 27.18
-    tp = 30
-    tn = 20
-    fp = 5
-    fn = 0
-    perf_values = [tn, fp, fn, tp, sens, spec]
+    perf_values = [20, 5, 0, 30, 31.41, 27.18] #[tn, fp, fn, tp, sens, spec]
 
     return "done"
 
@@ -507,6 +498,9 @@ def node_importance(token):
     """
     Calculate node importance for patient graph
     return: list of importances and corresponding node ids
+
+    TODO: Node importances need to be calculated
+    TODO: Node importances need to be returned as as list (see example values)
     """
 
     # graph and patient id
@@ -519,6 +513,7 @@ def node_importance(token):
 
     # get node ids
     node_ids = list(input_graph.node_ids.values())
+    node_ids = random.sample(node_ids, len(node_ids))
 
     # get random positive relevance values
     rel_pos = [random.randint(0, 100) for p in range(0, len(node_ids))]
@@ -535,6 +530,9 @@ def edge_importance(token):
     """
     Calculate edge importance for patient graph
     return: list of importances and corresponding edge ids
+
+    TODO: Edge importances need to be calculated
+    TODO: Edge importances need to be returned as as list (see example values)
     """
 
     # graph and patient id
@@ -547,13 +545,12 @@ def edge_importance(token):
 
     # get node ids
     edge_ids = list(input_graph.edge_ids)
-    
+    edge_ids = random.sample(edge_ids, len(edge_ids))
+
     # get random positive relevance values
     rel_pos = [random.randint(0, 100) for p in range(0, len(edge_ids))]
-    # get random positive and negative relevance values
-    rel_pos_neg = [random.randint(-100, 100) for p in range(0, len(edge_ids))]
 
-    return json.dumps([edge_ids, rel_pos, rel_pos_neg])
+    return json.dumps([edge_ids, rel_pos])
 
 
 
