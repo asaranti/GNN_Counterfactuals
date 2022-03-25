@@ -543,9 +543,6 @@ def edge_importance(token):
     """
     Calculate edge importance for patient graph
     return: list of importances and corresponding edge ids
-
-    TODO: Edge importances need to be calculated
-    TODO: Edge importances need to be returned as as list (see example values)
     """
 
     # graph and patient id ---------------------------------------------------------------------------------------------

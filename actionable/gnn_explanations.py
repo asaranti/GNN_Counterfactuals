@@ -12,6 +12,7 @@ from collections import defaultdict
 import numpy as np
 
 from captum.attr import Saliency, IntegratedGradients
+from sklearn.preprocessing import minmax_scale
 import torch
 from torch_geometric.data.data import Data
 
@@ -85,7 +86,7 @@ def aggregate_edge_directions(edge_mask, data):
     return edge_mask_dict
 
 
-def explain_sample(method: str, data: Data, target_label: int) -> list:
+def explain_sample(method: str, input_graph: Data, target_label: int) -> list:
     """
     Explain input sample
 
@@ -96,7 +97,7 @@ def explain_sample(method: str, data: Data, target_label: int) -> list:
     :return: List of edge relevances
     """
 
-    # [1.] Model and device are hardwired ------------------------------------------------------------------------------
+    # [0.] Model and device are hardwired ------------------------------------------------------------------------------
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = 'cuda:0'
 
@@ -105,8 +106,16 @@ def explain_sample(method: str, data: Data, target_label: int) -> list:
     model = torch.load(gnn_model_file_path)
     model.eval()
 
+    # [1.] Preprocessing ===============================================================================================
+    x_features = input_graph.x
+    x_features_array = x_features.cpu().detach().numpy()
+
+    x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
+    input_graph.x = torch.tensor(x_features_transformed)
+    input_graph.to(device)
+
     # [2.] Edge mask ---------------------------------------------------------------------------------------------------
-    edge_mask = explain(method, model, data, device, target_label)
+    edge_mask = explain(method, model, input_graph, device, target_label)
 
     return edge_mask
 
