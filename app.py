@@ -566,6 +566,7 @@ def edge_importance(token):
         input_graph,
         explanation_label,
     ))
+    rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
 
     return json.dumps([edge_ids, rel_pos])
 

@@ -39,5 +39,7 @@ rel_pos = list(explain_sample(
         input_graph,
         explanation_label,
     ))
+rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
 
 print(rel_pos)
+print(type(rel_pos[0]))
