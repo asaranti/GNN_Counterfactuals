@@ -21,6 +21,7 @@ import pickle
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from actionable.gnn_actions import gnn_init_train, gnn_predict, gnn_retrain
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
     add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
 
@@ -477,18 +478,29 @@ def init_gnn(token):
     Train initial GNN
     Save GNN and performance scores in global variables
 
-    TODO: GNN needs to be trained on graph dataset
     TODO: Performance values need to be saved in "perf_values" variable
     """
 
+    # [1.] Import the input dataset ------------------------------------------------------------------------------------
+    dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
+    dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
+
+    # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
+    test_set_metrics_dict = gnn_init_train(dataset)
+
+    # [3.] -------------------------------------------------------------------------------------------------------------
     # save performance values in global variable
     global perf_values
 
-    # these are placeholder values
-    perf_values = [20, 5, 0, 30, 31.41, 27.18] #[tn, fp, fn, tp, sens, spec]
+    # ----------- [tn, fp, fn, tp, sens, spec] -------------------------------------------------------------------------
+    perf_values = [test_set_metrics_dict["true_negatives"],
+                   test_set_metrics_dict["false_positives"],
+                   test_set_metrics_dict["false_negatives"],
+                   test_set_metrics_dict["true_positives"],
+                   test_set_metrics_dict["sensitivity"],
+                   test_set_metrics_dict["specificity"]]
 
     return "done"
-
 
 ########################################################################################################################
 # [16.] Get Node importances ===========================================================================================

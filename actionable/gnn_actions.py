@@ -6,14 +6,81 @@
     :date: 2022-02-18
 """
 
+from operator import itemgetter
 import os
+import random
 
+from sklearn.preprocessing import minmax_scale
 import torch
 from torch_geometric.data.data import Data
 from torch_geometric.loader import DataLoader
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.gnn_train_test_methods import train, test
+
+
+def gnn_init_train(original_dataset: list):
+    """
+    Method that implements the first training of the GNN
+
+    :param original_dataset: Original dataset - List of graphs
+    """
+
+    ####################################################################################################################
+    # [0.] Data Preparation ============================================================================================
+    ####################################################################################################################
+    # [0.0.] Choose device ---------------------------------------------------------------------------------------------
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    device = 'cuda:0'
+
+    # [0.1.] Input features preprocessing/normalization ----------------------------------------------------------------
+    for graph in original_dataset:
+        x_features = graph.x
+        x_features_array = x_features.cpu().detach().numpy()
+
+        x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
+        graph.x = torch.tensor(x_features_transformed)
+        graph.to(device)
+
+    # [0.2.] Split training/validation/test set ------------------------------------------------------------------------
+    graph_0 = original_dataset[0]
+    num_features = graph_0.num_node_features
+    graphs_nr = len(original_dataset)
+
+    # [0.3.] Shuffle the dataset and keep the list indexes -------------------------------------------------------------
+    x = list(enumerate(original_dataset))
+    random.shuffle(x)
+    random_indices, graphs_list = zip(*x)
+    dataset_random_shuffling = list(itemgetter(*random_indices)(original_dataset))
+
+    # [0.4.] Split to training and test set ----------------------------------------------------------------------------
+    train_dataset_len = int(graphs_nr * 3 / 4)
+    train_dataset = dataset_random_shuffling[:train_dataset_len]
+    test_dataset = dataset_random_shuffling[train_dataset_len:]
+
+    batch_size = 8
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    ####################################################################################################################
+    # [1.] Graph Classification ========================================================================================
+    ####################################################################################################################
+    num_classes = 2
+    model = GCN(num_node_features=num_features, hidden_channels=200, num_classes=num_classes).to(device)
+    print(model)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    criterion = torch.nn.CrossEntropyLoss().to(device)
+
+    epochs_nr = 20
+    for epoch in range(1, epochs_nr + 1):
+        train(model, train_loader, optimizer, criterion)
+        train_set_metrics_dict = test(model, train_loader)
+        test_set_metrics_dict = test(model, test_loader)
+
+    test_set_metrics_dict = test(model, test_loader)
+    print(test_set_metrics_dict)
+
+    return test_set_metrics_dict
 
 
 def gnn_predict(input_graph: Data):
