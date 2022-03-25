@@ -6,6 +6,8 @@
     :date: 2022-03-04
 """
 
+import os
+
 from collections import defaultdict
 import numpy as np
 
@@ -83,19 +85,27 @@ def aggregate_edge_directions(edge_mask, data):
     return edge_mask_dict
 
 
-def explain_sample(method: str, model: GCN, data: Data, target_label: int, device: str) -> list:
+def explain_sample(method: str, data: Data, target_label: int) -> list:
     """
     Explain input sample
 
     :param method: Explanation method
-    :param model: GNN model that will be used for the explanation
     :param data: Input data
     :param target_label: Target label
-    :param device: Device (Cuda or cpu)
 
     :return: List of edge relevances
     """
 
+    # [1.] Model and device are hardwired ------------------------------------------------------------------------------
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    device = 'cuda:0'
+
+    gnn_storage_folder = os.path.join("data", "output", "gnns")
+    gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+    model = torch.load(gnn_model_file_path)
+    model.eval()
+
+    # [2.] Edge mask ---------------------------------------------------------------------------------------------------
     edge_mask = explain(method, model, data, device, target_label)
 
     return edge_mask

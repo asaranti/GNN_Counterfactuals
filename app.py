@@ -24,6 +24,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from actionable.gnn_actions import gnn_init_train, gnn_predict, gnn_retrain
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
     add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
+from actionable.gnn_explanations import explain_sample
 
 from testing_utils.jsonification import graph_to_json
 
@@ -547,25 +548,29 @@ def edge_importance(token):
     TODO: Edge importances need to be returned as as list (see example values)
     """
 
-    # graph and patient id
+    # graph and patient id ---------------------------------------------------------------------------------------------
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
 
-    # input graph
+    # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
     input_graph = graph_data[patient_id][graph_id]
 
-    # get node ids
+    # get node ids -----------------------------------------------------------------------------------------------------
     edge_ids = list(input_graph.edge_ids)
-    edge_ids = random.sample(edge_ids, len(edge_ids))
 
-    # get random positive relevance values
-    rel_pos = [random.randint(0, 100) for p in range(0, len(edge_ids))]
+    # Explanation ------------------------------------------------------------------------------------------------------
+    explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
+    explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~
+
+    rel_pos = list(explain_sample(
+        explanation_method,
+        input_graph,
+        explanation_label,
+    ))
 
     return json.dumps([edge_ids, rel_pos])
-
-
-
 
 
 ### Don't know if needed
