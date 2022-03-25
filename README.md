@@ -31,4 +31,8 @@ After that you need to activate the environment:
 conda activate gnn
 ```
 
+Also install Captum for pytorch
+```bash
+conda install captum -c pytorch
+```
 Make sure you also activate the conda environment in PyCharm, a guide can be found [here](https://www.jetbrains.com/help/pycharm/conda-support-creating-conda-virtual-environment.html).
