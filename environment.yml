@@ -1,0 +1,14 @@
+name: gnn
+channels:
+  - conda-forge
+  - pytorch
+  - pyg
+dependencies:
+  - python=3.8
+  - numpy
+  - flask
+  - pytorch=1.9
+  - torchvision
+  - cudatoolkit=11.1
+  - pyg
+  - apscheduler

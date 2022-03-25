@@ -116,7 +116,7 @@ transform_from_pytorch_to_ppi(original_graph,
                               pytorch_ppi_attributes_file,
                               pytorch_ppi_node_id_to_name_file,
                               pytorch_ppi_edges_file)
-
+                              
 # [2.] Re-import this to Pytorch format ================================================================================
 reimported_graph = transform_from_ppi_to_pytorch(os.path.join("data", "format_transformation_a"),
                                                  pytorch_ppi_attributes_file,
@@ -130,7 +130,7 @@ transform_from_pytorch_to_ppi(reimported_graph,
                               pytorch_ppi_attributes_file,
                               pytorch_ppi_node_id_to_name_file,
                               pytorch_ppi_edges_file)
-
+                              
 # [4.] Compare the resulted files ======================================================================================
 pytorch_to_ppi_cmp_1 = filecmp.cmp(os.path.join("data", "format_transformation_a", pytorch_ppi_attributes_file),
                                    os.path.join("data", "format_transformation_b", pytorch_ppi_attributes_file))

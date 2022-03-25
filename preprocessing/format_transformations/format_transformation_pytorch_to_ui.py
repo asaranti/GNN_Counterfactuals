@@ -33,7 +33,7 @@ def transform_from_pytorch_to_ui(graph: Data,
     node_attributes_df = pd.DataFrame(graph.x.detach().cpu().numpy(), columns=graph.node_feature_labels)
 
     node_attributes_df["label"] = graph.node_labels
-    node_attributes_df["id"] = graph.node_ids
+    node_attributes_df["id"] = graph.node_ids.values()
 
     node_attributes_column_values = list(node_attributes_df.columns.values)
     del node_attributes_column_values[-2:]
@@ -42,10 +42,11 @@ def transform_from_pytorch_to_ui(graph: Data,
     node_attributes_df = node_attributes_df[node_attributes_column_values]
     # print(node_attributes_df.head(5))
 
-    node_attributes_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_nodes_file),
-                              index=False,
-                              quoting=csv.QUOTE_NONNUMERIC  # Add double quotes to anything that is non-numeric ~~~~~~~~
-                              )
+    if len(input_dataset_folder) > 1:
+        node_attributes_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_nodes_file),
+                                  index=False,
+                                  quoting=csv.QUOTE_NONNUMERIC  # Add double quotes to anything that is non-numeric ~~~~
+                                  )
 
     ####################################################################################################################
     # [2.] Edges =======================================================================================================
@@ -66,10 +67,13 @@ def transform_from_pytorch_to_ui(graph: Data,
     if graph.edge_attr is None:
 
         # csv.QUOTE_NONNUMERIC: Add double quotes to anything that is non-numeric ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        edge_data_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_edges_file),
-                            index=False,
-                            quoting=csv.QUOTE_NONNUMERIC
-                            )
+        if len(input_dataset_folder) > 1:
+            edge_data_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_edges_file),
+                                index=False,
+                                quoting=csv.QUOTE_NONNUMERIC
+                                )
+
+        edge_attributes_concat_df = edge_data_df
 
     else:
 
@@ -79,8 +83,9 @@ def transform_from_pytorch_to_ui(graph: Data,
         # print(edge_attributes_concat_df.head(5))
 
         # csv.QUOTE_NONNUMERIC: Add double quotes to anything that is non-numeric ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        edge_attributes_concat_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_edges_file),
-                                         index=False,
-                                         quoting=csv.QUOTE_NONNUMERIC
-                                         )
-
+        if len(input_dataset_folder) > 1:
+            edge_attributes_concat_df.to_csv(os.path.join(input_dataset_folder, ui_to_pytorch_edges_file),
+                                             index=False,
+                                             quoting=csv.QUOTE_NONNUMERIC
+                                             )
+    return node_attributes_df, edge_attributes_concat_df
