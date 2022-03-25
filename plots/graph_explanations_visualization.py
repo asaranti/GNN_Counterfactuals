@@ -63,11 +63,11 @@ def integrated_gradients_viz(graph_data: torch_geometric.data.data.Data,
     # [3.] Extra tools (hover...) --------------------------------------------------------------------------------------
     node_hover_tool = HoverTool(tooltips=[("index", "@index"), ("node_label", "@node_label")],
                                 renderers=[graph_renderer.node_renderer])
-    p_figure.add_tools(node_hover_tool, BoxZoomTool(), ResetTool())
 
     # [4.] Add the relevance of the edges "on top" ---------------------------------------------------------------------
     layout_pos = graph_renderer.layout_provider.graph_layout
     edge_index_array = graph_data.edge_index.cpu().detach().numpy()
+    p_lines_all = []
     for edge_cnt in range(edge_index_array.shape[1]):
 
         edge = edge_index_array[:, edge_cnt]
@@ -80,13 +80,17 @@ def integrated_gradients_viz(graph_data: torch_geometric.data.data.Data,
 
         relevance_of_line = edge_mask[edge_cnt]
 
-        p_figure.line(
+        p_line = p_figure.line(
             nodes_x_coors,
             nodes_y_coors,
             line_width=2,
             color='red',
             alpha=relevance_of_line
         )
+        p_lines_all.append(p_line)
+
+    edge_hover_tool = HoverTool(tooltips="alpha: @alpha", renderers=p_lines_all, mode="mouse")
+    p_figure.add_tools(node_hover_tool, edge_hover_tool, BoxZoomTool(), ResetTool())
 
     # [5.] Transform the network for HTML output -----------------------------------------------------------------------
     output_file(os.path.join(output_data_path, f"integrated_gradients_graph_{graph_idx}"

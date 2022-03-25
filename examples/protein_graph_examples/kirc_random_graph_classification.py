@@ -156,16 +156,27 @@ for test_idx in range(len(test_dataset)):
 
         edge_mask_relevances = explain_sample(explanation_method, model, test_sample_for_explanation,
                                               explanation_label, device)
+
         print(f"Min: {min(edge_mask_relevances)}, Max: {max(edge_mask_relevances)}")
         integrated_gradients_viz(test_sample_for_explanation, graph_id, edge_mask_relevances,
                                  node_labels_list, ground_truth_label, prediction, explanation_label,
                                  output_data_path)
     print("===========================================================================================================")
 
+"""
 ########################################################################################################################
 # [6.] Store the GNN ===================================================================================================
 ########################################################################################################################
-# gnn_storage_folder = os.path.join("data", "output", "gnns")
-# gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-# torch.save(model, gnn_model_file_path)
+date_time_obj = datetime.now()
+time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
+print(f'Store GNN start: {time_stamp_srt}')
 
+gnn_storage_folder = os.path.join("data", "output", "gnns")
+gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+torch.save(model, gnn_model_file_path)
+
+date_time_obj = datetime.now()
+time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
+print(f'Store GNN end: {time_stamp_srt}')
+########################################################################################################################
+"""
