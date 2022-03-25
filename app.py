@@ -326,21 +326,23 @@ def nn_predict(token):
 
     :return:
 
-    TODO: Prediction of Graph with GNN need to be done
-    TODO: What do we actually return here? Updated calculation of relevance values will ba done via "node_importance()"
-          and "edge_importance()" functions.
+    Prediction of Graph with GNN need to be done
+    Return the predicted class
     """
-    # Get patient id and graph id -----------------------------------------------------------------
+
+    # Get patient id and graph id --------------------------------------------------------------------------------------
     req_data = request.get_json()
 
-    # graph and patient id
+    # graph and patient id ---------------------------------------------------------------------------------------------
     patient_id = req_data["patient_id"]
     graph_id = req_data["graph_id"]
 
-    # input graph
+    # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
+    # predicted class --------------------------------------------------------------------------------------------------
+    predicted_class = gnn_predict(input_graph)
 
     return "done"
 

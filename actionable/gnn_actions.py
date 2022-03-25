@@ -90,15 +90,32 @@ def gnn_init_train(original_dataset: list):
     return test_set_metrics_dict
 
 
-def gnn_predict(input_graph: Data):
+def gnn_predict(input_graph: Data) -> str:
     """
     GNN predict function.
+
+    :param input_graph: The input graph that we need its prediction
 
     [1.] Load the GNN from the file system.
     [2.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN.
          If the requirements are not fulfilled, then the predict function cannot be applied.
     [3.] Apply the predict function on the GNN
+
+    :return:
     """
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    device = 'cuda:0'
+
+    ####################################################################################################################
+    # [0.] Preprocessing ===============================================================================================
+    ####################################################################################################################
+    x_features = input_graph.x
+    x_features_array = x_features.cpu().detach().numpy()
+
+    x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
+    input_graph.x = torch.tensor(x_features_transformed)
+    input_graph.to(device)
 
     ####################################################################################################################
     # [1.] Load the GNN from the file system ===========================================================================
@@ -126,7 +143,9 @@ def gnn_predict(input_graph: Data):
     for data in testing_graph_loader:
         output_of_testing = model.forward(data.x, data.edge_index, data.batch)
         prediction_of_testing = output_of_testing.argmax(dim=1)
-        print(f"Prediction of testing: {prediction_of_testing}")
+
+    prediction_of_input_graph = str(prediction_of_testing.cpu().detach().numpy()[0])
+    return prediction_of_input_graph
 
 
 def gnn_retrain(input_graphs: list):
