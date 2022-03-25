@@ -80,6 +80,13 @@ def gnn_init_train(original_dataset: list):
     test_set_metrics_dict = test(model, test_loader)
     print(test_set_metrics_dict)
 
+    ####################################################################################################################
+    # [2.] GNN store ===================================================================================================
+    ####################################################################################################################
+    gnn_storage_folder = os.path.join("data", "output", "gnns")
+    gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+    torch.save(model, gnn_model_file_path)
+
     return test_set_metrics_dict
 
 

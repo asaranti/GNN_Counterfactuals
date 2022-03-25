@@ -24,8 +24,6 @@ def train(model: GCN, train_loader: DataLoader, optimizer, criterion):
     :param criterion: Loss criterion for the GNN training
     """
 
-    device = 'cuda:0'
-
     model.train()
 
     for data in train_loader:                               # Iterate in batches over the training dataset.
@@ -76,12 +74,14 @@ def test(model: GCN, test_loader: DataLoader) -> dict:
 
     accuracy = (true_positives + true_negatives)/(true_positives + true_negatives + false_positives + false_negatives)
 
-    test_set_metrics_dict = {"accuracy": accuracy,
-                             "true_negatives": true_negatives,
-                             "false_positives": false_positives,
-                             "false_negatives": false_negatives,
-                             "true_positives": true_positives,
-                             "sensitivity": sensitivity,
-                             "specificity": specificity}
+    test_set_metrics_dict = {"accuracy": str(round(accuracy, 2)),
+                             "true_negatives": str(true_negatives),
+                             "false_positives": str(false_positives),
+                             "false_negatives": str(false_negatives),
+                             "true_positives": str(true_positives),
+                             "sensitivity": str(round(sensitivity, 2)),
+                             "specificity": str(round(specificity, 2))}
+
+    print(test_set_metrics_dict)
 
     return test_set_metrics_dict

@@ -477,8 +477,6 @@ def init_gnn(token):
     """
     Train initial GNN
     Save GNN and performance scores in global variables
-
-    TODO: Performance values need to be saved in "perf_values" variable
     """
 
     # [1.] Import the input dataset ------------------------------------------------------------------------------------
