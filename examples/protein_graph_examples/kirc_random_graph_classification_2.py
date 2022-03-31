@@ -12,7 +12,7 @@ import random
 
 import numpy as np
 
-from actionable.gnn_actions import gnn_init_train, gnn_predict, gnn_retrain
+from actionable.gnn_actions import GNN_Actions
 from actionable.gnn_explanations import explain_sample
 
 
@@ -21,13 +21,14 @@ dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_ran
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
 # [2.] Train the GNN for the first time --------------------------------------------------------------------------------
-# performance_values_dict = gnn_init_train(dataset)
+gnn_actions_obj = GNN_Actions()
+performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 
 # [3.] Tryout the predict function -------------------------------------------------------------------------------------
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len)
 input_graph = dataset[graph_idx]
-gnn_predict(input_graph)
+gnn_actions_obj.gnn_predict(input_graph)
 
 # [4.] Explanation -----------------------------------------------------------------------------------------------------
 explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,3 +44,4 @@ rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
 
 print(rel_pos)
 print(type(rel_pos[0]))
+

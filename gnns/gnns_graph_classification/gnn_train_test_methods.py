@@ -6,6 +6,7 @@
     :date: 2022-02-18
 """
 
+import numpy as np
 from sklearn.metrics import accuracy_score, confusion_matrix
 import torch
 from torch_geometric.loader.dataloader import DataLoader
@@ -14,7 +15,7 @@ from torch.nn.modules.loss import CrossEntropyLoss
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 
 
-def train(model: GCN, train_loader: DataLoader, optimizer, criterion):
+def train_model(model: GCN, train_loader: DataLoader, optimizer, criterion):
     """
     Training of the model
 
@@ -37,13 +38,13 @@ def train(model: GCN, train_loader: DataLoader, optimizer, criterion):
         optimizer.zero_grad()                               # Clear gradients.
 
 
-def test(model: GCN, test_loader: DataLoader) -> dict:
+def use_trained_model(model: GCN, data_loader: DataLoader) -> dict:
     """
     Test the model - pass all data in the test_loader to the model
     to check its performance
 
     :param model: GNN model
-    :param test_loader: Loader of test set
+    :param data_loader: Loader of data set
 
     :return: Dictionary with all the gathered metrics for the test set
     """
@@ -51,18 +52,28 @@ def test(model: GCN, test_loader: DataLoader) -> dict:
     # [1.] Pass the test data in the GNN -------------------------------------------------------------------------------
     model.eval()
 
-    correct = 0
     y_test = []
     y_pred = []
 
-    for data in test_loader:                                    # Iterate in batches over the training/test dataset.
+    outputs_all = []
+    predictions_all = []
+
+    for data in data_loader:                                    # Iterate in batches over the training/test dataset.
+
         out = model(data.x, data.edge_index, data.batch)
         pred = out.argmax(dim=1)                                # Use the class with highest probability.
+
+        outputs_all.append(out)
+        predictions_all.append(pred)
 
         y_test += list(data.y.cpu().detach().numpy())
         y_pred += list(pred.cpu().detach().numpy())
 
-    # [2.] Gather the metrics ------------------------------------------------------------------------------------------
+    # [2.] Gather the predictions --------------------------------------------------------------------------------------
+    outputs_all_tensor = np.around(torch.cat(outputs_all, dim=0).cpu().detach().numpy(), decimals=2).astype('str')
+    predictions_all_tensor = torch.cat(predictions_all, dim=0).cpu().detach().numpy().astype('str')
+
+    # [3.] Gather the metrics ------------------------------------------------------------------------------------------
     conf_matrix = confusion_matrix(y_test, y_pred)
     true_negatives = conf_matrix[0][0]
     false_positives = conf_matrix[0][1]
@@ -74,14 +85,14 @@ def test(model: GCN, test_loader: DataLoader) -> dict:
 
     accuracy = (true_positives + true_negatives)/(true_positives + true_negatives + false_positives + false_negatives)
 
-    test_set_metrics_dict = {"accuracy": str(round(accuracy, 2)),
-                             "true_negatives": str(true_negatives),
-                             "false_positives": str(false_positives),
-                             "false_negatives": str(false_negatives),
-                             "true_positives": str(true_positives),
-                             "sensitivity": str(round(sensitivity, 2)),
-                             "specificity": str(round(specificity, 2))}
+    dataset_metrics_dict = {"accuracy": str(round(accuracy, 2)),
+                            "true_negatives": str(true_negatives),
+                            "false_positives": str(false_positives),
+                            "false_negatives": str(false_negatives),
+                            "true_positives": str(true_positives),
+                            "sensitivity": str(round(sensitivity, 2)),
+                            "specificity": str(round(specificity, 2))}
 
-    print(test_set_metrics_dict)
+    dataset_outputs_predictions_dict = {"outputs": outputs_all_tensor, "predictions": predictions_all_tensor}
 
-    return test_set_metrics_dict
+    return dataset_metrics_dict, dataset_outputs_predictions_dict

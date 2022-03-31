@@ -21,7 +21,7 @@ from torch_geometric.loader import DataLoader
 from sklearn.preprocessing import minmax_scale
 
 from actionable.gnn_explanations import explain_sample
-from gnns.gnns_graph_classification.gnn_train_test_methods import train, test
+from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from preprocessing.format_transformations.format_transformation_random_kirc_to_pytorch import import_random_kirc_data
 from sklearn.preprocessing import StandardScaler
@@ -100,9 +100,9 @@ print(f'Training time start: {time_stamp_srt}')
 epochs_nr = 20
 for epoch in range(1, epochs_nr + 1):
 
-    train(model, train_loader, optimizer, criterion)
-    train_acc = test(model, train_loader)
-    test_acc = test(model, test_loader)
+    train_model(model, train_loader, optimizer, criterion)
+    train_acc = use_trained_model(model, train_loader)
+    test_acc = use_trained_model(model, test_loader)
 
     print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
     print("-------------------------------------------------------------------------")
@@ -111,7 +111,7 @@ date_time_obj = datetime.now()
 time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
 print(f'Training time end: {time_stamp_srt}')
 
-test_acc = test(model, test_loader)
+test_acc = use_trained_model(model, test_loader)
 
 date_time_obj = datetime.now()
 time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")

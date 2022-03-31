@@ -21,7 +21,7 @@ import pickle
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from actionable.gnn_actions import gnn_init_train, gnn_predict, gnn_retrain
+from actionable.gnn_actions import GNN_Actions
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
     add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
 from actionable.gnn_explanations import explain_sample
@@ -55,6 +55,7 @@ user_last_updated = {}
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
+gnn_actions_obj = GNN_Actions()
 
 
 ########################################################################################################################
@@ -343,7 +344,7 @@ def nn_predict(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # predicted class --------------------------------------------------------------------------------------------------
-    predicted_class = gnn_predict(input_graph)
+    predicted_class = gnn_actions_obj.gnn_predict(input_graph)
 
     return "done"
 
@@ -487,7 +488,7 @@ def init_gnn(token):
     dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
     # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
-    test_set_metrics_dict = gnn_init_train(dataset)
+    test_set_metrics_dict = gnn_actions_obj.gnn_init_train(dataset)
 
     # [3.] -------------------------------------------------------------------------------------------------------------
     # save performance values in global variable
