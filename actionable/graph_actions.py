@@ -30,7 +30,7 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
     """
 
     # [0.] Constraint: the new node's features needs to be the same length (type) --------------------------------------
-    input_graph_x = input_graph.x.numpy()
+    input_graph_x = input_graph.x.cpu().detach().numpy()
     if input_graph_x is not None:
 
         assert input_graph_x.shape[1] == node_features.shape[1], \
@@ -103,7 +103,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
 
     # [1.] The corresponding line needs to be removed from the "x" field of the Data class, ----------------------------
     #      corresponding to node features. -----------------------------------------------------------------------------
-    input_graph_x = input_graph.x.numpy()
+    input_graph_x = input_graph.x.cpu().detach().numpy()
     output_graph_x = np.delete(input_graph_x, node_index, 0)
     del input_graph.node_ids[node_index]
 
@@ -165,7 +165,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
         f"with the number of nodes {input_graph.num_nodes}"
 
     # [1.] Check that the nodes specified by the input indexes are not already connected -------------------------------
-    input_graph_edge_index = input_graph.edge_index.numpy()
+    input_graph_edge_index = input_graph.edge_index.cpu().detach().numpy()
     output_graph_edge_ids = copy.deepcopy(input_graph.edge_ids)
 
     if input_graph_edge_index is not None:
@@ -194,7 +194,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
 
     # [1.] Add the node's features -------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None and new_edge_attr is not None:
-        input_graph_edge_attr = input_graph.edge_attr.numpy()
+        input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
 
         assert input_graph_edge_attr.shape[1] == new_edge_attr.shape[1], \
             f"The shape of the features of the new edge: {new_edge_attr.shape[1]} must conform to the shape " \
@@ -244,7 +244,7 @@ def remove_edge(input_graph: torch_geometric.data.data.Data, edge_index_left: in
     output_graph_edge_attr = copy.deepcopy(input_graph.edge_attr)
     output_graph_edge_ids = copy.deepcopy(input_graph.edge_ids)
 
-    input_graph_edge_index = input_graph.edge_index.numpy()
+    input_graph_edge_index = input_graph.edge_index.cpu().detach().numpy()
 
     assert input_graph_edge_index is not None, "There are no edges in the graph"
 
@@ -272,7 +272,7 @@ def remove_edge(input_graph: torch_geometric.data.data.Data, edge_index_left: in
         output_graph_edge_ids = np.delete(output_graph_edge_ids, index_of_pair_to_delete)
 
         if input_graph.edge_attr is not None:
-            input_graph_edge_attr = input_graph.edge_attr.numpy()
+            input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
             input_graph_edge_attr = np.delete(input_graph_edge_attr, index_of_pair_to_delete, 0)
             output_graph_edge_attr = torch.from_numpy(input_graph_edge_attr)
         else:
@@ -317,7 +317,7 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data, new_input
                                                         f"{new_input_node_feature.shape[0]}. All nodes should have " \
                                                         f"the feature, since heterogeneous graphs are not allowed."
 
-    input_graph_x = input_graph.x.numpy()
+    input_graph_x = input_graph.x.cpu().detach().numpy()
     output_graph_x = np.column_stack((input_graph_x, new_input_node_feature))
 
     # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
@@ -355,7 +355,7 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, remove
 
     # [0.] Check that the index of the deleted feature is valid --------------------------------------------------------
     assert input_graph.x is not None, "No nodes saved in the graphs, the \"x\" field is None"
-    input_graph_x = input_graph.x.numpy()
+    input_graph_x = input_graph.x.cpu().detach().numpy()
     node_features_nr = input_graph_x.shape[1]
     assert 0 <= removed_node_feature_idx < node_features_nr, \
            f"The index of the feature index: {removed_node_feature_idx} is not in accordance with the " \
@@ -399,7 +399,7 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data, new_input
                                                         f"the attribute, since heterogeneous graphs are not allowed."
 
     if input_graph.edge_attr is not None:
-        input_graph_edge_attr = input_graph.edge_attr.numpy()
+        input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
         output_graph_edge_attr = torch.from_numpy(np.column_stack((input_graph_edge_attr, new_input_edge_feature)))
     else:
         output_graph_edge_attr = torch.from_numpy([new_input_edge_feature])
@@ -440,7 +440,7 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data, remove
     # [1.] Check that the index of the deleted feature is valid --------------------------------------------------------
     if input_graph.edge_attr is not None:
 
-        input_graph_edge_attr = input_graph.edge_attr.numpy()
+        input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
 
         edge_attributes_nr = input_graph_edge_attr.shape[1]
         assert 0 <= removed_edge_attribute_idx < edge_attributes_nr, \
