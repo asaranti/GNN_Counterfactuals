@@ -572,6 +572,32 @@ def edge_importance(token):
     return json.dumps([edge_ids, rel_pos])
 
 
+########################################################################################################################
+# [18.] Get Patient information ========================================================================================
+########################################################################################################################
+@app.route('/<uuid:token>/patients', methods=['GET'])
+def patient_information(token):
+    """
+    Calculate edge importance for patient graph
+    return: list of importances and corresponding edge ids
+
+    TODO: Get the following information of the Patient:
+          1. Is he in Train or Test Data
+          2. Ground truth label
+          3. Predicted label
+    """
+
+    # graph and patient id ---------------------------------------------------------------------------------------------
+    patient_id = request.args.get("patient_id")
+    graph_id = request.args.get("graph_id")
+
+    dataset = "Train Data"
+    ground_truth_label = "1"
+    predicted_label = "0"
+
+    return json.dumps([dataset, ground_truth_label, predicted_label])
+
+
 ### Don't know if needed
 
 ########################################################################################################################
