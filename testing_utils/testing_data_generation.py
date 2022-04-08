@@ -19,6 +19,7 @@ graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
 path = Path(__file__).parent.parent
 data_folder = os.path.join(path.absolute(), "data")
 
+
 def generate_data_set(dataset_name):
     """
     Generate Dataset for testing and return first patient graph.

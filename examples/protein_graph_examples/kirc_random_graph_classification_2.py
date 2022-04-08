@@ -11,10 +11,15 @@ import pickle
 import random
 
 import numpy as np
+import torch
+from torch_geometric.data import Data
 
 from actionable.gnn_actions import GNN_Actions
 from actionable.gnn_explanations import explain_sample
+from actionable.graph_actions import add_node, remove_node, remove_edge
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+device = 'cuda:0'
 
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph ---------------------------------------------------------
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
@@ -28,7 +33,25 @@ performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len)
 input_graph = dataset[graph_idx]
-gnn_actions_obj.gnn_predict(input_graph)
+print(f"Node that will be removed. {input_graph.node_labels[graph_idx]}")
+print(input_graph.x.shape, input_graph.edge_index.shape)
+input_graph_update = remove_node(input_graph, graph_idx, input_graph.node_labels[graph_idx])
+# input_graph_update = remove_edge(input_graph, 1125, 502)
+# edge_indexes = input_graph_update.edge_index.cpu().detach().numpy()
+# print(edge_indexes.shape)
+# edge_indexes = edge_indexes[:, edge_indexes[0] != 0]
+# edge_indexes = edge_indexes[:, edge_indexes[1] != 0]
+# if 0 in edge_indexes:
+#     print("EDGE")
+# edge_indexes = edge_indexes - 1
+# input_graph_update_2 = Data(x=input_graph_update.x,
+#                            edge_index=input_graph_update.edge_index,
+#                            edge_attr=None,
+#                            y=input_graph_update.y
+#                            )
+# print(input_graph_update_2.x.dtype)
+predicted_class = gnn_actions_obj.gnn_predict(input_graph_update)
+print(f"Predicted class: {predicted_class}")
 
 # [4.] Explanation -----------------------------------------------------------------------------------------------------
 explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

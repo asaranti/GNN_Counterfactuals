@@ -140,17 +140,18 @@ class GNN_Actions(torch.nn.Module):
         :return:
         """
 
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-        device = 'cuda:0'
+        # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        # device = 'cuda:0'
+        device = 'cpu'
 
         ################################################################################################################
         # [0.] Preprocessing ===========================================================================================
         ################################################################################################################
-        x_features = input_graph.x
-        x_features_array = x_features.cpu().detach().numpy()
+        # x_features = input_graph.x
+        # x_features_array = x_features.cpu().detach().numpy()
 
-        x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
-        input_graph.x = torch.tensor(x_features_transformed)
+        # x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
+        # input_graph.x = torch.tensor(x_features_transformed)
         input_graph.to(device)
 
         ################################################################################################################
@@ -158,7 +159,7 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         gnn_storage_folder = os.path.join("data", "output", "gnns")
         gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-        model = torch.load(gnn_model_file_path)
+        model = torch.load(gnn_model_file_path).to(device)
         model.eval()
 
         ################################################################################################################
@@ -176,8 +177,10 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         testing_graph_list = [input_graph]
         testing_graph_loader = DataLoader(testing_graph_list, batch_size=1, shuffle=False)
+
         for data in testing_graph_loader:
-            output_of_testing = model.forward(data.x, data.edge_index, data.batch)
+            print(data.x.shape, data.edge_index.shape, data.batch.shape)
+            output_of_testing = model(data.x, data.edge_index, data.batch)
             prediction_of_testing = output_of_testing.argmax(dim=1)
 
         prediction_of_input_graph = str(prediction_of_testing.cpu().detach().numpy()[0])
