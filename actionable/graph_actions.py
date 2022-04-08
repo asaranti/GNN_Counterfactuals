@@ -49,16 +49,15 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
     output_pos = input_graph.pos
 
     # [3.] Output graph ------------------------------------------------------------------------------------------------
-    new_node_id = list(input_graph.node_ids.keys())[-1] + 1
-    input_graph.node_ids[new_node_id] = node_id
-    output_graph_node_labels = np.append(input_graph.node_labels, label)
+    output_graph_node_ids = np.append(input_graph.node_ids, [node_id], axis=0)
+    output_graph_node_labels = np.append(input_graph.node_labels, [label], axis=0)
 
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
                         y=input_graph.y,
                         node_labels=output_graph_node_labels,
-                        node_ids=input_graph.node_ids,
+                        node_ids=output_graph_node_ids,
                         node_feature_labels=input_graph.node_feature_labels,
                         edge_ids=input_graph.edge_ids,
                         edge_attr_labels=input_graph.edge_attr_labels,
@@ -105,6 +104,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
     #      corresponding to node features. -----------------------------------------------------------------------------
     input_graph_x = input_graph.x.cpu().detach().numpy()
     output_graph_x = np.delete(input_graph_x, node_index, 0)
+
     input_graph.node_ids = np.delete(input_graph.node_ids, node_index)
 
     # [2.] All edges in which the node participates need to be deleted. ------------------------------------------------

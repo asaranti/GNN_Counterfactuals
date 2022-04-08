@@ -18,6 +18,7 @@ import re
 import numpy as np
 import pickle
 
+import torch
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -121,12 +122,6 @@ def patient_name(token):
         patient_id = graph_id_comp_array[2]
         graph_id = graph_id_comp_array[3]
 
-        # 2.3. Add dict for node_ids -------------------------------------------------------------------------------
-        dict_node_ids = {}
-        for i in range(0, len(graph.node_ids)):
-            dict_node_ids[i] = graph.node_ids[i]
-        graph.node_ids = dict_node_ids
-
         patient_dict = {graph_id: graph}
         graph_data[patient_id] = patient_dict
 
@@ -185,10 +180,14 @@ def adding_node(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # node features
-    node_features = np.array(req_data["features"]).reshape(-1, 1).T
+    node_features = np.array(req_data["features"]).astype(np.float32).reshape(-1, 1).T
+    print('got features: ', req_data["features"])
+    print('features: ', node_features)
+    print('f type: ',  node_features.dtype)
 
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_node(input_graph, node_features, node_label, node_id)
+    print('out x: ', output_graph.x.dtype)
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
@@ -218,10 +217,9 @@ def delete_node(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # get node id from node ids
-    deleted_node_id = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(deleted_node_id)])
+    node_index = np.where(input_graph.node_ids == deleted_node_id)[0][0]
 
-    # delete node
-    output_graph = remove_node(input_graph, deleted_node_id, deleted_node_label)
+    output_graph = remove_node(input_graph, node_index, deleted_node_label)
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
@@ -249,19 +247,19 @@ def adding_edge(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # left and right node ids
-    edge_index_left = req_data["new_edge_index_left"]
-    edge_index_right = req_data["new_edge_index_right"]
-    new_edge_index_left = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_index_left)])
-    new_edge_index_right = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_index_right)])
+    edge_id_left = req_data["new_edge_index_left"]
+    edge_id_right = req_data["new_edge_index_right"]
+    node_index_left = np.where(input_graph.node_ids == edge_id_left)[0][0]
+    node_index_right = np.where(input_graph.node_ids == edge_id_right)[0][0]
 
     # edge features
     try:
-        edge_features = np.array(req_data["features"]).reshape(-1, 1).T
+        edge_features = np.array(req_data["features"]).astype(np.float32).reshape(-1, 1).T
     except KeyError:
         edge_features = None
 
     # Add the node with its features -----------------------------------------------------------------------------------
-    output_graph = add_edge(input_graph, new_edge_index_left, new_edge_index_right, edge_features)
+    output_graph = add_edge(input_graph, node_index_left, node_index_right, edge_features)
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
@@ -292,11 +290,11 @@ def delete_edge(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # get node ids from node labels
-    edge_index_left = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_id_left)])
-    edge_index_right = (list(input_graph.node_ids.keys())[list(input_graph.node_ids.values()).index(edge_id_right)])
+    node_index_left = np.where(input_graph.node_ids == edge_id_left)[0][0]
+    node_index_right = np.where(input_graph.node_ids == edge_id_right)[0][0]
 
     # remove edge
-    output_graph = remove_edge(input_graph, edge_index_left, edge_index_right)
+    output_graph = remove_edge(input_graph, node_index_left, node_index_right)
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
@@ -344,6 +342,7 @@ def nn_predict(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # predicted class --------------------------------------------------------------------------------------------------
+    input_graph.x = input_graph.x.to(dtype=torch.float32)
     predicted_class = gnn_actions_obj.gnn_predict(input_graph)
 
     return "done"
@@ -526,7 +525,7 @@ def node_importance(token):
     input_graph = graph_data[patient_id][graph_id]
 
     # get node ids
-    node_ids = list(input_graph.node_ids.values())
+    node_ids = list(input_graph.node_ids)
     node_ids = random.sample(node_ids, len(node_ids))
 
     # get random positive relevance values
@@ -625,7 +624,7 @@ def add_feature_to_all_nodes(token):
     req_data = request.get_json()
     patient_id = req_data["patient_id"]
     graph_id = req_data["graph_id"]
-    new_nodes_feature = np.array(req_data["new_nodes_feature"]).reshape(-1, 1)
+    new_nodes_feature = np.array(req_data["new_nodes_feature"]).astype(np.float32).reshape(-1, 1)
 
     # get all graphs of this user session
     graph_data = user_graph_data[str(token)]
@@ -678,7 +677,7 @@ def add_feature_to_all_edges(token):
     req_data = request.get_json()
     patient_id = req_data["patient_id"]
     graph_id = req_data["graph_id"]
-    new_node_feature = np.array(req_data["new_edges_feature"]).reshape(-1, 1)
+    new_node_feature = np.array(req_data["new_edges_feature"]).astype(np.float32).reshape(-1, 1)
 
     # get all graphs of this user session
     graph_data = user_graph_data[str(token)]

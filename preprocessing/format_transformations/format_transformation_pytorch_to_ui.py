@@ -33,7 +33,7 @@ def transform_from_pytorch_to_ui(graph: Data,
     node_attributes_df = pd.DataFrame(graph.x.detach().cpu().numpy(), columns=graph.node_feature_labels)
 
     node_attributes_df["label"] = graph.node_labels
-    node_attributes_df["id"] = graph.node_ids.values()
+    node_attributes_df["id"] = graph.node_ids
 
     node_attributes_column_values = list(node_attributes_df.columns.values)
     del node_attributes_column_values[-2:]
