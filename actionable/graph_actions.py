@@ -49,8 +49,8 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
     output_pos = input_graph.pos
 
     # [3.] Output graph ------------------------------------------------------------------------------------------------
-    output_graph_node_ids = np.append(input_graph.node_ids, node_id, axis=1)
-    output_graph_node_labels = np.append(input_graph.node_labels, label, axis=1)
+    output_graph_node_ids = np.append(input_graph.node_ids, [node_id], axis=0)
+    output_graph_node_labels = np.append(input_graph.node_labels, [label], axis=0)
 
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
