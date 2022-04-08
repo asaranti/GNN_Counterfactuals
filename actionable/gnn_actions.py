@@ -140,9 +140,9 @@ class GNN_Actions(torch.nn.Module):
         :return:
         """
 
-        # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-        # device = 'cuda:0'
-        device = 'cpu'
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        device = 'cuda:0'
+        # device = 'cpu'
 
         ################################################################################################################
         # [0.] Preprocessing ===========================================================================================
@@ -179,7 +179,6 @@ class GNN_Actions(torch.nn.Module):
         testing_graph_loader = DataLoader(testing_graph_list, batch_size=1, shuffle=False)
 
         for data in testing_graph_loader:
-            print(data.x.shape, data.edge_index.shape, data.batch.shape)
             output_of_testing = model(data.x, data.edge_index, data.batch)
             prediction_of_testing = output_of_testing.argmax(dim=1)
 

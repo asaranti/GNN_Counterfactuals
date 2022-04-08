@@ -49,16 +49,15 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
     output_pos = input_graph.pos
 
     # [3.] Output graph ------------------------------------------------------------------------------------------------
-    new_node_id = list(input_graph.node_ids.keys())[-1] + 1
-    input_graph.node_ids[new_node_id] = node_id
-    output_graph_node_labels = np.append(input_graph.node_labels, label)
+    output_graph_node_ids = np.append(input_graph.node_ids, node_id, axis=1)
+    output_graph_node_labels = np.append(input_graph.node_labels, label, axis=1)
 
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
                         y=input_graph.y,
                         node_labels=output_graph_node_labels,
-                        node_ids=input_graph.node_ids,
+                        node_ids=output_graph_node_ids,
                         node_feature_labels=input_graph.node_feature_labels,
                         edge_ids=input_graph.edge_ids,
                         edge_attr_labels=input_graph.edge_attr_labels,
@@ -96,6 +95,8 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
     :return: The updated graph
     """
 
+    print(len(input_graph.node_ids))
+
     # [0.] Check that the index of the deleted node is valid -----------------------------------------------------------
     assert input_graph.x is not None, "No nodes saved in the graphs, the \"x\" field is None"
     assert 0 <= node_index < input_graph.num_nodes, \
@@ -105,11 +106,12 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
     #      corresponding to node features. -----------------------------------------------------------------------------
     input_graph_x = input_graph.x.cpu().detach().numpy()
     output_graph_x = np.delete(input_graph_x, node_index, 0)
+
     input_graph.node_ids = np.delete(input_graph.node_ids, node_index)
 
     # [2.] All edges in which the node participates need to be deleted. ------------------------------------------------
     #      The corresponding pairs in the "edge_index" need to be removed. ---------------------------------------------
-    #      This part is done via the UI.
+    #      This part is also done via the UI. --------------------------------------------------------------------------
     input_graph_edge_index = input_graph.cpu().detach().edge_index.numpy()
 
     output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
@@ -133,6 +135,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
                 del input_graph_edge_index_left[removing_edge_index]
                 del input_graph_edge_index_right[removing_edge_index]
 
+            # [3.] Move the indexes of the nodes that have index > of the deleted node by (-1) -------------------------
             input_graph_edge_index_left_reindexed = []
             input_graph_edge_index_right_reindexed = []
             for x in input_graph_edge_index_left:
@@ -149,24 +152,24 @@ def remove_node(input_graph: torch_geometric.data.data.Data, node_index: int,
             output_graph_edge_index = torch.from_numpy(np.row_stack((input_graph_edge_index_left_reindexed,
                                                                      input_graph_edge_index_right_reindexed)))
 
-            # [3.] The features of all the edges that are deleted in the previous step ---------------------------------
-            #          must also be deleted. ---------------------------------------------------------------------------
+            # [4.] The features of all the edges that are deleted in the previous step ---------------------------------
+            #      must also be deleted. -------------------------------------------------------------------------------
             if input_graph.edge_attr is not None:
                 input_graph_edge_attr = input_graph.edge_attr.numpy()
                 for removing_edge_index in all_indices:
                     input_graph_edge_attr = np.delete(input_graph_edge_attr, removing_edge_index, 0)
                 output_graph_edge_attr = torch.from_numpy(input_graph_edge_attr)
 
-    # [4.] Graph node labels need to be adapted ------------------------------------------------------------------------
+    # [5.] Graph node labels need to be adapted ------------------------------------------------------------------------
     output_graph_node_labels = np.delete(input_graph.node_labels, np.argwhere(input_graph.node_labels == label))
 
-    # [5.] The field "y" must not be deleted. --------------------------------------------------------------------------
+    # [6.] The field "y" must not be deleted. --------------------------------------------------------------------------
     #      Nothing to do here
 
-    # [6.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
+    # [7.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
 
-    # [7.] Output graph ------------------------------------------------------------------------------------------------
+    # [8.] Output graph ------------------------------------------------------------------------------------------------
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=output_graph_edge_index,
                         edge_attr=output_graph_edge_attr,

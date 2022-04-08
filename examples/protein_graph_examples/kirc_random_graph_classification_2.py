@@ -33,24 +33,23 @@ performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len)
 input_graph = dataset[graph_idx]
-print(f"Node that will be removed. {input_graph.node_labels[graph_idx]}")
-print(input_graph.x.shape, input_graph.edge_index.shape)
-input_graph_update = remove_node(input_graph, graph_idx, input_graph.node_labels[graph_idx])
-# input_graph_update = remove_edge(input_graph, 1125, 502)
-# edge_indexes = input_graph_update.edge_index.cpu().detach().numpy()
-# print(edge_indexes.shape)
-# edge_indexes = edge_indexes[:, edge_indexes[0] != 0]
-# edge_indexes = edge_indexes[:, edge_indexes[1] != 0]
-# if 0 in edge_indexes:
-#     print("EDGE")
-# edge_indexes = edge_indexes - 1
-# input_graph_update_2 = Data(x=input_graph_update.x,
-#                            edge_index=input_graph_update.edge_index,
-#                            edge_attr=None,
-#                            y=input_graph_update.y
-#                            )
-# print(input_graph_update_2.x.dtype)
+
+# [3.1.] Delete the first node -----------------------------------------------------------------------------------------
+nodes_nr = input_graph.x.shape[0]
+print(f"Nr. of nodes: {nodes_nr}")
+node_idx = random.randint(0, nodes_nr)
+print(f"Node that will be removed. {input_graph.node_labels[node_idx]}")
+input_graph_update = remove_node(input_graph, node_idx, input_graph.node_labels[node_idx])
 predicted_class = gnn_actions_obj.gnn_predict(input_graph_update)
+print(f"Predicted class: {predicted_class}")
+
+# [3.2.] Delete the second node ----------------------------------------------------------------------------------------
+nodes_nr = input_graph_update.x.shape[0]
+print(f"Nr. of nodes: {nodes_nr}")
+node_idx = random.randint(0, nodes_nr)
+print(f"Node that will be removed. {input_graph_update.node_labels[node_idx]}")
+input_graph_update_2 = remove_node(input_graph_update, node_idx, input_graph_update.node_labels[node_idx])
+predicted_class = gnn_actions_obj.gnn_predict(input_graph_update_2)
 print(f"Predicted class: {predicted_class}")
 
 # [4.] Explanation -----------------------------------------------------------------------------------------------------
