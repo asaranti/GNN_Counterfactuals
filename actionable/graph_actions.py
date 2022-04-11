@@ -13,9 +13,13 @@ import torch
 import torch_geometric
 from torch_geometric.data import Data
 
+from constraints.graph_constraints import check_data_format_consistency
 
-def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.array,
-             label: str, node_id: str) -> torch_geometric.data.data.Data:
+
+def add_node(input_graph: torch_geometric.data.data.Data,
+             node_features: np.array,
+             label: str,
+             node_id: str) -> torch_geometric.data.data.Data:
     """
     Add node with its features. No edges are added at this point.
     If there are already nodes with specified features, then the size of the new node's feature array
@@ -29,7 +33,17 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
     :return: The updated graph
     """
 
-    # [0.] Constraint: the new node's features needs to be the same length (type) --------------------------------------
+    ####################################################################################################################
+    # [0.] Constraints/Requirements ====================================================================================
+    ####################################################################################################################
+    # [0.1.] Check the types of the input graph's object ---------------------------------------------------------------
+    check_data_format_consistency(input_graph)
+
+    # [0.2.] Check the type of node features ---------------------------------------------------------------------------
+    assert node_features.dtype == np.float32, f"The type of the node features must be: \"np.float32\".\n" \
+                                              f"Instead it is: {node_features.dtype}"
+
+    # [0.3.] Constraint: the new node's features needs to be the same length (type) ------------------------------------
     input_graph_x = input_graph.x.cpu().detach().numpy()
     if input_graph_x is not None:
         print(input_graph_x.shape[1], node_features.shape[1])
@@ -37,18 +51,24 @@ def add_node(input_graph: torch_geometric.data.data.Data, node_features: np.arra
             "The shape of the features of the new node must conform to the shape " \
             "of the features of the rest of the nodes. The graph must be homogeneous."
 
-    # [1.] Add the node's features -------------------------------------------------------------------------------------
+    ####################################################################################################################
+    # [1.] Add the node's features =====================================================================================
+    ####################################################################################################################
     if input_graph_x is not None:
         output_graph_x = np.row_stack((input_graph_x,
                                        node_features))
     else:
         output_graph_x = np.array([node_features])
 
-    # [2.] If pos is not None, then it needs to contain a new pos ------------------------------------------------------
+    ####################################################################################################################
+    # [2.] If pos is not None, then it needs to contain a new pos ======================================================
     #      TODO ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ####################################################################################################################
     output_pos = input_graph.pos
 
-    # [3.] Output graph ------------------------------------------------------------------------------------------------
+    ####################################################################################################################
+    # [3.] Output graph ================================================================================================
+    ####################################################################################################################
     output_graph_node_ids = np.append(input_graph.node_ids, [node_id], axis=0)
     output_graph_node_labels = np.append(input_graph.node_labels, [label], axis=0)
 
