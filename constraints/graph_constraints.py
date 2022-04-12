@@ -24,13 +24,10 @@ def check_data_format_consistency(input_graph: torch_geometric.data.data.Data):
     assert isinstance(input_graph.edge_index, torch.Tensor)
     assert isinstance(input_graph.edge_attr, torch.Tensor) or input_graph.edge_attr is None
     assert isinstance(input_graph.y, torch.Tensor)
-    assert isinstance(input_graph.node_labels, np.ndarray)
-    assert isinstance(input_graph.node_ids, np.ndarray)
+    assert isinstance(input_graph.node_labels, list)
+    assert isinstance(input_graph.node_ids, list)
     assert isinstance(input_graph.node_feature_labels, list)
     assert isinstance(input_graph.edge_ids, list)
     assert isinstance(input_graph.edge_attr_labels, list)
     assert isinstance(input_graph.pos, torch.Tensor) or input_graph.pos is None
     assert isinstance(input_graph.graph_id, str)
-
-    # TODO dtype >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    # assert isinstance(input_graph.dtype, torch.dtype) or torch.dtype is None

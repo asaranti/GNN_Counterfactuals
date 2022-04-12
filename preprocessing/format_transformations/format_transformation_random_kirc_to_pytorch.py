@@ -174,8 +174,8 @@ def import_random_kirc_data(input_dataset_folder: str,
             edge_attr=None,  # edge_attr,
             y=torch.tensor([label]),
             pos=None,
-            node_labels=np.array(node_names_mRNA_attribute_list),
-            node_ids=np.array(node_ids_list),
+            node_labels=node_names_mRNA_attribute_list,
+            node_ids=node_ids_list,
             node_feature_labels=node_feature_labels,
             edge_ids=edge_ids,
             edge_attr_labels=["combined_score"],
@@ -269,8 +269,10 @@ def select_max_cc(graph_orig: Data, node_attributes_list: list,  row_nr: int) \
     # print(f"Nr. edges in cc: {len(edge_idx_cc_left_list)}")
 
     # [4.] Larger connected component ==================================================================================
-    graph_cc_node_labels = graph_orig.node_labels[largest_cc_graph]
-    graph_cc_node_ids = graph_orig.node_ids[largest_cc_graph]
+    graph_cc_node_labels = [graph_orig.node_labels[idx] for idx in largest_cc_graph]
+    graph_cc_node_ids = [graph_orig.node_ids[idx] for idx in largest_cc_graph]
+
+    print(type(graph_cc_node_labels), type(graph_cc_node_ids))
 
     graph_cc = Data(
         x=node_attributes_cc,

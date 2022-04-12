@@ -14,9 +14,8 @@ import uuid
 
 import numpy as np
 import torch_geometric
-from torch_geometric.data import Data
 
-from actionable.graph_actions import add_node, remove_node
+from actionable.graph_actions import add_node
 
 
 def check_node_add(input_graph: torch_geometric.data.data.Data,
@@ -25,7 +24,7 @@ def check_node_add(input_graph: torch_geometric.data.data.Data,
                    node_label: str,
                    node_id: str):
     """
-    Check the node additions
+    Check the node addition
 
     :param input_graph: Input graph before node addition
     :param output_graph: Output graph after node addition
@@ -48,8 +47,11 @@ def check_node_add(input_graph: torch_geometric.data.data.Data,
 
     # [2.] "edge_index", "edge_attr", "y", "edge_ids", "edge_attr_labels", "pos", "graph_id", "node_feature_labels" ----
     #      stay intact - don't change ----------------------------------------------------------------------------------
+
+    # TODO: Check if "edge_index" is principally allowed to be None ----------------------------------------------------
     assert torch.equal(input_graph.edge_index, output_graph.edge_index), \
         "The input's and output's graph \"edge_index\" fields must be equal."
+
     if input_graph.edge_attr is None:
         assert output_graph.edge_attr is None, "If the input graph's \"edge_attr\" is None, then after a node " \
                                                 "addition should keep the \"edge_attr\" as None."
@@ -64,21 +66,21 @@ def check_node_add(input_graph: torch_geometric.data.data.Data,
     assert input_graph.pos == output_graph.pos, "The input's and output's graph \"pos\" fields must be equal."
     assert input_graph.graph_id == output_graph.graph_id, "The input's and output's graph \"graph_id\" fields must " \
                                                           "be equal."
+    assert input_graph.node_feature_labels == output_graph.node_feature_labels, \
+        "The input's and output's graph \"node_feature_labels\" fields must be equal."
 
     # [3.] "node_labels", "node_ids" change accordingly ----------------------------------------------------------------
     assert output_graph.node_labels[-1] == node_label, f"The last node label of the output graph's node labels must " \
                                                        f"be: {node_label}."
-    assert np.array_equal(input_graph.node_labels, output_graph.node_labels[:-1]), \
+    assert input_graph.node_labels == output_graph.node_labels[:-1], \
         "All elements of the \"node_labels\" field of the output graph except the last one, must equal the elements " \
         "of the \"node_labels\" field of the input graph."
 
     assert output_graph.node_ids[-1] == node_id, f"The last node id of the output graph's node labels must " \
                                                  f"be: {node_id}."
-    assert np.array_equal(input_graph.node_ids, output_graph.node_ids[:-1]), \
+    assert input_graph.node_ids == output_graph.node_ids[:-1], \
         "All elements of the \"node_ids\" field of the output graph except the last one, must equal the elements " \
         "of the \"node_ids\" field of the input graph."
-
-    # TODO >>> dtype >>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 ########################################################################################################################
@@ -98,13 +100,19 @@ def test_unit_add_nodes():
     input_graph = dataset[graph_idx]
 
     # [2.] Try node addition(s) ----------------------------------------------------------------------------------------
-    node_id = str(uuid.uuid4())
-    label = "label_" + str(uuid.uuid4())
-    node_features_size = input_graph.x.size(dim=1)
+    node_additions_nr = 10
+    for node_addition in range(node_additions_nr):
 
-    node_features = np.random.randn(1, node_features_size).astype(np.float32)
+        node_id = str(uuid.uuid4())
+        label = "label_" + str(uuid.uuid4())
+        node_features_size = input_graph.x.size(dim=1)
 
-    output_graph = add_node(input_graph, node_features, label, node_id)
+        node_features = np.random.randn(1, node_features_size).astype(np.float32)
 
-    # [3.] Check that the node addition is successful ------------------------------------------------------------------
-    check_node_add(input_graph, output_graph, node_features, label, node_id)
+        output_graph = add_node(input_graph, node_features, label, node_id)
+
+        # [3.] Check that the node addition is successful --------------------------------------------------------------
+        check_node_add(input_graph, output_graph, node_features, label, node_id)
+
+        # [4.] Copy and repeat -----------------------------------------------------------------------------------------
+        input_graph = output_graph
