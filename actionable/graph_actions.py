@@ -144,6 +144,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
 
     output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
     output_graph_edge_attr = copy.deepcopy(input_graph.edge_attr)
+    output_graph_edge_ids = copy.deepcopy(input_graph.edge_ids)
 
     if input_graph_edge_index is not None:
 
@@ -162,6 +163,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
             for removing_edge_index in all_indices:
                 del input_graph_edge_index_left[removing_edge_index]
                 del input_graph_edge_index_right[removing_edge_index]
+                del output_graph_edge_ids[removing_edge_index]
 
             # [3.] Move the indexes of the nodes that have index > of the deleted node by (-1) -------------------------
             input_graph_edge_index_left_reindexed = []
@@ -206,7 +208,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
                         node_labels=output_graph_node_labels,
                         node_ids=output_graph_node_ids,
                         node_feature_labels=input_graph.node_feature_labels,
-                        edge_ids=input_graph.edge_ids,
+                        edge_ids=output_graph_edge_ids,
                         edge_attr_labels=input_graph.edge_attr_labels,
                         pos=output_pos,
                         graph_id=input_graph.graph_id,
