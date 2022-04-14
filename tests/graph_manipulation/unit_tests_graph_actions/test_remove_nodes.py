@@ -10,7 +10,6 @@ import os
 import pickle
 import random
 import torch
-import uuid
 
 import numpy as np
 import torch_geometric
@@ -102,7 +101,7 @@ def check_node_remove(input_graph: torch_geometric.data.data.Data,
 ########################################################################################################################
 def test_unit_remove_nodes():
     """
-    Unit test add nodes
+    Unit test remove nodes
     """
 
     # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph -----------------------------------------------------
@@ -114,8 +113,8 @@ def test_unit_remove_nodes():
     input_graph = dataset[graph_idx]
 
     # [2.] Try node addition(s) ----------------------------------------------------------------------------------------
-    node_additions_nr = 1
-    for node_addition in range(node_additions_nr):
+    node_removals = 10
+    for node_removal in range(node_removals):
 
         nodes_nr = input_graph.x.size(dim=0)
         node_index = random.randint(0, nodes_nr)
