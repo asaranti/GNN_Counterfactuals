@@ -15,6 +15,7 @@ import numpy as np
 import torch_geometric
 
 from actionable.graph_actions import remove_node
+from tests.utils_tests.utilities_for_tests import check_edge_removal_after_node_remove
 
 
 def check_node_remove(input_graph: torch_geometric.data.data.Data,
@@ -47,45 +48,7 @@ def check_node_remove(input_graph: torch_geometric.data.data.Data,
 
     # [3.]  "edge_index", "edge_attr", "edge_ids" will probably change -------------------------------------------------
     # [3.1.] "edge_index" ----------------------------------------------------------------------------------------------
-    input_graph_edge_index = input_graph.edge_index.cpu().detach().numpy()
-    output_graph_edge_index = output_graph.edge_index.cpu().detach().numpy()
-
-    if input_graph.edge_index is not None:
-
-        input_graph_edge_index_left = list(input_graph.edge_index[0, :])
-        input_graph_edge_index_right = list(input_graph.edge_index[1, :])
-
-        if len(input_graph_edge_index_left) > 0 and len(input_graph_edge_index_right) > 0:
-
-            left_indices = [i for i, x in enumerate(input_graph_edge_index_left) if x == (node_index - 1)]
-            right_indices = [i for i, x in enumerate(input_graph_edge_index_right) if x == (node_index - 1)]
-
-            all_indices = list(set(left_indices + right_indices))
-            input_graph_edge_index_after_delete = np.delete(input_graph_edge_index, all_indices, axis=1)
-            input_graph_edge_index_after_delete[input_graph_edge_index_after_delete > node_index] -= 1
-
-            assert np.array_equal(input_graph_edge_index_after_delete,
-                                  output_graph_edge_index), "For the deleted edges the \"edge_index\" elements that " \
-                                                            "contained the index of the node must be removed. " \
-                                                            "Reindexing -1 must be done."
-
-            # [3.2.] "edge_attr" ---------------------------------------------------------------------------------------
-            if input_graph.edge_attr is not None:
-
-                input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
-                output_graph_edge_attr = output_graph.edge_attr.cpu().detach().numpy()
-
-                assert np.array_equal(np.delete(input_graph_edge_attr, all_indices, axis=0),
-                                      output_graph_edge_attr), \
-                    "For the deleted edges the \"edge_attr\" elements that contained the index of the node must be " \
-                    "removed."
-
-            # [3.3.] "edge_ids" ----------------------------------------------------------------------------------------
-            output_graph_edge_ids = output_graph.edge_ids
-            assert np.array_equal(list(np.delete(input_graph.edge_ids, all_indices, axis=0)),
-                                  output_graph_edge_ids), \
-                "For the deleted edges the \"edge_ids\" elements that contained the index of the node must be " \
-                "removed."
+    check_edge_removal_after_node_remove(input_graph, output_graph, node_index)
 
     # [4.] "node_ids" and "node_labels" have one element less ----------------------------------------------------------
     assert input_graph.node_ids[:node_index] + input_graph.node_ids[node_index + 1:] == output_graph.node_ids, \

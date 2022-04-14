@@ -153,8 +153,8 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
 
         if len(input_graph_edge_index_left) > 0 and len(input_graph_edge_index_right) > 0:
 
-            left_indices = [i for i, x in enumerate(input_graph_edge_index_left) if x == (node_index - 1)]
-            right_indices = [i for i, x in enumerate(input_graph_edge_index_right) if x == (node_index - 1)]
+            left_indices = [i for i, x in enumerate(input_graph_edge_index_left) if x == node_index]
+            right_indices = [i for i, x in enumerate(input_graph_edge_index_right) if x == node_index]
 
             all_indices = list(set(left_indices + right_indices))
             all_indices.sort()

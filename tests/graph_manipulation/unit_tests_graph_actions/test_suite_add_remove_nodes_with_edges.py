@@ -10,40 +10,36 @@ import copy
 import random
 import uuid
 
-import networkx as nx
 import numpy as np
 import torch
-import torch_geometric
 from torch_geometric.data import Data
 
 from actionable.graph_actions import add_node, remove_node
+from tests.utils_tests.utilities_for_tests import unchanged_fields_node_add_remove_without_edges, \
+    check_edge_removal_after_node_remove
 
 
-def unchanged_fields_node_add_remove(graph_1: Data, graph_2: Data):
+def unchanged_fields_node_add_remove_with_edges(graph_1: Data, graph_2: Data, node_idx_to_remove: int):
     """
     Make the checks for the node and add remove, for the fields
     that are not supposed to change after the node add and remove
 
     :param graph_1: Input graph
     :param graph_2: Output graph
+    :param node_idx_to_remove: Node index to remove
     """
 
-    # assert torch.equal(graph_1.edge_index, graph_2.edge_index), \
-    #    "The input's and output's graph \"edge_index\" fields must be equal."
-    if graph_1.edge_attr is None:
-        assert graph_2.edge_attr is None, "The input's and output's graph \"edge_attr\" fields must be equally None."
-    # else:
-    #    assert torch.equal(graph_1.edge_attr, graph_2.edge_attr), \
-    #        "The input's and output's graph \"edge_attr\" fields must be equal."
+    # [1.] Check which elements needs to be the same -------------------------------------------------------------------
     assert torch.equal(graph_1.y, graph_2.y), "The input's and output's graph \"y\" fields must be equal."
     assert graph_1.node_feature_labels == graph_2.node_feature_labels, \
         "The input's and output's graph \"node_feature_labels\" fields must be equal."
-    # assert graph_1.edge_ids == graph_2.edge_ids, \
-    #    "The input's and output's graph \"edge_ids\" fields must be equal."
     assert graph_1.edge_attr_labels == graph_2.edge_attr_labels, \
         "The input's and output's graph \"edge_attr_labels\" fields must be equal."
     assert graph_1.graph_id == graph_2.graph_id, \
         "The input's and output's graph \"graph_id\" fields must be equal."
+
+    # [2.] Check the edge removal as a by-product of node removal ------------------------------------------------------
+    check_edge_removal_after_node_remove(graph_1, graph_2, node_idx_to_remove)
 
 
 ########################################################################################################################
@@ -88,8 +84,6 @@ def test_unit_add_remove_nodes():
                      pos=None,
                      graph_id=graph_id
                      )
-    print(graph_1_2)
-    print("-----------------------------------------------------------------------------------------------------------")
 
     ####################################################################################################################
     # [2.] Add a third node ============================================================================================
@@ -99,11 +93,9 @@ def test_unit_add_remove_nodes():
     node_features_3 = np.random.randn(1, node_features_size).astype(np.float32)
 
     graph_3 = add_node(graph_1_2, node_features_3, node_label_3, node_id_3)
-    print(graph_3)
-    print("-----------------------------------------------------------------------------------------------------------")
 
     # [2.1.] Check the elements that don't change ----------------------------------------------------------------------
-    unchanged_fields_node_add_remove(graph_1_2, graph_3)
+    unchanged_fields_node_add_remove_without_edges(graph_1_2, graph_3)
 
     # [2.2.] Check the elements that change - "x", "node_labels", "node_ids" -------------------------------------------
     assert torch.equal(graph_3.x, torch.vstack((graph_1_2.x, torch.from_numpy(node_features_3)))), \
@@ -117,12 +109,13 @@ def test_unit_add_remove_nodes():
     ####################################################################################################################
     nodes_nr = graph_3.x.size(dim=0)
     node_idx_to_remove = random.randint(0, nodes_nr - 1)
+
     graph_4 = remove_node(graph_3, node_idx_to_remove)
 
     # [3.1.] Check the elements that don't change ----------------------------------------------------------------------
-    unchanged_fields_node_add_remove(graph_3, graph_4)
+    unchanged_fields_node_add_remove_with_edges(graph_3, graph_4, node_idx_to_remove)
 
-    # [3.2.] Check the elements that change - "x", "node_labels", "node_ids" -------------------------------------------
+    # [3.2.] Check the node elements that change - "x", "node_labels", "node_ids" --------------------------------------
     graph_3_x = graph_3.x.cpu().detach().numpy()
     graph_4_x = graph_4.x.cpu().detach().numpy()
 
@@ -136,4 +129,7 @@ def test_unit_add_remove_nodes():
     graph_3_node_ids = copy.deepcopy(graph_3.node_ids)
     del graph_3_node_ids[node_idx_to_remove]
     assert graph_4.node_ids == graph_3_node_ids, "The node ids of the updated graph is incorrect."
+
+    # [3.3.] Check the egde elements that change - "edge_index", "edge_attr", "edge_ids" -------------------------------
+    unchanged_fields_node_add_remove_with_edges(graph_3, graph_4, node_idx_to_remove)
 
