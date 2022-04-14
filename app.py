@@ -122,6 +122,10 @@ def patient_name(token):
         patient_id = graph_id_comp_array[2]
         graph_id = graph_id_comp_array[3]
 
+        # 2.3. Reformat ndarrays to lists, according to graph_constraints ----------------------------------------------
+        graph.node_labels = graph.node_labels.tolist()
+        graph.node_ids = graph.node_ids.tolist()
+
         patient_dict = {graph_id: graph}
         graph_data[patient_id] = patient_dict
 
@@ -217,9 +221,9 @@ def delete_node(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # get node id from node ids
-    node_index = np.where(input_graph.node_ids == deleted_node_id)[0][0]
+    node_index = np.where(np.asarray(input_graph.node_ids) == deleted_node_id)[0][0]
 
-    output_graph = remove_node(input_graph, node_index, deleted_node_label)
+    output_graph = remove_node(input_graph, node_index)
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
@@ -249,8 +253,8 @@ def adding_edge(token):
     # left and right node ids
     edge_id_left = req_data["new_edge_index_left"]
     edge_id_right = req_data["new_edge_index_right"]
-    node_index_left = np.where(input_graph.node_ids == edge_id_left)[0][0]
-    node_index_right = np.where(input_graph.node_ids == edge_id_right)[0][0]
+    node_index_left = np.where(np.asarray(input_graph.node_ids) == edge_id_left)[0][0]
+    node_index_right = np.where(np.asarray(input_graph.node_ids) == edge_id_right)[0][0]
 
     # edge features
     try:
@@ -290,8 +294,9 @@ def delete_edge(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # get node ids from node labels
-    node_index_left = np.where(input_graph.node_ids == edge_id_left)[0][0]
-    node_index_right = np.where(input_graph.node_ids == edge_id_right)[0][0]
+    # for np.ndarrays -> [0][0]
+    node_index_left = np.where(np.asarray(input_graph.node_ids) == edge_id_left)[0][0]
+    node_index_right = np.where(np.asarray(input_graph.node_ids) == edge_id_right)[0][0]
 
     # remove edge
     output_graph = remove_edge(input_graph, node_index_left, node_index_right)
