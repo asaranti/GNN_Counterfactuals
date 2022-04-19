@@ -15,7 +15,8 @@ import numpy as np
 import torch_geometric
 
 from actionable.graph_actions import remove_node
-from tests.utils_tests.utilities_for_tests import check_edge_removal_after_node_remove
+from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import \
+    check_edge_removal_after_node_remove, unchanged_fields_node_remove
 
 
 def check_node_remove(input_graph: torch_geometric.data.data.Data,
@@ -37,14 +38,7 @@ def check_node_remove(input_graph: torch_geometric.data.data.Data,
         f"The output graph's \"x\" field must have the corresponding column with index: {node_index} removed."
 
     # [2.] "y", "pos", "graph_id", "node_feature_labels", "edge_attr_labels" stay intact - don't change ----------------
-    assert torch.equal(input_graph.y, output_graph.y), "The input's and output's graph \"y\" fields must be equal."
-    assert input_graph.pos == output_graph.pos, "The input's and output's graph \"pos\" fields must be equal."
-    assert input_graph.graph_id == output_graph.graph_id, "The input's and output's graph \"graph_id\" fields must " \
-                                                          "be equal."
-    assert input_graph.node_feature_labels == output_graph.node_feature_labels, \
-        "The input's and output's graph \"node_feature_labels\" fields must be equal."
-    assert input_graph.edge_attr_labels == output_graph.edge_attr_labels, \
-        "The input's and output's graph \"edge_attr_labels\" fields must be equal."
+    unchanged_fields_node_remove(input_graph, output_graph)
 
     # [3.]  "edge_index", "edge_attr", "edge_ids" will probably change -------------------------------------------------
     # [3.1.] "edge_index" ----------------------------------------------------------------------------------------------

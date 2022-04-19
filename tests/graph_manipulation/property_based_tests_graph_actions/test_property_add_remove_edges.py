@@ -8,7 +8,6 @@
 
 import copy
 import random
-import pytest
 
 import networkx as nx
 import numpy as np
@@ -17,7 +16,7 @@ import torch_geometric
 from torch_geometric.utils.convert import to_networkx
 
 from actionable.graph_actions import add_edge, remove_edge
-from testing_utils.testing_data_generation import generate_data_set
+from tests.utils_tests.testing_data_generation import generate_data_set
 
 
 def add_edges_simulation(input_graph: torch_geometric.data.data.Data):

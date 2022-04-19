@@ -15,7 +15,7 @@ import torch
 from torch_geometric.data import Data
 
 from actionable.graph_actions import add_node, remove_node
-from tests.utils_tests.utilities_for_tests import unchanged_fields_node_add_remove_without_edges
+from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import unchanged_fields_node_add_remove_without_edges
 
 
 ########################################################################################################################

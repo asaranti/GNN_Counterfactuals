@@ -8,16 +8,14 @@
 
 import copy
 import random
-import pytest
 
 import numpy as np
 import torch
 import torch_geometric
-from torch_geometric.transforms import NormalizeFeatures
 
 from actionable.graph_actions import add_edge, remove_edge
 from actionable.graph_actions import add_node, remove_node
-from testing_utils.testing_data_generation import generate_data_set
+from tests.utils_tests.testing_data_generation import generate_data_set
 
 
 def add_remove_nodes_edges_simulation_valid(input_graph: torch_geometric.data.data.Data):

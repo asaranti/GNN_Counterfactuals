@@ -16,6 +16,7 @@ import numpy as np
 import torch_geometric
 
 from actionable.graph_actions import add_node
+from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import unchanged_fields_node_add
 
 
 def check_node_add(input_graph: torch_geometric.data.data.Data,
@@ -47,27 +48,7 @@ def check_node_add(input_graph: torch_geometric.data.data.Data,
 
     # [2.] "edge_index", "edge_attr", "y", "edge_ids", "edge_attr_labels", "pos", "graph_id", "node_feature_labels" ----
     #      stay intact - don't change ----------------------------------------------------------------------------------
-
-    # TODO: Check if "edge_index" is principally allowed to be None ----------------------------------------------------
-    assert torch.equal(input_graph.edge_index, output_graph.edge_index), \
-        "The input's and output's graph \"edge_index\" fields must be equal."
-
-    if input_graph.edge_attr is None:
-        assert output_graph.edge_attr is None, "If the input graph's \"edge_attr\" is None, then after a node " \
-                                                "addition should keep the \"edge_attr\" as None."
-    else:
-        assert torch.equal(input_graph.edge_attr, output_graph.edge_attr), \
-            "The input's and output's graph \"edge_attr\" fields must be equal."
-    assert torch.equal(input_graph.y, output_graph.y), "The input's and output's graph \"y\" fields must be equal."
-    assert input_graph.edge_ids == output_graph.edge_ids, "The input's and output's graph \"edge_ids\" fields must " \
-                                                          "be equal."
-    assert input_graph.edge_attr_labels == output_graph.edge_attr_labels, \
-        "The input's and output's graph \"edge_attr_labels\" fields must be equal."
-    assert input_graph.pos == output_graph.pos, "The input's and output's graph \"pos\" fields must be equal."
-    assert input_graph.graph_id == output_graph.graph_id, "The input's and output's graph \"graph_id\" fields must " \
-                                                          "be equal."
-    assert input_graph.node_feature_labels == output_graph.node_feature_labels, \
-        "The input's and output's graph \"node_feature_labels\" fields must be equal."
+    unchanged_fields_node_add(input_graph, output_graph)
 
     # [3.] "node_labels", "node_ids" change accordingly ----------------------------------------------------------------
     assert output_graph.node_labels[-1] == node_label, f"The last node label of the output graph's node labels must " \
