@@ -7,6 +7,7 @@
 """
 
 import copy
+from typing import Optional
 
 import numpy as np
 import torch
@@ -218,8 +219,10 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     return output_graph
 
 
-def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: int, new_edge_index_right: int,
-             new_edge_attr: np.array) -> \
+def add_edge(input_graph: torch_geometric.data.data.Data,
+             new_edge_index_left: int,
+             new_edge_index_right: int,
+             new_edge_attr: Optional[np.array]) -> \
         torch_geometric.data.data.Data:
     """
     Add edge to the graph. The "left" and "right" nodes (imaginary in undirected graphs) must exist.
@@ -235,7 +238,13 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
     :return: The updated graph
     """
 
-    # [0.] Check that nodes exist in the graph and check that the index of the left and right node is valid ------------
+    ####################################################################################################################
+    # [0.] Constraints/Requirements ====================================================================================
+    ####################################################################################################################
+    # [0.1.] Check the types of the input graph's object ---------------------------------------------------------------
+    check_data_format_consistency(input_graph)
+
+    # [0.2.] Check that nodes exist in the graph and check that the index of the left and right node is valid ----------
     assert input_graph.x is not None, "No nodes saved in the graphs, the \"x\" field is None"
     assert 0 <= new_edge_index_left, \
         f"The index of the node {new_edge_index_left} is not in accordance " \
@@ -256,12 +265,14 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
         if len(input_graph_edge_index_left) > 0 and len(input_graph_edge_index_right) > 0:
             graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
                                         list(zip(input_graph_edge_index_left, input_graph_edge_index_right))))
-            assert (new_edge_index_left, new_edge_index_right) not in graph_edge_pairs and \
-                (new_edge_index_right, new_edge_index_left) not in graph_edge_pairs, \
-                f"There is already an edge connecting node {new_edge_index_left} and {new_edge_index_right}.\n" \
-                f"Multi-graphs are not allowed."
 
-        # Add edge in the graph edge index ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+            if (new_edge_index_left, new_edge_index_right) in graph_edge_pairs or \
+               (new_edge_index_right, new_edge_index_left) in graph_edge_pairs:
+
+                raise ValueError(f"There is already an edge connecting node {new_edge_index_left} and "
+                                 f"{new_edge_index_right}.\nMulti-graphs are not allowed.")
+
+        # Add edge in the graph edge index ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
         input_graph_edge_index_left.append(new_edge_index_left)
         input_graph_edge_index_right.append(new_edge_index_right)
 
@@ -274,7 +285,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
         output_graph_edge_index = torch.from_numpy(np.array([[new_edge_index_left],
                                                              [new_edge_index_right]]))
 
-    # [1.] Add the node's features -------------------------------------------------------------------------------------
+    # [1.] Add the edge's features -------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None and new_edge_attr is not None:
         input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
 
@@ -304,11 +315,14 @@ def add_edge(input_graph: torch_geometric.data.data.Data, new_edge_index_left: i
                         pos=output_pos,
                         graph_id=input_graph.graph_id
                         )
+    check_data_format_consistency(output_graph)
 
     return output_graph
 
 
-def remove_edge(input_graph: torch_geometric.data.data.Data, edge_index_left: int, edge_index_right: int) -> \
+def remove_edge(input_graph: torch_geometric.data.data.Data,
+                edge_index_left: int,
+                edge_index_right: int) -> \
         torch_geometric.data.data.Data:
     """
     Remove an edge between two nodes. Check if the edge exists, remove the corresponding pair from "edge_index" and the
@@ -320,6 +334,12 @@ def remove_edge(input_graph: torch_geometric.data.data.Data, edge_index_left: in
 
     :return: The updated graph
     """
+
+    ####################################################################################################################
+    # [0.] Constraints/Requirements ====================================================================================
+    ####################################################################################################################
+    # [0.1.] Check the types of the input graph's object ---------------------------------------------------------------
+    check_data_format_consistency(input_graph)
 
     # [1.] Check that the nodes specified by the input indexes are not already connected -------------------------------
     output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
@@ -377,6 +397,8 @@ def remove_edge(input_graph: torch_geometric.data.data.Data, edge_index_left: in
                         pos=output_pos,
                         graph_id=input_graph.graph_id
                         )
+    check_data_format_consistency(output_graph)
+
     return output_graph
 
 

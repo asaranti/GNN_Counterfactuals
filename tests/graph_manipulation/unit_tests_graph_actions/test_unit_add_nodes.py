@@ -38,12 +38,12 @@ def check_node_add(input_graph: torch_geometric.data.data.Data,
     input_graph_x = input_graph.x.cpu().detach().numpy()
     output_graph_x = output_graph.x.cpu().detach().numpy()
 
-    assert np.array_equal(node_features[0], output_graph_x[-1, :]), "The last column of the \"x\" field of the " \
+    assert np.array_equal(node_features[0], output_graph_x[-1, :]), "The last row of the \"x\" field of the " \
                                                                     "output graph must equal the \"node_features\"" \
                                                                     "of the input graph."
 
-    assert np.array_equal(input_graph_x, output_graph_x[:-1, :]), "All columns of the \"x\" field of the output " \
-                                                                  "graph except the last one, must equal the columns " \
+    assert np.array_equal(input_graph_x, output_graph_x[:-1, :]), "All rows of the \"x\" field of the output " \
+                                                                  "graph except the last one, must equal the rows " \
                                                                   "of the input graph."
 
     # [2.] "edge_index", "edge_attr", "y", "edge_ids", "edge_attr_labels", "pos", "graph_id", "node_feature_labels" ----
