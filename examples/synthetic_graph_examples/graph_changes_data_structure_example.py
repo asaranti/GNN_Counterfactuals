@@ -63,7 +63,7 @@ print("=========================================================================
 ########################################################################################################################
 
 # 3.1. Pick randomly a graph to change ---------------------------------------------------------------------------------
-patient_idx_selected = str(random.randint(0, graphs_nr))
+patient_idx_selected = str(random.randint(0, graphs_nr - 1))
 patient_graph_changes_nr = 0
 patient_graph_selected = graph_adaptation_structure[patient_idx_selected][str(patient_graph_changes_nr)]
 

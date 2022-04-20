@@ -31,13 +31,13 @@ performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 
 # [3.] Tryout the predict function -------------------------------------------------------------------------------------
 dataset_len = len(dataset)
-graph_idx = random.randint(0, dataset_len)
+graph_idx = random.randint(0, dataset_len - 1)
 input_graph = dataset[graph_idx]
 
 # [3.1.] Delete the first node -----------------------------------------------------------------------------------------
 nodes_nr = input_graph.x.shape[0]
 print(f"Nr. of nodes: {nodes_nr}")
-node_idx = random.randint(0, nodes_nr)
+node_idx = random.randint(0, nodes_nr - 1)
 print(f"Node that will be removed. {input_graph.node_labels[node_idx]}")
 input_graph_update = remove_node(input_graph, node_idx, input_graph.node_labels[node_idx])
 predicted_class = gnn_actions_obj.gnn_predict(input_graph_update)
@@ -46,7 +46,7 @@ print(f"Predicted class: {predicted_class}")
 # [3.2.] Delete the second node ----------------------------------------------------------------------------------------
 nodes_nr = input_graph_update.x.shape[0]
 print(f"Nr. of nodes: {nodes_nr}")
-node_idx = random.randint(0, nodes_nr)
+node_idx = random.randint(0, nodes_nr - 1)
 print(f"Node that will be removed. {input_graph_update.node_labels[node_idx]}")
 input_graph_update_2 = remove_node(input_graph_update, node_idx, input_graph_update.node_labels[node_idx])
 predicted_class = gnn_actions_obj.gnn_predict(input_graph_update_2)

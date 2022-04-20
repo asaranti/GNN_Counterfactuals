@@ -11,10 +11,12 @@ import pickle
 import random
 import pytest
 from typing import Optional
+import uuid
 
 import numpy as np
 import torch
 import torch_geometric
+from torch_geometric.data import Data
 
 from actionable.graph_actions import add_edge
 
@@ -90,7 +92,7 @@ def check_edge_add(input_graph: torch_geometric.data.data.Data,
 
 
 # MAIN Tests ===========================================================================================================
-def test_unit_add_edge_correct():
+def test_unit_add_edge_correct_kirc_random():
     """
     Unit test add nodes that is expected to be correct
     """
@@ -113,7 +115,7 @@ def test_unit_add_edge_correct():
     check_edge_add(input_graph, output_graph, edge_node_left, edge_node_right, new_edge_attr)
 
 
-def test_unit_add_edge_expected_exception():
+def test_unit_add_edge_expected_exception_kirc_random():
     """
     Unit test add nodes that is expected to be wrong and raise an exception
     """
@@ -135,4 +137,50 @@ def test_unit_add_edge_expected_exception():
 
     with pytest.raises(ValueError) as excinfo:
         output_graph = add_edge(input_graph, selected_edge[0], selected_edge[1], new_edge_attr)
+
+
+def test_unit_add_edge_small_graph():
+    """
+    Unit test that is expected to be correct
+    """
+
+    # [1.] Input graph with two nodes ----------------------------------------------------------------------------------
+    node_features_size = 2
+    edge_features_size = 3
+
+    node_feature_labels = ["node_feature_1", "node_feature_2"]
+    edge_feature_labels = ["edge_feature_1", "edge_feature_2", "edge_feature_3"]
+
+    node_id_1 = str(uuid.uuid4())
+    node_label_1 = "label_" + str(uuid.uuid4())
+
+    node_id_2 = str(uuid.uuid4())
+    node_label_2 = "label_" + str(uuid.uuid4())
+    node_features_1_2 = np.random.randn(2, node_features_size).astype(np.float32)
+
+    graph_id = "graph_" + str(uuid.uuid4())
+
+    input_graph_1_2 = Data(x=torch.from_numpy(node_features_1_2),
+                           edge_index=torch.Tensor(2, 0),
+                           edge_attr=None,
+                           y=torch.from_numpy(np.array([1])),
+                           node_labels=[node_label_1, node_label_2],
+                           node_ids=[node_id_1, node_id_2],
+                           node_feature_labels=node_feature_labels,
+                           edge_ids=[],
+                           edge_attr_labels=edge_feature_labels,
+                           pos=None,
+                           graph_id=graph_id
+                           )
+
+    # [2.] Valid edge addition -----------------------------------------------------------------------------------------
+    edge_node_left = 0
+    edge_node_right = 1
+    new_edge_attr = np.random.randn(1, edge_features_size).astype(np.float32)
+
+    graph_3 = add_edge(input_graph_1_2, edge_node_left, edge_node_right, new_edge_attr)
+
+    # [3.] Try again to re-enter the edde, this should raise an exception ----------------------------------------------
+    with pytest.raises(ValueError) as excinfo:
+        graph_4 = add_edge(graph_3, edge_node_left, edge_node_right, new_edge_attr)
 

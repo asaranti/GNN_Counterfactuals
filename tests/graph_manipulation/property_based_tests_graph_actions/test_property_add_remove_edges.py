@@ -45,8 +45,8 @@ def add_edges_simulation(input_graph: torch_geometric.data.data.Data):
         else:
             edge_features = None
 
-        edge_index_left = np.random.randint(max_number_nodes)
-        edge_index_right = np.random.randint(max_number_nodes)
+        edge_index_left = np.random.randint(max_number_nodes - 1)
+        edge_index_right = np.random.randint(max_number_nodes - 1)
 
         updated_graph_edge_index = updated_graph.edge_index.numpy()
         updated_graph_edge_index_left = list(updated_graph_edge_index[0, :])

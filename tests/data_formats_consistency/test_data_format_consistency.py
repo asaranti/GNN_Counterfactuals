@@ -26,7 +26,7 @@ def test_data_format_consistency():
     dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
     dataset_len = len(dataset)
-    graph_idx = random.randint(0, dataset_len)
+    graph_idx = random.randint(0, dataset_len - 1)
     input_graph = dataset[graph_idx]
 
     # [2.] Check the data format consistency ---------------------------------------------------------------------------

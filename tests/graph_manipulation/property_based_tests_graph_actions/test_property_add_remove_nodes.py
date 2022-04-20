@@ -38,7 +38,7 @@ def test_property_add_nodes(node_additions_nr: int):
     dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
     dataset_len = len(dataset)
-    graph_idx = random.randint(0, dataset_len)
+    graph_idx = random.randint(0, dataset_len - 1)
     input_graph = dataset[graph_idx]
     input_graph_original = copy.deepcopy(input_graph)
 
@@ -92,7 +92,7 @@ def test_property_remove_nodes(node_removals_nr: int):
     dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
     dataset_len = len(dataset)
-    graph_idx = random.randint(0, dataset_len)
+    graph_idx = random.randint(0, dataset_len - 1)
     input_graph = dataset[graph_idx]
     input_graph_original = copy.deepcopy(input_graph)
 
@@ -100,7 +100,7 @@ def test_property_remove_nodes(node_removals_nr: int):
     for node_removal in range(node_removals_nr):
 
         nodes_nr = input_graph.x.size(dim=0)
-        node_index = random.randint(0, nodes_nr)
+        node_index = random.randint(0, nodes_nr - 1)
         output_graph = remove_node(input_graph, node_index)
 
         # [1.3.] Copy and repeat ---------------------------------------------------------------------------------------
