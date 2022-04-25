@@ -356,9 +356,10 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
     if len(input_graph_edge_index_left) > 0 and len(input_graph_edge_index_right) > 0:
         graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
                                     list(zip(input_graph_edge_index_left, input_graph_edge_index_right))))
-        assert (edge_index_left, edge_index_right) in graph_edge_pairs or \
-               (edge_index_right, edge_index_left) in graph_edge_pairs, \
-               f"There is no edge connecting node {edge_index_left} and {edge_index_right}.\n"
+
+        if not (edge_index_left, edge_index_right) in graph_edge_pairs and \
+                not (edge_index_right, edge_index_left) in graph_edge_pairs:
+            raise ValueError(f"There is no edge connecting node {edge_index_left} and {edge_index_right}.\n")
 
         # # [2.] Remove the edge and its attributes --------------------------------------------------------------------
         if (edge_index_left, edge_index_right) in graph_edge_pairs:
@@ -370,7 +371,7 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
         del input_graph_edge_index_right[index_of_pair_to_delete]
 
         output_graph_edge_index = torch.from_numpy(np.row_stack((input_graph_edge_index_left,
-                                                                 input_graph_edge_index_right)))
+                                                                 input_graph_edge_index_right))).to(dtype=torch.int64)
         # output_graph_edge_ids = np.delete(output_graph_edge_ids, index_of_pair_to_delete) >>>>>>>>>>>>>>>>>>>>>>>>>>>>
         del output_graph_edge_ids[index_of_pair_to_delete]
 
@@ -380,6 +381,8 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
             output_graph_edge_attr = torch.from_numpy(input_graph_edge_attr)
         else:
             output_graph_edge_attr = None
+    else:
+        raise ValueError(f"There are no edges in the graph. This edge removal is per definition invalid.\n")
 
     # [3.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos

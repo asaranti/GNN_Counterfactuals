@@ -19,6 +19,8 @@ import torch_geometric
 from torch_geometric.data import Data
 
 from actionable.graph_actions import add_edge
+from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import \
+    unchanged_fields_edge_add_remove
 
 
 def check_edge_add(input_graph: torch_geometric.data.data.Data,
@@ -38,19 +40,7 @@ def check_edge_add(input_graph: torch_geometric.data.data.Data,
     """
 
     # [1.] Fields that don't change ------------------------------------------------------------------------------------
-    assert torch.equal(input_graph.x, output_graph.x), "The input's and output's graph \"x\" fields must be equal."
-    assert torch.equal(input_graph.y, output_graph.y), "The input's and output's graph \"y\" fields must be equal."
-    assert input_graph.node_labels == output_graph.node_labels, \
-        "The input's and output's graph \"node_labels\" fields must be equal."
-    assert input_graph.node_ids == output_graph.node_ids, \
-        "The input's and output's graph \"node_ids\" fields must be equal."
-    assert input_graph.node_feature_labels == output_graph.node_feature_labels, \
-        "The input's and output's graph \"node_feature_labels\" fields must be equal."
-    assert input_graph.edge_attr_labels == output_graph.edge_attr_labels, \
-        "The input's and output's graph \"edge_attr_labels\" fields must be equal."
-    assert input_graph.pos == output_graph.pos, "The input's and output's graph \"pos\" fields must be equal."
-    assert input_graph.graph_id == output_graph.graph_id, "The input's and output's graph \"graph_id\" " \
-                                                          "fields must be equal."
+    unchanged_fields_edge_add_remove(input_graph, output_graph)
 
     # [2.] "egde_index", "edge_ids", "edge_attr" -----------------------------------------------------------------------
     input_graph_edge_index = input_graph.edge_index.cpu().detach().numpy()
@@ -94,7 +84,7 @@ def check_edge_add(input_graph: torch_geometric.data.data.Data,
 # MAIN Tests ===========================================================================================================
 def test_unit_add_edge_correct_kirc_random():
     """
-    Unit test add nodes that is expected to be correct
+    Unit test add edge that is expected to be correct
     """
 
     # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph -----------------------------------------------------
@@ -117,7 +107,7 @@ def test_unit_add_edge_correct_kirc_random():
 
 def test_unit_add_edge_expected_exception_kirc_random():
     """
-    Unit test add nodes that is expected to be wrong and raise an exception
+    Unit test add edge that is expected to be wrong and raise an exception
     """
 
     # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph -----------------------------------------------------
@@ -136,12 +126,12 @@ def test_unit_add_edge_expected_exception_kirc_random():
     new_edge_attr = None
 
     with pytest.raises(ValueError) as excinfo:
-        output_graph = add_edge(input_graph, selected_edge[0], selected_edge[1], new_edge_attr)
+        add_edge(input_graph, selected_edge[0], selected_edge[1], new_edge_attr)
 
 
 def test_unit_add_edge_small_graph():
     """
-    Unit test that is expected to be correct
+    Unit test add edge that is expected to be correct
     """
 
     # [1.] Input graph with two nodes ----------------------------------------------------------------------------------
@@ -182,5 +172,5 @@ def test_unit_add_edge_small_graph():
 
     # [3.] Try again to re-enter the edde, this should raise an exception ----------------------------------------------
     with pytest.raises(ValueError) as excinfo:
-        graph_4 = add_edge(graph_3, edge_node_left, edge_node_right, new_edge_attr)
+        add_edge(graph_3, edge_node_left, edge_node_right, new_edge_attr)
 

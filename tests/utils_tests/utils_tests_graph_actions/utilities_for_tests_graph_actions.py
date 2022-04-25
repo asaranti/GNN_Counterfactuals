@@ -89,6 +89,26 @@ def unchanged_fields_node_add_remove_without_edges(graph_1: Data, graph_2: Data)
         "The input's and output's graph \"graph_id\" fields must be equal."
 
 
+def unchanged_fields_edge_add_remove(graph_1: Data, graph_2: Data):
+    """
+    Unchanged fields for edge add and remove
+    """
+
+    assert torch.equal(graph_1.x, graph_2.x), "The input's and output's graph \"x\" fields must be equal."
+    assert torch.equal(graph_1.y, graph_2.y), "The input's and output's graph \"y\" fields must be equal."
+    assert graph_1.node_labels == graph_2.node_labels, \
+        "The input's and output's graph \"node_labels\" fields must be equal."
+    assert graph_1.node_ids == graph_2.node_ids, \
+        "The input's and output's graph \"node_ids\" fields must be equal."
+    assert graph_1.node_feature_labels == graph_2.node_feature_labels, \
+        "The input's and output's graph \"node_feature_labels\" fields must be equal."
+    assert graph_1.edge_attr_labels == graph_2.edge_attr_labels, \
+        "The input's and output's graph \"edge_attr_labels\" fields must be equal."
+    assert graph_1.pos == graph_2.pos, "The input's and output's graph \"pos\" fields must be equal."
+    assert graph_1.graph_id == graph_2.graph_id, "The input's and output's graph \"graph_id\" fields must be equal."
+
+
+########################################################################################################################
 def check_edge_removal_after_node_remove(graph_1: torch_geometric.data.data.Data,
                                          graph_2: torch_geometric.data.data.Data,
                                          node_idx_to_remove: int):
