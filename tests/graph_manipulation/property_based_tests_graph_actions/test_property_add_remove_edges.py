@@ -1,401 +1,165 @@
 """
-    Simulate the addition and removal of edges
+    Simulate the addition and removal of nodes
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
-    :date: 2021-11-10
+    :date: 2022-04-25
 """
 
 import copy
+import os
+import pickle
+import pytest
 import random
+import uuid
 
-import networkx as nx
+from hypothesis import given, settings
+from hypothesis.strategies import integers
 import numpy as np
-import torch
-import torch_geometric
-from torch_geometric.utils.convert import to_networkx
 
 from actionable.graph_actions import add_edge, remove_edge
-from tests.utils_tests.testing_data_generation import generate_data_set
+from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import \
+    unchanged_fields_edge_add_remove
 
 
-def add_edges_simulation(input_graph: torch_geometric.data.data.Data):
+@given(edge_additions_nr=integers(min_value=1, max_value=10))
+@settings(max_examples=10, deadline=None)
+def test_property_add_edges(edge_additions_nr: int):
     """
-    Simulate the addition of valid edges in an existing graph.
-    Properties of the graph after any edge addition:
+    Property-based test add edges
 
-    [1.] The number of edges is increased
-    [2.] The number of nodes, number of node features, number of edge features must stay the same
-    """
-
-    # [0.] Perform edge additions --------------------------------------------------------------------------------------
-    #      Only add valid edges to the graph (non existent with valid node indices) ------------------------------------
-    edge_addition_actions_max_nr = 100
-    edge_addition_actions_nr = random.randint(1, edge_addition_actions_max_nr)
-    max_number_nodes = input_graph.node_stores[0].num_nodes
-    added_edges = 0
-    graph_edge_pairs = 0
-
-    updated_graph = copy.deepcopy(input_graph)
-    edge_features_nr = input_graph.edge_attr
-
-    for edge_addition_action in range(edge_addition_actions_nr):
-        if edge_features_nr is not None:
-            edge_features = np.random.randn(1, edge_features_nr.shape[1])
-        else:
-            edge_features = None
-
-        edge_index_left = np.random.randint(max_number_nodes - 1)
-        edge_index_right = np.random.randint(max_number_nodes - 1)
-
-        updated_graph_edge_index = updated_graph.edge_index.numpy()
-        updated_graph_edge_index_left = list(updated_graph_edge_index[0, :])
-        updated_graph_edge_index_right = list(updated_graph_edge_index[1, :])
-        if len(updated_graph_edge_index_left) > 0 and len(updated_graph_edge_index_right) > 0:
-            graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
-                                        list(zip(updated_graph_edge_index_left, updated_graph_edge_index_right))))
-
-        if edge_index_left != edge_index_right and (edge_index_left, edge_index_right) not in graph_edge_pairs\
-                and (edge_index_right, edge_index_left) not in graph_edge_pairs:
-            updated_graph = add_edge(updated_graph, edge_index_left, edge_index_right, edge_features)
-            added_edges += 1
-
-    # [1.] What should change ------------------------------------------------------------------------------------------
-    # 1.1. Number of edges must equal actions --------------------------------------------------------------------------
-    assert updated_graph.edge_stores[0].num_edges == input_graph.edge_stores[0].num_edges + added_edges, \
-        f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
-        f" must equal to the number of edges " \
-        f"in the input graph {input_graph.edge_stores[0].num_edges} and added edges {added_edges}."
-
-    # 1.2. Number of edges -------------------------------------------------------------------------------------
-    if input_graph.edge_attr is not None:
-        assert input_graph.edge_attr.shape[0] < updated_graph.edge_attr.shape[0], \
-            f"The number of edges of the input graph must be less than the one of the updated graph."
-
-    # [2.] What should stay constant -----------------------------------------------------------------------------------
-    # 2.1. Number of nodes ---------------------------------------------------------------------------------------------
-    assert updated_graph.x.shape[0] == input_graph.x.shape[0], \
-        f"The nodes of the input graph must be the same as the ones of the updated graph."
-
-    # 2.2. Number of node features -------------------------------------------------------------------------------------
-    assert input_graph.x.shape[1] == updated_graph.x.shape[1], \
-        f"The number of the node features of the input graph {input_graph.x.shape[1]} must equal " \
-        f"to the number of node features of the updated graph {updated_graph.x.shape[1]}."
-
-    # 2.3. Edge features -----------------------------------------------------------------------------------------------
-    if input_graph.edge_attr is not None:
-        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
-            f"The edges of the input graph must be the same as the one of the updated graph."
-
-    # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    if input_graph.y is not None:
-        assert torch.equal(input_graph.y, updated_graph.y), \
-            f"The classes/labels of the input graph must be the same as the one of the updated graph."
-
-
-def add_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data):
-    """
-    Simulate the addition of invalid edges in an existing graph.
-    Properties of the graph after any edge addition:
-
-    [1.] The number of edges is increased
-    [2.] The number of nodes, number of node features, number of edge features must stay the same
+    :param edge_additions_nr: Number of edges that will be added
     """
 
-    # [0.] Perform edge additions --------------------------------------------------------------------------------------
-    #      Test different combinations of valid additions and invalid ones (node index, feature dimension) -------------
-    edge_addition_actions_max_nr = 100
-    edge_addition_actions_nr = random.randint(1, edge_addition_actions_max_nr)
-    max_number_nodes = input_graph.node_stores[0].num_nodes
-    added_edges = 0
-    failed_attempts = 0
+    ####################################################################################################################
+    # [1.] Import graph data and add the nodes =========================================================================
+    ####################################################################################################################
+    # [1.1.] Import graph data -----------------------------------------------------------------------------------------
+    dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
+    dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
-    edge_features_nr = input_graph.edge_attr
-    updated_graph = copy.deepcopy(input_graph)
+    dataset_len = len(dataset)
+    graph_idx = random.randint(0, dataset_len - 1)
+    input_graph = dataset[graph_idx]
 
-    for edge_addition_action in range(edge_addition_actions_nr):
-        if edge_features_nr is not None:
-            edge_features = np.random.randn(1, edge_features_nr.shape[1])
-        else:
-            edge_features = None
-        edge_index_left = np.random.randint(max_number_nodes * 2)
-        edge_index_right = np.random.randint(max_number_nodes * 2)
+    # [1.2.] Add edges simulation --------------------------------------------------------------------------------------
+    for edge in range(edge_additions_nr):
 
-        updated_graph_edge_index = updated_graph.edge_index.numpy()
-        updated_graph_edge_index_left = list(updated_graph_edge_index[0, :])
-        updated_graph_edge_index_right = list(updated_graph_edge_index[1, :])
+        # [1.3.] Get "edge_index" and then sample from the nodes for an edge that does not exist -----------------------
+        nodes_nr = input_graph.x.size(dim=0)
+        nodes_indexes_list = list(range(nodes_nr))
 
-        if edge_index_right > max_number_nodes or edge_index_left > max_number_nodes:
-            try:
-                updated_graph = add_edge(updated_graph, edge_index_left, edge_index_right, edge_features)
-                if len(updated_graph_edge_index_left) > 0 and len(updated_graph_edge_index_right) > 0:
-                    graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
-                                            list(zip(updated_graph_edge_index_left, updated_graph_edge_index_right))))
-                    assert (edge_index_left, edge_index_right) not in graph_edge_pairs, \
-                        f"Multi-graphs are not allowed!"
-                added_edges += 1
-            except AssertionError:
-                failed_attempts += 1
-        else:
-            try:
-                invalid_features = np.random.randn(1, 20)
-                updated_graph = add_edge(updated_graph, edge_index_left, edge_index_right, invalid_features)
-                if len(updated_graph_edge_index_left) > 0 and len(updated_graph_edge_index_right) > 0:
-                    graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
-                                            list(zip(updated_graph_edge_index_left, updated_graph_edge_index_right))))
-                    assert (edge_index_left, edge_index_right) not in graph_edge_pairs, \
-                        f"Multi-graphs are not allowed!"
-                added_edges += 1
-            except AssertionError:
-                failed_attempts += 1
-
-    # [1.] What should change ------------------------------------------------------------------------------------------
-    # 1.1. Number of edges must equal actions --------------------------------------------------------------------------
-    assert updated_graph.edge_stores[0].num_edges == input_graph.edge_stores[0].num_edges + added_edges, \
-        f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
-        f" must equal to the number of edges " \
-        f"in the input graph {input_graph.edge_stores[0].num_edges} and added edges {added_edges}."
-
-    assert edge_addition_actions_nr == added_edges + failed_attempts, \
-        f"The number of actions {edge_addition_actions_nr} must equal to the number of valid attempts  " \
-        f"{added_edges} and failed attempts {failed_attempts}."
-
-    # 1.2. Number of edges -------------------------------------------------------------------------------------
-    if input_graph.edge_attr is not None:
-        assert input_graph.edge_attr.shape[0] < updated_graph.edge_attr.shape[0], \
-            f"The number of edges of the input graph must be less than the one of the updated graph."
-
-    # [2.] What should stay constant -----------------------------------------------------------------------------------
-    # 2.1. Number of nodes ---------------------------------------------------------------------------------------------
-    assert updated_graph.x.shape[0] == input_graph.x.shape[0], \
-        f"The nodes of the input graph must be the same as the ones of the updated graph."
-
-    # 2.2. Number of node features -------------------------------------------------------------------------------------
-    assert input_graph.x.shape[1] == updated_graph.x.shape[1], \
-        f"The number of the node features of the input graph {input_graph.x.shape[1]} must equal " \
-        f"to the number of node features of the updated graph {updated_graph.x.shape[1]}."
-
-    # 2.3. Edge features -----------------------------------------------------------------------------------------------
-    if input_graph.edge_attr is not None:
-        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
-            f"The edges of the input graph must be the same as the one of the updated graph."
-
-    # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    if input_graph.y is not None:
-        assert torch.equal(input_graph.y, updated_graph.y), \
-            f"The classes/labels of the input graph must be the same as the one of the updated graph."
-
-
-def remove_edges_simulation(input_graph: torch_geometric.data.data.Data):
-    """
-    Simulate the removal of edges in an existing graph.
-    Properties of the graph after any edge removal:
-
-    [1.] The number of edges is decreased
-    [2.] The number of nodes, number of node features, number of edge features must stay the same
-    """
-
-    # [0.] Perform edge removals ---------------------------------------------------------------------------------------
-    #      Only remove valid edges (existent, valid indices) -----------------------------------------------------------
-    edge_removal_actions_max_nr = 100
-    edge_removal_actions_nr = random.randint(1, edge_removal_actions_max_nr)
-    max_number_nodes = input_graph.node_stores[0].num_nodes
-    removed_edges = 0
-    graph_edge_pairs = 0
-
-    updated_graph = copy.deepcopy(input_graph)
-
-    for edge_removal_action in range(edge_removal_actions_nr):
-        edge_index_left = np.random.randint(max_number_nodes)
-        edge_index_right = np.random.randint(max_number_nodes)
-
-        updated_graph_edge_index = updated_graph.edge_index.numpy()
-        updated_graph_edge_index_left = list(updated_graph_edge_index[0, :])
-        updated_graph_edge_index_right = list(updated_graph_edge_index[1, :])
-        if len(updated_graph_edge_index_left) > 0 and len(updated_graph_edge_index_right) > 0:
-            graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
-                                        list(zip(updated_graph_edge_index_left, updated_graph_edge_index_right))))
-
-        if edge_index_left != edge_index_right and (edge_index_left, edge_index_right) in graph_edge_pairs:
-            updated_graph = remove_edge(updated_graph, edge_index_left, edge_index_right)
-            removed_edges += 1
-
-    # [1.] What should change ------------------------------------------------------------------------------------------
-    # 1.1. Number of edges must equal actions --------------------------------------------------------------------------
-    assert updated_graph.edge_stores[0].num_edges == input_graph.edge_stores[0].num_edges - removed_edges, \
-        f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
-        f" must equal to the number of edges " \
-        f"in the input graph {input_graph.edge_stores[0].num_edges} and removed edges {removed_edges}."
-
-    # [2.] What should stay constant -----------------------------------------------------------------------------------
-    # 2.1. Number of nodes ---------------------------------------------------------------------------------------------
-    assert updated_graph.x.shape[0] == input_graph.x.shape[0], \
-        f"The nodes of the input graph must be the same as the ones of the updated graph."
-
-    # 2.2. Number of node features -------------------------------------------------------------------------------------
-    assert input_graph.x.shape[1] == updated_graph.x.shape[1], \
-        f"The number of the node features of the input graph {input_graph.x.shape[1]} must equal " \
-        f"to the number of node features of the updated graph {updated_graph.x.shape[1]}."
-
-    # 2.3. Edge features -----------------------------------------------------------------------------------------------
-    if input_graph.edge_attr is not None:
-        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
-            f"The edges of the input graph must be the same as the one of the updated graph."
-
-    # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    if input_graph.y is not None:
-        assert torch.equal(input_graph.y, updated_graph.y), \
-            f"The classes/labels of the input graph must be the same as the one of the updated graph."
-
-
-def remove_edges_simulation_invalid(input_graph: torch_geometric.data.data.Data):
-    """
-    Simulate the removal of invalid/ not existing edges in an existing graph.
-    Properties of the graph after any edge removal:
-
-    [1.] The number of edges is decreased
-    [2.] The number of nodes, number of node features, number of edge features must stay the same
-    """
-
-    # [0.] Perform edge removals ---------------------------------------------------------------------------------------
-    #      Test valid and invalid edge removals ------------------------------------------------------------------------
-    edge_removal_actions_max_nr = 100
-    edge_removal_actions_nr = random.randint(1, edge_removal_actions_max_nr)
-    max_number_nodes = input_graph.node_stores[0].num_nodes
-    removed_edges = 0
-    failed_attempts = 0
-
-    updated_graph = copy.deepcopy(input_graph)
-
-    for edge_removal_action in range(edge_removal_actions_nr):
-        edge_index_left = np.random.randint(max_number_nodes * 2)
-        edge_index_right = np.random.randint(max_number_nodes * 2)
-
-        try:
-            updated_graph = remove_edge(updated_graph, edge_index_left, edge_index_right)
-            removed_edges += 1
-        except AssertionError:
-            failed_attempts += 1
-
-    # [1.] What should change ------------------------------------------------------------------------------------------
-    # 1.1. Number of edges must equal actions --------------------------------------------------------------------------
-    assert updated_graph.edge_stores[0].num_edges == input_graph.edge_stores[0].num_edges - removed_edges, \
-        f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
-        f" must equal to the number of edges " \
-        f"in the input graph {input_graph.edge_stores[0].num_edges} and removed edges {removed_edges}."
-
-    assert edge_removal_actions_nr == removed_edges + failed_attempts, \
-        f"The number of actions {edge_removal_actions_nr} must equal to the number of valid attempts  " \
-        f"{removed_edges} and failed attempts {failed_attempts}."
-
-    # [2.] What should stay constant -----------------------------------------------------------------------------------
-    # 2.1. Number of nodes ---------------------------------------------------------------------------------------------
-    assert updated_graph.x.shape[0] == input_graph.x.shape[0], \
-        f"The nodes of the input graph must be the same as the ones of the updated graph."
-
-    # 2.2. Number of node features -------------------------------------------------------------------------------------
-    assert input_graph.x.shape[1] == updated_graph.x.shape[1], \
-        f"The number of the node features of the input graph {input_graph.x.shape[1]} must equal " \
-        f"to the number of node features of the updated graph {updated_graph.x.shape[1]}."
-
-    # 2.3. Edge features -----------------------------------------------------------------------------------------------
-    if input_graph.edge_attr is not None:
-        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
-            f"The edges of the input graph must be the same as the one of the updated graph."
-
-    # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    if input_graph.y is not None:
-        assert torch.equal(input_graph.y, updated_graph.y), \
-            f"The classes/labels of the input graph must be the same as the one of the updated graph."
-
-
-def remove_edges_simulation_all(input_graph: torch_geometric.data.data.Data):
-    """
-    Simulate the removal of all edges in an existing graph.
-    Properties of the graph after any edge removal:
-
-    [1.] No edges are in the graph
-    [2.] The number of nodes, number of node features, number of edge features must stay the same
-    """
-
-    # [0.] Perform edge removals ---------------------------------------------------------------------------------------
-    input_graph_edge_index = input_graph.edge_index.numpy()
-    input_graph_edge_index_left = list(input_graph_edge_index[0, :])
-    input_graph_edge_index_right = list(input_graph_edge_index[1, :])
-
-    if len(input_graph_edge_index_left) > 0 and len(input_graph_edge_index_right) > 0:
+        input_graph_edge_index = input_graph.edge_index.cpu().detach().numpy()
+        input_graph_edge_index_left = list(input_graph_edge_index[0, :])
+        input_graph_edge_index_right = list(input_graph_edge_index[1, :])
         graph_edge_pairs = list(map(lambda x: (x[0], x[1]),
                                     list(zip(input_graph_edge_index_left, input_graph_edge_index_right))))
 
-    updated_graph = copy.deepcopy(input_graph)
+        edge_index_left = random.choice(nodes_indexes_list)
+        edge_index_right = random.choice(nodes_indexes_list)
+        while edge_index_left == edge_index_right:
+            edge_index_right = random.choice(nodes_indexes_list)
 
-    for (edge_index_left, edge_index_right) in graph_edge_pairs:
-        updated_graph = remove_edge(updated_graph, edge_index_left, edge_index_right)
+        new_edge_attr = None
 
-    # [1.] What should change ------------------------------------------------------------------------------------------
-    assert updated_graph.edge_stores[0].num_edges == 0, \
-        f"The number of edges in the updated graph {updated_graph.edge_stores[0].num_edges}" \
-        f" must equal to 0."
+        # [1.4.] The edge does not exist already -----------------------------------------------------------------------
+        if not (edge_index_left, edge_index_right) in graph_edge_pairs and \
+                not (edge_index_right, edge_index_left) in graph_edge_pairs:
 
-    # [2.] What should stay constant -----------------------------------------------------------------------------------
-    # 2.1. Number of nodes ---------------------------------------------------------------------------------------------
-    assert updated_graph.x.shape[0] == input_graph.x.shape[0], \
-        f"The nodes of the input graph must be the same as the ones of the updated graph."
+            output_graph = add_edge(input_graph, edge_index_left, edge_index_right, new_edge_attr)
 
-    # 2.2. Number of node features -------------------------------------------------------------------------------------
-    assert input_graph.x.shape[1] == updated_graph.x.shape[1], \
-        f"The number of the node features of the input graph {input_graph.x.shape[1]} must equal " \
-        f"to the number of node features of the updated graph {updated_graph.x.shape[1]}."
+            # [1.4.1.] Fields that don't change ------------------------------------------------------------------------
+            unchanged_fields_edge_add_remove(input_graph, output_graph)
 
-    # 2.3. Edge features -----------------------------------------------------------------------------------------------
-    if input_graph.edge_attr is not None:
-        assert input_graph.edge_attr.shape[1] == updated_graph.edge_attr.shape[1], \
-            f"The edges of the input graph must be the same as the one of the updated graph."
+            # [1.4.2.] Check the properties at the end of the edge additions -------------------------------------------
+            assert input_graph.edge_index.size(dim=1) + 1 == output_graph.edge_index.size(dim=1), \
+                f"The columns of the features \"edge_index\" must be increased exactly by one edge that is added."
+            assert input_graph.edge_index.size(dim=0) == output_graph.edge_index.size(dim=0), \
+                f"The rows of the features \"edge_index\", should not change"
 
-    # 2.4. Classes / Labels --------------------------------------------------------------------------------------------
-    assert torch.equal(input_graph.y, updated_graph.y), \
-        f"The classes/labels of the input graph must be the same as the one of the updated graph."
+            assert len(input_graph.edge_ids) + 1 == len(output_graph.edge_ids), \
+                f"The length of the \"edge_ids\" must be increased exactly by one."
 
-    # [3.] Check that graph is unconnected -----------------------------------------------------------------------------
-    updated_graph_nx = to_networkx(updated_graph, to_undirected=True)
-    assert not nx.is_connected(updated_graph_nx), \
-        f"Since there are no edges drawn, the graph must be unconnected."
+            if input_graph.edge_attr is None:
+                assert output_graph.edge_attr is None, "If the input graph's \"edge_attr\" is None, then after an " \
+                                                       "edge addition should keep the \"edge_attr\" as None."
+            else:
+                assert input_graph.edge_attr.size(dim=0) + 1 == output_graph.edge_attr.size(dim=0), \
+                    f"The rows of the features \"edge_attr\" must be increased exactly by one edge that is added."
+                assert input_graph.edge_attr.size(dim=1) == output_graph.edge_attr.size(dim=1), \
+                    f"The columns of the features \"edge_attr\", should not change"
 
+            # [1.4.3.] Copy and repeat ---------------------------------------------------------------------------------
+            input_graph = output_graph
 
-########################################################################################################################
-# MAIN =================================================================================================================
-########################################################################################################################
-
-# [1.] Graphs dataset that was used in the GNN task --------------------------------------------------------------------
-dataset_names = ["Barabasi-Albert Dataset", "Kirc Dataset"]
-
-
-def simulate_actions(dataset_name):
-    dataset = generate_data_set(dataset_name)
-
-    # [2.] Perform the first task (atm: node classification) with the GNN ----------------------------------------------
-    graph_idx = 0
-    patient_graph = dataset[str(graph_idx)]
-    selected_graph = patient_graph[str(graph_idx)]  # Get the selected graph object. -----------------------------------
-
-    # Add y to Barabasi dataset ----------------------------------------------------------------------------------------
-    if dataset_name == dataset_names[0]:
-        selected_graph.y = torch.from_numpy(np.array([1, 2, 3]))
-
-    # [3.] Make some edge additions ------------------------------------------------------------------------------------
-    add_edges_simulation(selected_graph)
-    add_edges_simulation_invalid(selected_graph)
-
-    # [4.] Remove edges ------------------------------------------------------------------------------------------------
-    remove_edges_simulation(selected_graph)
-    remove_edges_simulation_invalid(selected_graph)
-    remove_edges_simulation_all(selected_graph)
+        # [1.5.] The edge already exist - Expected exception must be thrown --------------------------------------------
+        else:
+            with pytest.raises(ValueError) as excinfo:
+                add_edge(input_graph, edge_index_left, edge_index_right, new_edge_attr)
 
 
-def test_barabasi_simulation():
-    simulate_actions(dataset_names[0])
+"""
+@given(edge_additions_nr=integers(min_value=1, max_value=10))
+@settings(max_examples=10, deadline=None)
+def test_property_remove_edges(edge_additions_nr: int):
+    # Property-based test remove edges
+
+    # :param edge_additions_nr: Number of edges that will be removed
 
 
-def test_kirc_simulation():
-    simulate_actions(dataset_names[1])
+    ####################################################################################################################
+    # [1.] Import graph data and remove the nodes ======================================================================
+    ####################################################################################################################
+    # [1.1.] Transformation Experiment ::: From PPI to Pytorch_Graph ---------------------------------------------------
+    dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
+    dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
+    dataset_len = len(dataset)
+    graph_idx = random.randint(0, dataset_len - 1)
+    input_graph = dataset[graph_idx]
+    input_graph_original = copy.deepcopy(input_graph)
+
+    # [1.2.] Try node addition(s) --------------------------------------------------------------------------------------
+    for node_removal in range(node_removals_nr):
+
+        nodes_nr = input_graph.x.size(dim=0)
+        node_index = random.randint(0, nodes_nr - 1)
+        output_graph = remove_node(input_graph, node_index)
+
+        # [1.3.] Copy and repeat ---------------------------------------------------------------------------------------
+        input_graph = output_graph
+
+    ####################################################################################################################
+    # [2.] Check the properties at the end of the node removals ========================================================
+    ####################################################################################################################
+    # [2.1.] Field "x" of the last graph will have node_removals_nr deleted rows ---------------------------------------
+    print(input_graph_original.x.size(dim=0), node_removals_nr, input_graph.x.size(dim=0))
+    assert input_graph_original.x.size(dim=0) - node_removals_nr == input_graph.x.size(dim=0), \
+        f"The rows of the features \"x\" must be decreased exactly by the number of removed nodes."
+    assert input_graph_original.x.size(dim=1) == input_graph.x.size(dim=1), \
+        f"The columns of the features \"x\", should not change."
+
+    # [2.2.] Unchanged fields of node removal --------------------------------------------------------------------------
+    unchanged_fields_node_remove(input_graph_original, input_graph)
+
+    # [2.3.] "edge_index", "edge_attr", "edge_ids" will probably change ------------------------------------------------
+    assert input_graph_original.edge_index.size(dim=0) == input_graph.edge_index.size(dim=0), \
+        f"The number of \"edge_index\" rows must be equal with the original graph."
+    assert input_graph_original.edge_index.size(dim=1) >= input_graph.edge_index.size(dim=1), \
+        f"The number of edges must necessarily be equal or less with the original graph."
+
+    if input_graph_original.edge_attr is not None:
+        assert input_graph_original.edge_attr.size(dim=0) >= input_graph.edge_attr.size(dim=0), \
+            f"The number of \"edge_attr\" rows must necessarily be equal or less with the original graph."
+        assert input_graph_original.edge_attr.size(dim=1) == input_graph.edge_attr.size(dim=1), \
+            f"The number of \"edge_attr\" columns must be equal with the original graph."
+
+    assert len(input_graph_original.edge_ids) >= len(input_graph.edge_ids), \
+        f"The length of the \"edge_ids\" must necessarily be equal or less with the original graph"
+
+    # [2.4.] "node_labels", "node_ids" change accordingly --------------------------------------------------------------
+    assert len(input_graph_original.node_labels) - node_removals_nr == len(input_graph.node_labels), \
+        f"The length of the \"node_labels\" must be increased exactly by the number of added nodes."
+    assert len(input_graph_original.node_ids) - node_removals_nr == len(input_graph.node_ids), \
+        f"The length of the \"node_ids\" must be increased exactly by the number of added nodes."
+"""

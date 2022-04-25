@@ -22,7 +22,7 @@ from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actio
 
 
 @given(node_additions_nr=integers(min_value=1, max_value=10))
-@settings(max_examples=10)
+@settings(max_examples=10, deadline=None)
 def test_property_add_nodes(node_additions_nr: int):
     """
     Property-based test add nodes
