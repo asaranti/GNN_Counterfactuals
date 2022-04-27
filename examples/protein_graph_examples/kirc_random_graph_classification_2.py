@@ -39,7 +39,7 @@ nodes_nr = input_graph.x.shape[0]
 print(f"Nr. of nodes: {nodes_nr}")
 node_idx = random.randint(0, nodes_nr - 1)
 print(f"Node that will be removed. {input_graph.node_labels[node_idx]}")
-input_graph_update = remove_node(input_graph, node_idx, input_graph.node_labels[node_idx])
+input_graph_update = remove_node(input_graph, node_idx)
 predicted_class = gnn_actions_obj.gnn_predict(input_graph_update)
 print(f"Predicted class: {predicted_class}")
 
@@ -48,22 +48,26 @@ nodes_nr = input_graph_update.x.shape[0]
 print(f"Nr. of nodes: {nodes_nr}")
 node_idx = random.randint(0, nodes_nr - 1)
 print(f"Node that will be removed. {input_graph_update.node_labels[node_idx]}")
-input_graph_update_2 = remove_node(input_graph_update, node_idx, input_graph_update.node_labels[node_idx])
+input_graph_update_2 = remove_node(input_graph_update, node_idx)
 predicted_class = gnn_actions_obj.gnn_predict(input_graph_update_2)
 print(f"Predicted class: {predicted_class}")
 
-# [4.] Explanation -----------------------------------------------------------------------------------------------------
-explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
-explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~~~~~
+# [4.] Re-train --------------------------------------------------------------------------------------------------------
+dataset[graph_idx] = input_graph_update_2   # Update the graph in the list ---------------------------------------------
+gnn_actions_obj.gnn_retrain(dataset)        # Re-train -----------------------------------------------------------------
 
-rel_pos = list(explain_sample(
-        explanation_method,
-        input_graph,
-        explanation_label,
-    ))
-rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
+# [5.] Explanation -----------------------------------------------------------------------------------------------------
+# explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
+# explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~~~
 
-print(rel_pos)
-print(type(rel_pos[0]))
+# rel_pos = list(explain_sample(
+#        explanation_method,
+#        input_graph,
+#        explanation_label,
+#    ))
+# rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
+
+# print(rel_pos)
+# print(type(rel_pos[0]))
 

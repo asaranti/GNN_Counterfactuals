@@ -17,6 +17,7 @@ from torch_geometric.loader import DataLoader
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
+from preprocessing_data.graph_features_normalization import graph_features_normalization
 
 
 class GNN_Actions(torch.nn.Module):
@@ -34,6 +35,10 @@ class GNN_Actions(torch.nn.Module):
         self.proportion_of_training_set = 3/4
         self.train_dataset_shuffled_indexes = None
         self.test_dataset_shuffled_indexes = None
+
+        self.batch_size = 8
+        self.epochs_nr = 20
+
         self.train_set_metrics_dict = None
         self.train_outputs_predictions_dict = None
         self.test_set_metrics_dict = None
@@ -61,9 +66,8 @@ class GNN_Actions(torch.nn.Module):
         self.train_dataset_shuffled_indexes = random_indices[:train_dataset_len]
         self.test_dataset_shuffled_indexes = random_indices[train_dataset_len:]
 
-        batch_size = 8
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
 
         return train_loader, test_loader
 
@@ -109,8 +113,7 @@ class GNN_Actions(torch.nn.Module):
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
 
-        epochs_nr = 20
-        for epoch in range(1, epochs_nr + 1):
+        for epoch in range(1, self.epochs_nr + 1):
             train_model(model, train_loader, optimizer, criterion)
 
         self.train_set_metrics_dict, self.train_outputs_predictions_dict = use_trained_model(model, train_loader)
@@ -198,10 +201,12 @@ class GNN_Actions(torch.nn.Module):
         device = 'cuda:0'
 
         ################################################################################################################
-        # [0.] Preprocessing ===========================================================================================
+        # [0.] Preprocessing - normalization ===========================================================================
         ################################################################################################################
-        
+        normalized_graphs_dataset = graph_features_normalization(input_graphs)
 
+        re_train_loader = DataLoader(normalized_graphs_dataset, batch_size=self.batch_size, shuffle=True)
+        re_test_loader = DataLoader(normalized_graphs_dataset, batch_size=self.batch_size, shuffle=False)
 
         ################################################################################################################
         # [1.] Load the GNN, get the architecture ======================================================================
@@ -217,7 +222,7 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         model_state_dict = model.state_dict()
         input_features_model_nr = model_state_dict["conv1.lin.weight"].size(dim=1)
-        input_features_graph_nr = input_graphs[0].x.size(dim=1)
+        input_features_graph_nr = normalized_graphs_dataset[0].x.size(dim=1)
 
         # [2.1.] If the number of features did not change, then just reset the weights ---------------------------------
         if input_features_model_nr == input_features_graph_nr:
@@ -239,24 +244,16 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [3.] Retrain =================================================================================================
         ################################################################################################################
-        batch_size = 8
-        epochs_nr = 20
-
-        re_train_dataset = DataLoader(input_graphs, batch_size=batch_size, shuffle=False)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
-        for epoch in range(1, epochs_nr + 1):
-            print(f"Epoch: {epoch}")
+        for epoch in range(1, self.epochs_nr + 1):
 
-            train_model(model, re_train_dataset, optimizer, criterion)
+            train_model(model, re_train_loader, optimizer, criterion)
             self.train_set_metrics_dict, self.train_outputs_predictions_dict = \
-                use_trained_model(model, re_train_dataset)
-
-            print(f'Epoch: {epoch:03d}, Tra+in Acc: {self.train_set_metrics_dict["accuracy"]:.4f}')
-            print("-------------------------------------------------------------------------")
+                use_trained_model(model, re_train_loader)
 
         ################################################################################################################
         # [4.] Recompute the new test set metrics after re-train =======================================================
         ################################################################################################################
-        self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, self.test_loader)
+        self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, re_test_loader)
         print(self.test_set_metrics_dict)
