@@ -18,14 +18,12 @@ from operator import itemgetter
 import torch
 from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
-from sklearn.preprocessing import minmax_scale
 
 from actionable.gnn_explanations import explain_sample
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
-from preprocessing_files.format_transformations.format_transformation_random_kirc_to_pytorch import import_random_kirc_data
-from sklearn.preprocessing import StandardScaler
 from plots.graph_explanations_visualization import integrated_gradients_viz
+from preprocessing_data.graph_features_normalization import graph_features_normalization
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = 'cuda:0'
@@ -34,35 +32,25 @@ device = 'cuda:0'
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph =========================================================
 ########################################################################################################################
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
-dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
+input_dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
 ########################################################################################################################
 # [2.] Data Preparation ================================================================================================
 ########################################################################################################################
 
-# [2.1.] Input features preprocessing_files/normalization --------------------------------------------------------------------
-for graph in dataset:
-
-    x_features = graph.x
-    x_features_array = x_features.cpu().detach().numpy()
-
-    # scaler = StandardScaler()
-    # scaler.fit(x_features_array)
-    # x_features_transformed = scaler.transform(x_features_array)
-    x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
-    graph.x = torch.tensor(x_features_transformed)
-    graph.to(device)
+# [2.1.] Input features preprocessing_files/normalization --------------------------------------------------------------
+normalized_graphs_dataset = graph_features_normalization(input_dataset)
 
 # [2.2.] Split training/validation/test set ----------------------------------------------------------------------------
-graph_0 = dataset[0]
+graph_0 = normalized_graphs_dataset[0]
 num_features = graph_0.num_node_features
-graphs_nr = len(dataset)
+graphs_nr = len(normalized_graphs_dataset)
 
 # [2.3.] Shuffle the dataset and keep the list indexes -----------------------------------------------------------------
-x = list(enumerate(dataset))
+x = list(enumerate(normalized_graphs_dataset))
 random.shuffle(x)
 random_indices, graphs_list = zip(*x)
-dataset_random_shuffling = list(itemgetter(*random_indices)(dataset))
+dataset_random_shuffling = list(itemgetter(*random_indices)(normalized_graphs_dataset))
 
 # [2.4.] Split to training and test set --------------------------------------------------------------------------------
 train_dataset_len = int(graphs_nr*3/4)

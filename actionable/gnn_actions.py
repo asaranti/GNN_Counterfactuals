@@ -10,7 +10,6 @@ from operator import itemgetter
 import os
 import random
 
-from sklearn.preprocessing import minmax_scale
 import torch
 from torch_geometric.data.data import Data
 from torch_geometric.loader import DataLoader
@@ -71,7 +70,7 @@ class GNN_Actions(torch.nn.Module):
 
         return train_loader, test_loader
 
-    def gnn_init_train(self, original_dataset: list):
+    def gnn_init_train(self, input_graphs: list):
         """
         Method that implements the first training of the GNN
 
@@ -86,23 +85,16 @@ class GNN_Actions(torch.nn.Module):
         device = 'cuda:0'
 
         # [0.1.] Input features preprocessing_files/normalization ------------------------------------------------------
-        graphs_nr = len(original_dataset)
-
-        for graph in original_dataset:
-            x_features = graph.x
-            x_features_array = x_features.cpu().detach().numpy()
-
-            x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
-            graph.x = torch.tensor(x_features_transformed)
-            graph.to(device)
+        graphs_nr = len(input_graphs)
+        normalized_graphs_dataset = graph_features_normalization(input_graphs)
 
         # [0.2.] Split training/validation/test set --------------------------------------------------------------------
-        graph_0 = original_dataset[0]
+        graph_0 = normalized_graphs_dataset[0]
         num_features = graph_0.num_node_features
 
         # [0.3.] Shuffle the dataset and keep the list indexes ---------------------------------------------------------
         # [0.4.] Split to training and test set ------------------------------------------------------------------------
-        train_loader, test_loader = self.gnn_init_preprocessing(original_dataset)
+        train_loader, test_loader = self.gnn_init_preprocessing(normalized_graphs_dataset)
 
         ################################################################################################################
         # [1.] Graph Classification ====================================================================================
@@ -149,11 +141,6 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [0.] Preprocessing ===========================================================================================
         ################################################################################################################
-        # x_features = input_graph.x
-        # x_features_array = x_features.cpu().detach().numpy()
-
-        # x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
-        # input_graph.x = torch.tensor(x_features_transformed)
         input_graph.to(device)
 
         ################################################################################################################
