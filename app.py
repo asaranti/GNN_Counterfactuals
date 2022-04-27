@@ -29,7 +29,7 @@ from actionable.gnn_explanations import explain_sample
 
 from tests.utils_tests.utils_tests_gnns.jsonification import graph_to_json
 
-from preprocessing.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from preprocessing_files.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
 
 from examples.synthetic_graph_examples.ba_graphs_generator import ba_graphs_gen
 

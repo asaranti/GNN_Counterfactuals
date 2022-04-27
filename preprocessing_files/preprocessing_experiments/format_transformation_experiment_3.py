@@ -13,8 +13,8 @@ import pickle
 import torch
 
 from plots.graph_visualization import graph_visualization_complex, graph_viz
-from preprocessing.format_transformations.format_transformation_random_kirc_to_pytorch import import_random_kirc_data
-from preprocessing.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from preprocessing_files.format_transformations.format_transformation_random_kirc_to_pytorch import import_random_kirc_data
+from preprocessing_files.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
 
 ########################################################################################################################
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph =========================================================

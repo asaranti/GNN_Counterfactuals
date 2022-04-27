@@ -8,8 +8,8 @@
 
 import os
 
-from preprocessing.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
-from preprocessing.format_transformations.format_transformation_ui_to_pytorch import transform_from_ui_to_pytorch
+from preprocessing_files.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from preprocessing_files.format_transformations.format_transformation_ui_to_pytorch import transform_from_ui_to_pytorch
 from examples.synthetic_graph_examples.ba_graphs_generator import ba_graphs_gen
 
 ########################################################################################################################

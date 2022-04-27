@@ -23,7 +23,7 @@ from sklearn.preprocessing import minmax_scale
 from actionable.gnn_explanations import explain_sample
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
-from preprocessing.format_transformations.format_transformation_random_kirc_to_pytorch import import_random_kirc_data
+from preprocessing_files.format_transformations.format_transformation_random_kirc_to_pytorch import import_random_kirc_data
 from sklearn.preprocessing import StandardScaler
 from plots.graph_explanations_visualization import integrated_gradients_viz
 
@@ -40,7 +40,7 @@ dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nod
 # [2.] Data Preparation ================================================================================================
 ########################################################################################################################
 
-# [2.1.] Input features preprocessing/normalization --------------------------------------------------------------------
+# [2.1.] Input features preprocessing_files/normalization --------------------------------------------------------------------
 for graph in dataset:
 
     x_features = graph.x

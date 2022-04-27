@@ -12,7 +12,7 @@ import unittest
 
 from HTMLTestRunner import HTMLTestRunner
 
-from preprocessing.format_transformations.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
+from preprocessing_files.format_transformations.format_transformation_ppi_to_pytorch import transform_from_ppi_to_pytorch
 
 
 class DataConsistency(unittest.TestCase):

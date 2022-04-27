@@ -41,7 +41,7 @@ class GNN_Actions(torch.nn.Module):
 
     def gnn_init_preprocessing(self, original_dataset: list):
         """
-        Method GNN preprocessing: Make the initial split of the dataset and store the indexes of the split
+        Method GNN preprocessing_files: Make the initial split of the dataset and store the indexes of the split
 
         :param original_dataset: Original dataset - List of graphs
         """
@@ -81,7 +81,7 @@ class GNN_Actions(torch.nn.Module):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         device = 'cuda:0'
 
-        # [0.1.] Input features preprocessing/normalization ------------------------------------------------------------
+        # [0.1.] Input features preprocessing_files/normalization ------------------------------------------------------
         graphs_nr = len(original_dataset)
 
         for graph in original_dataset:
@@ -142,7 +142,6 @@ class GNN_Actions(torch.nn.Module):
 
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         device = 'cuda:0'
-        # device = 'cpu'
 
         ################################################################################################################
         # [0.] Preprocessing ===========================================================================================
@@ -195,12 +194,21 @@ class GNN_Actions(torch.nn.Module):
         [3.] Apply the predict function on the GNN
         """
 
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        device = 'cuda:0'
+
+        ################################################################################################################
+        # [0.] Preprocessing ===========================================================================================
+        ################################################################################################################
+        
+
+
         ################################################################################################################
         # [1.] Load the GNN, get the architecture ======================================================================
         ################################################################################################################
         gnn_storage_folder = os.path.join("data", "output", "gnns")
         gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-        model = torch.load(gnn_model_file_path)
+        model = torch.load(gnn_model_file_path).to(device)
         model.eval()
 
         ################################################################################################################
@@ -226,7 +234,7 @@ class GNN_Actions(torch.nn.Module):
             hidden_channels = model_state_dict["conv1.lin.weight"].size(dim=0)
             model = GCN(num_node_features=input_features_graph_nr,
                         hidden_channels=hidden_channels,
-                        num_classes=num_classes)
+                        num_classes=num_classes).to(device)
 
         ################################################################################################################
         # [3.] Retrain =================================================================================================
@@ -236,7 +244,7 @@ class GNN_Actions(torch.nn.Module):
 
         re_train_dataset = DataLoader(input_graphs, batch_size=batch_size, shuffle=False)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss().to(device)
         for epoch in range(1, epochs_nr + 1):
             print(f"Epoch: {epoch}")
 
