@@ -5,6 +5,7 @@ pandas==1.4.2
 Flask
 apscheduler
 bokeh
+ogb
 pytest==7.1.1
 html-testRunner==1.2.1
 # conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch

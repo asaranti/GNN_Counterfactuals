@@ -73,3 +73,25 @@ def graph_viz(graph_data: torch_geometric.data.data.Data, graph_idx: int):
     fig.savefig(os.path.join(output_data_path,  f"graph_{graph_idx}.png"))
 
     plt.close()
+
+
+def graph_viz_general(graph_data: torch_geometric.data.data.Data):
+    """
+    The most general graph visualisation with matplotlib
+
+    :param graph_data: Graph data
+    """
+
+    graph_viz = torch_geometric.utils.to_networkx(graph_data, to_undirected=True)
+
+    fig = plt.figure(figsize=(12, 12))
+    plt.xticks([])
+    plt.yticks([])
+    nx.draw_networkx(
+        graph_viz,
+        with_labels=True,
+    )
+    plt.show()
+
+    plt.close()
+    
