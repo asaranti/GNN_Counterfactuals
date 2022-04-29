@@ -35,13 +35,18 @@ dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'synthetic_pytor
 gnn_actions_obj = GNN_Actions()
 performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 
-########################################################################################################################
-# [3.] Get some patient info -------------------------------------------------------------------------------------------
-########################################################################################################################
+print(performance_values_dict)
+
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len - 1)  # Pick a random graph from the dataset ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 input_graph = dataset[graph_idx]
 
+print(input_graph.edge_index)
+
+"""
+########################################################################################################################
+# [3.] Get some patient info -------------------------------------------------------------------------------------------
+########################################################################################################################
 ground_truth_label = str(input_graph.y.cpu().detach().numpy()[0])
 
 # Check if it is in the training or test dataset -----------------------------------------------------------------------
@@ -87,4 +92,4 @@ output_data_path = os.path.join(os.path.join("data", "output", "Synthetic", "plo
 
 integrated_gradients_viz(input_graph, graph_idx, rel_pos, input_graph.node_labels, ground_truth_label,
                          int(predicted_class), explanation_label, output_data_path)
-"""
+

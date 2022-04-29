@@ -108,6 +108,13 @@ class GNN_Actions(torch.nn.Module):
         # [0.1.] Input features preprocessing_files/normalization ------------------------------------------------------
         graphs_nr = len(input_graphs)
         normalized_graphs_dataset = graph_features_normalization(input_graphs)
+        # for graph in input_graphs:
+
+        #    x_features_array = graph.x.cpu().detach().numpy()
+        #    graph.x = torch.tensor(x_features_array).to(dtype=torch.float32)    # float32 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        #    graph.to(device)
+        # normalized_graphs_dataset = input_graphs
 
         # [0.2.] Split training/validation/test set --------------------------------------------------------------------
         graph_0 = normalized_graphs_dataset[0]
@@ -265,6 +272,5 @@ class GNN_Actions(torch.nn.Module):
         # [4.] Recompute the new test set metrics after re-train =======================================================
         ################################################################################################################
         self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, re_test_loader)
-        print(self.test_set_metrics_dict)
 
         return self.test_set_metrics_dict

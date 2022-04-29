@@ -501,9 +501,11 @@ def init_gnn(token):
     Save GNN and performance scores in global variables
     """
 
-    # [1.] Import the input dataset ------------------------------------------------------------------------------------
-    dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
-    dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
+    # [1.] Get patient id to get the dataset that will be used in init -------------------------------------------------
+    req_data = request.get_json()
+    patient_id = req_data["patient_id"]
+
+    dataset = user_graph_data[str(token)][str(patient_id)]
 
     # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
     test_set_metrics_dict = gnn_actions_obj.gnn_init_train(dataset)

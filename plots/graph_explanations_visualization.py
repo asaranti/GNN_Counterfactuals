@@ -85,12 +85,15 @@ def integrated_gradients_viz(graph_data: torch_geometric.data.data.Data,
             nodes_y_coors,
             line_width=2,
             color='red',
-            alpha=relevance_of_line
+            alpha=float(relevance_of_line)
         )
         p_lines_all.append(p_line)
 
     edge_hover_tool = HoverTool(tooltips="alpha: @alpha", renderers=p_lines_all, mode="mouse")
-    p_figure.add_tools(node_hover_tool, edge_hover_tool, BoxZoomTool(), ResetTool())
+    p_figure.add_tools(node_hover_tool,
+                       # edge_hover_tool,
+                       BoxZoomTool(),
+                       ResetTool())
 
     # [5.] Transform the network for HTML output -----------------------------------------------------------------------
     output_file(os.path.join(output_data_path, f"integrated_gradients_graph_{graph_idx}"
