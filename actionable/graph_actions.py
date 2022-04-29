@@ -141,7 +141,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     # [2.] All edges in which the node participates need to be deleted. ------------------------------------------------
     #      The corresponding pairs in the "edge_index" need to be removed. ---------------------------------------------
     #      This part is also done via the UI. --------------------------------------------------------------------------
-    input_graph_edge_index = input_graph.cpu().detach().edge_index.numpy()
+    input_graph_edge_index = input_graph.edge_index.cpu().detach().numpy()
 
     output_graph_edge_index = copy.deepcopy(input_graph.edge_index)
     output_graph_edge_attr = copy.deepcopy(input_graph.edge_attr)

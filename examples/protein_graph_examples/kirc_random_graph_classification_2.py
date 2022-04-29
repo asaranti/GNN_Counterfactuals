@@ -54,7 +54,7 @@ print(f"Predicted class: {predicted_class}")
 
 # [4.] Re-train --------------------------------------------------------------------------------------------------------
 dataset[graph_idx] = input_graph_update_2   # Update the graph in the list ---------------------------------------------
-gnn_actions_obj.gnn_retrain(dataset)        # Re-train -----------------------------------------------------------------
+test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset)    # Re-train ---------------------------------------------
 
 # [5.] Explanation -----------------------------------------------------------------------------------------------------
 # explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

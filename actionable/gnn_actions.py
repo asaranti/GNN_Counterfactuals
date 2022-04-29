@@ -9,7 +9,9 @@
 from operator import itemgetter
 import os
 import random
+import re
 
+import numpy as np
 import torch
 from torch_geometric.data.data import Data
 from torch_geometric.loader import DataLoader
@@ -43,6 +45,25 @@ class GNN_Actions(torch.nn.Module):
         self.test_set_metrics_dict = None
         self.test_outputs_predictions_dict = None
 
+    def is_in_training_set(self, graph_id) -> bool:
+        """
+        Check if the graph is in the training or test set
+
+        :param graph_id: Id of graph
+
+        :return: Boolean value indicating if this graph is in the training set
+        """
+
+        b_is_in_train = True
+
+        graph_numbering_ids = re.findall('[0-9]+', graph_id)
+        graph_nr_in_dataset = graph_numbering_ids[0]
+
+        if graph_nr_in_dataset in self.test_dataset_shuffled_indexes:
+            b_is_in_train = False
+
+        return b_is_in_train
+
     def gnn_init_preprocessing(self, original_dataset: list):
         """
         Method GNN preprocessing_files: Make the initial split of the dataset and store the indexes of the split
@@ -70,11 +91,11 @@ class GNN_Actions(torch.nn.Module):
 
         return train_loader, test_loader
 
-    def gnn_init_train(self, input_graphs: list):
+    def gnn_init_train(self, input_graphs: list) -> dict:
         """
         Method that implements the first training of the GNN
 
-        :param original_dataset: Original dataset - List of graphs
+        :param input_graphs: Original dataset - List of graphs
         """
 
         ################################################################################################################
@@ -100,7 +121,7 @@ class GNN_Actions(torch.nn.Module):
         # [1.] Graph Classification ====================================================================================
         ################################################################################################################
         num_classes = 2
-        model = GCN(num_node_features=num_features, hidden_channels=200, num_classes=num_classes).to(device)
+        model = GCN(num_node_features=num_features, hidden_channels=20, num_classes=num_classes).to(device)
         print(model)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
@@ -121,7 +142,7 @@ class GNN_Actions(torch.nn.Module):
 
         return self.test_set_metrics_dict
 
-    def gnn_predict(self, input_graph: Data) -> str:
+    def gnn_predict(self, input_graph: Data) -> tuple:
         """
         GNN predict function.
 
@@ -168,13 +189,14 @@ class GNN_Actions(torch.nn.Module):
         testing_graph_loader = DataLoader(testing_graph_list, batch_size=1, shuffle=False)
 
         for data in testing_graph_loader:
-            output_of_testing = model(data.x, data.edge_index, data.batch)
-            prediction_of_testing = output_of_testing.argmax(dim=1)
+            output_of_testing = model(data.x, data.edge_index, data.batch).cpu().detach().numpy()[0]
 
-        prediction_of_input_graph = str(prediction_of_testing.cpu().detach().numpy()[0])
-        return prediction_of_input_graph
+            prediction_label_of_testing = np.argmax(output_of_testing)
+            prediction_confidence_of_testing = np.amax(output_of_testing)
 
-    def gnn_retrain(self, input_graphs: list):
+        return str(prediction_label_of_testing), str(round(prediction_confidence_of_testing, 2))
+
+    def gnn_retrain(self, input_graphs: list) -> dict:
         """
         GNN retrain function
 
@@ -244,3 +266,5 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, re_test_loader)
         print(self.test_set_metrics_dict)
+
+        return self.test_set_metrics_dict

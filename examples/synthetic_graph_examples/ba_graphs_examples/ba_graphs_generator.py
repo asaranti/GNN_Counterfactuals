@@ -12,7 +12,7 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.utils.random import barabasi_albert_graph
 
-from examples.synthetic_graph_examples.synthetic_graph_utils import remove_duplicate_edges
+from examples.synthetic_graph_examples.ba_graphs_examples.synthetic_graph_utils import remove_duplicate_edges
 
 
 def ba_graphs_gen(graphs_nr: int, nodes_nr: int, edges_per_node_nr: int, node_features_nr: int, edge_features_nr: int) \

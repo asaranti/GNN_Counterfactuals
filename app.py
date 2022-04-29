@@ -31,7 +31,7 @@ from tests.utils_tests.utils_tests_gnns.jsonification import graph_to_json
 
 from preprocessing_files.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
 
-from examples.synthetic_graph_examples.ba_graphs_generator import ba_graphs_gen
+from examples.synthetic_graph_examples.ba_graphs_examples.ba_graphs_generator import ba_graphs_gen
 
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -96,14 +96,17 @@ def patient_name(token):
     graph_data = {}
 
     # get patient ids corresponding to dataset
-    if dataset_name == "Barabasi-Albert Dataset":
-        # get list of all graphs in pytorch format
+    if dataset_name == "Barabasi-Albert Dataset":       # get list of all graphs in pytorch format
         graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
 
-    elif dataset_name == "Kirc Dataset":
-        # get list of all graphs in pytorch format
+    elif dataset_name == "Kirc Dataset":                # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
+            graphs_list = pickle.load(f)
+
+    elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
+        dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_ui")
+        with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
 
     # turn list into dictionary format
@@ -122,8 +125,8 @@ def patient_name(token):
         graph_id = graph_id_comp_array[3]
 
         # 2.3. Reformat ndarrays to lists, according to graph_constraints ----------------------------------------------
-        graph.node_labels = graph.node_labels.tolist()
-        graph.node_ids = graph.node_ids.tolist()
+        graph.node_labels = graph.node_labels
+        graph.node_ids = graph.node_ids
 
         patient_dict = {graph_id: graph}
         graph_data[patient_id] = patient_dict
@@ -336,8 +339,6 @@ def nn_predict(token):
 
     # Get patient id and graph id --------------------------------------------------------------------------------------
     req_data = request.get_json()
-
-    # graph and patient id ---------------------------------------------------------------------------------------------
     patient_id = req_data["patient_id"]
     graph_id = req_data["graph_id"]
 
@@ -347,7 +348,7 @@ def nn_predict(token):
 
     # predicted class --------------------------------------------------------------------------------------------------
     input_graph.x = input_graph.x.to(dtype=torch.float32)
-    predicted_class = gnn_actions_obj.gnn_predict(input_graph)
+    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph)
 
     return "done"
 
@@ -358,18 +359,32 @@ def nn_predict(token):
 @app.route('/<uuid:token>/nn_retrain', methods=['POST'])
 def nn_retrain(token):
     """
-    Apply a new retrain with the current graphs dataset
+    GNN needs to be retrained on the latest graphs of every patient
+    Performance values need to be saved in "perf_values" variable
 
     :return:
-
-    TODO: GNN needs to be retrained on the latest graphs of every patient
-    TODO: Performance values need to be saved in "perf_values" variable
     """
 
+    # [1.] Get patient id to get the dataset that will be used in retrain ----------------------------------------------
+    req_data = request.get_json()
+    patient_id = req_data["patient_id"]
 
-    # these are placeholder values
-    perf_values = [20, 5, 0, 30, 31.41, 27.18]  # [tn, fp, fn, tp, sens, spec]
+    dataset = user_graph_data[str(token)][str(patient_id)]
 
+    # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
+    test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset)
+
+    # [3.] -------------------------------------------------------------------------------------------------------------
+    # save performance values in global variable
+    global perf_values
+
+    # ----------- [tn, fp, fn, tp, sens, spec] -------------------------------------------------------------------------
+    perf_values = [test_set_metrics_dict["true_negatives"],
+                   test_set_metrics_dict["false_positives"],
+                   test_set_metrics_dict["false_negatives"],
+                   test_set_metrics_dict["true_positives"],
+                   test_set_metrics_dict["sensitivity"],
+                   test_set_metrics_dict["specificity"]]
     return "done"
 
 
@@ -539,6 +554,7 @@ def node_importance(token):
 
     return json.dumps([node_ids, rel_pos, rel_pos_neg])
 
+
 ########################################################################################################################
 # [17.] Get Edge importances ===========================================================================================
 ########################################################################################################################
@@ -552,6 +568,7 @@ def edge_importance(token):
     # graph and patient id ---------------------------------------------------------------------------------------------
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
+    method = request.args.get("method")
 
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
@@ -561,7 +578,11 @@ def edge_importance(token):
     edge_ids = list(input_graph.edge_ids)
 
     # Explanation ------------------------------------------------------------------------------------------------------
-    explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if method == "saliency":
+        explanation_method = 'saliency'
+    elif method == "ig":
+        explanation_method = 'ig'
+
     ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
     explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~
 
@@ -570,6 +591,7 @@ def edge_importance(token):
         input_graph,
         explanation_label,
     ))
+
     rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
 
     return json.dumps([edge_ids, rel_pos])
@@ -581,24 +603,33 @@ def edge_importance(token):
 @app.route('/<uuid:token>/patients', methods=['GET'])
 def patient_information(token):
     """
-    Calculate edge importance for patient graph
-    return: list of importances and corresponding edge ids
+    Get the following information of the Patient:
 
-    TODO: Get the following information of the Patient:
-          1. Is he in Train or Test Data
-          2. Ground truth label
-          3. Predicted label
+    [1.] Is he in Train or Test Data
+    [2.] Ground truth label
+    [3.] Predicted label
+    [4.] Prediction confidence
     """
 
     # graph and patient id ---------------------------------------------------------------------------------------------
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
 
-    dataset = "Train Data"
-    ground_truth_label = "1"
-    predicted_label = "0"
+    # Ground truth label is already stored -----------------------------------------------------------------------------
+    current_graph = user_graph_data[str(token)][patient_id][graph_id]
+    ground_truth_label = str(current_graph.y.cpu().detach().numpy()[0])
 
-    return json.dumps([dataset, ground_truth_label, predicted_label])
+    # Check if it is in the training or test dataset -------------------------------------------------------------------
+    current_graph_id = current_graph.graph_id
+    b_is_in_train = gnn_actions_obj.is_in_training_set(current_graph_id)
+    which_dataset = "Test Data"
+    if b_is_in_train:
+        which_dataset = "Training Data"
+
+    # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
+    predicted_label, prediction_confidence = gnn_actions_obj.gnn_predict(current_graph)
+
+    return json.dumps([which_dataset, ground_truth_label, predicted_label, prediction_confidence])
 
 
 ### Don't know if needed
@@ -613,6 +644,7 @@ def backup():
 
     :return:
     """
+
 
 ########################################################################################################################
 # [5.] Add feature to all nodes ========================================================================================

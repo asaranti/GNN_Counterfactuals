@@ -14,7 +14,7 @@ import random
 import numpy as np
 import torch
 
-from examples.synthetic_graph_examples.ba_graphs_generator import ba_graphs_gen
+from examples.synthetic_graph_examples.ba_graphs_examples.ba_graphs_generator import ba_graphs_gen
 
 ########################################################################################################################
 # [1.] BA graphs generation ============================================================================================

@@ -91,7 +91,7 @@ def explain_sample(method: str, input_graph: Data, target_label: int) -> list:
     Explain input sample
 
     :param method: Explanation method
-    :param data: Input data
+    :param input_graph: Input data
     :param target_label: Target label
 
     :return: List of edge relevances
@@ -106,15 +106,7 @@ def explain_sample(method: str, input_graph: Data, target_label: int) -> list:
     model = torch.load(gnn_model_file_path)
     model.eval()
 
-    # [1.] Preprocessing ===============================================================================================
-    x_features = input_graph.x
-    x_features_array = x_features.cpu().detach().numpy()
-
-    x_features_transformed = minmax_scale(x_features_array, feature_range=(0, 1))
-    input_graph.x = torch.tensor(x_features_transformed)
-    input_graph.to(device)
-
-    # [2.] Edge mask ---------------------------------------------------------------------------------------------------
+    # [1.] Edge mask ---------------------------------------------------------------------------------------------------
     edge_mask = explain(method, model, input_graph, device, target_label)
 
     return edge_mask
