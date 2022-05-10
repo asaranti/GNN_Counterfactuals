@@ -32,6 +32,7 @@ from tests.utils_tests.utils_tests_gnns.jsonification import graph_to_json
 from preprocessing_files.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
 
 from examples.synthetic_graph_examples.ba_graphs_examples.ba_graphs_generator import ba_graphs_gen
+from utils.dataset_utilities import keep_only_last_graph_dataset
 
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -367,15 +368,16 @@ def nn_retrain(token):
 
     # [1.] Get patient id to get the dataset that will be used in retrain ----------------------------------------------
     req_data = request.get_json()
-    patient_id = req_data["patient_id"]
 
-    dataset = user_graph_data[str(token)][str(patient_id)]
+    dataset = user_graph_data[str(token)]
 
-    # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
+    # [2.] Keep only the last graph in the dataset ---------------------------------------------------------------------
+    dataset = keep_only_last_graph_dataset(dataset)
+
+    # [3.] Retrain the GNN ---------------------------------------------------------------------------------------------
     test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset)
 
-    # [3.] -------------------------------------------------------------------------------------------------------------
-    # save performance values in global variable
+    # [4.] Save performance values in global variable ------------------------------------------------------------------
     global perf_values
 
     # ----------- [tn, fp, fn, tp, sens, spec] -------------------------------------------------------------------------

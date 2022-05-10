@@ -6,6 +6,7 @@
     :date: 2022-03-25
 """
 
+import copy
 import os
 import pickle
 import random
@@ -18,12 +19,17 @@ from actionable.gnn_actions import GNN_Actions
 from actionable.gnn_explanations import explain_sample
 from actionable.graph_actions import add_node, remove_node, remove_edge
 
+from utils.dataset_utilities import keep_only_last_graph_dataset
+
+# [0.] =================================================================================================================
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = 'cuda:0'
 
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph ---------------------------------------------------------
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
+print(f"==================> Length of dataset: {len(dataset)}")
 
 # [2.] Train the GNN for the first time --------------------------------------------------------------------------------
 gnn_actions_obj = GNN_Actions()
@@ -52,9 +58,19 @@ input_graph_update_2 = remove_node(input_graph_update, node_idx)
 predicted_class = gnn_actions_obj.gnn_predict(input_graph_update_2)
 print(f"Predicted class: {predicted_class}")
 
+print(input_graph_update_2)
+
 # [4.] Re-train --------------------------------------------------------------------------------------------------------
-dataset[graph_idx] = input_graph_update_2   # Update the graph in the list ---------------------------------------------
-test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset)    # Re-train ---------------------------------------------
+input_graph_update_2_new_id = copy.deepcopy(input_graph_update_2)
+input_graph_update_2_new_id.graph_id = f"graph_id_{graph_idx}_10"
+zero_graph_new_id = copy.deepcopy(dataset[0])
+zero_graph_new_id.graph_id = f"graph_id_0_5"
+dataset.append(zero_graph_new_id)
+dataset.append(input_graph_update_2_new_id)
+print(f"=================> Length of dataset: {len(dataset)}")
+output_dataset = keep_only_last_graph_dataset(dataset)
+print(f"=================> Length of dataset: {len(output_dataset)}")
+test_set_metrics_dict = gnn_actions_obj.gnn_retrain(output_dataset)    # Re-train --------------------------------------
 
 # [5.] Explanation -----------------------------------------------------------------------------------------------------
 # explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
