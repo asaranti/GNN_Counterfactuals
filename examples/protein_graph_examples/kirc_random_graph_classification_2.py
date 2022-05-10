@@ -19,7 +19,7 @@ from actionable.gnn_actions import GNN_Actions
 from actionable.gnn_explanations import explain_sample
 from actionable.graph_actions import add_node, remove_node, remove_edge
 
-from utils.dataset_utilities import keep_only_last_graph_dataset
+from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_last_graph_dataset
 
 # [0.] =================================================================================================================
 
@@ -68,7 +68,7 @@ zero_graph_new_id.graph_id = f"graph_id_0_5"
 dataset.append(zero_graph_new_id)
 dataset.append(input_graph_update_2_new_id)
 print(f"=================> Length of dataset: {len(dataset)}")
-output_dataset = keep_only_last_graph_dataset(dataset)
+output_dataset = keep_only_first_graph_dataset(dataset)
 print(f"=================> Length of dataset: {len(output_dataset)}")
 test_set_metrics_dict = gnn_actions_obj.gnn_retrain(output_dataset)    # Re-train --------------------------------------
 
