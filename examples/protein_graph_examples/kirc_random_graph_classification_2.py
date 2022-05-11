@@ -22,10 +22,16 @@ from actionable.graph_actions import add_node, remove_node, remove_edge
 from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_last_graph_dataset
 
 # [0.] =================================================================================================================
-
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = 'cuda:0'
 
+dataset_from_ui_folder = os.path.join("data", "input", "KIRC_RANDOM", "kirc_random_dict_from_ui")
+dataset_1 = pickle.load(open(os.path.join(dataset_from_ui_folder, 'kirc_pytorch_dictionary.pkl'), "rb"))
+
+dataset_2 = keep_only_first_graph_dataset(dataset_1)
+# print(dataset_2)
+
+"""
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph ---------------------------------------------------------
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
@@ -86,4 +92,4 @@ test_set_metrics_dict = gnn_actions_obj.gnn_retrain(output_dataset)    # Re-trai
 
 # print(rel_pos)
 # print(type(rel_pos[0]))
-
+"""

@@ -9,37 +9,27 @@
 import re
 
 
-def keep_only_first_graph_dataset(input_dataset: list) -> list:
+def keep_only_first_graph_dataset(input_dataset: dict) -> list:
     """
-    Since the graph_id counter is increased each time before a predict or retrain,
+    Since the "graph_id" counter is increased each time before a predict or retrain,
     several "versions" of the graph can be contained in the dataset. Return the dataset
     that only contains the first "version" of each graph.
 
-    :param input_dataset: Input dataset
-    :returns: Output dataset
+    :param input_dataset: Input dataset in the form of dictionary
+    :returns: Output dataset in the form of list that is going to be used for training or retraining
     """
 
     # [1.] Dictionary with keys the number of graph, and value the graph itself ----------------------------------------
     output_dataset_dict = {}
 
-    for input_graph in input_dataset:   # Iterate over all graphs ------------------------------------------------------
+    for input_graph_nr_in_dataset in input_dataset:   # [2.] Iterate over all graphs -----------------------------------
 
-        input_graph_numbering_ids = re.findall('[0-9]+', input_graph.graph_id)
-        input_graph_nr_in_dataset = input_graph_numbering_ids[0]
-        input_graph_cnt_in_dataset = input_graph_numbering_ids[1]
+        patient_graph_versions = input_dataset[input_graph_nr_in_dataset]
+        patient_graph_versions_counters = [int(x) for x in list(patient_graph_versions.keys())]
 
-        # [2.] If the graph number is already in the keys of the dictionary, then check the counter --------------------
-        if input_graph_nr_in_dataset in output_dataset_dict:
-            graph_already_in_dict = output_dataset_dict[input_graph_nr_in_dataset]
-            already_graph_cnt_in_dataset = re.findall('[0-9]+', graph_already_in_dict.graph_id)[1]
-
-            if already_graph_cnt_in_dataset > input_graph_cnt_in_dataset:   # The current counter is higher than the
-                # present one in the dictionary - update the graph -----------------------------------------------------
-
-                output_dataset_dict[input_graph_nr_in_dataset] = input_graph
-        # [3.] First time that one sees the graph with this number -----------------------------------------------------
-        else:
-            output_dataset_dict[input_graph_nr_in_dataset] = input_graph
+        # [3.] Get the min - works also in the case where there is only one element ------------------------------------
+        first_graph_cnt = min(patient_graph_versions_counters)
+        output_dataset_dict[input_graph_nr_in_dataset] = patient_graph_versions[str(first_graph_cnt)]
 
     # [4.] Return the values as list -----------------------------------------------------------------------------------
     output_dataset = list(output_dataset_dict.values())
@@ -47,36 +37,27 @@ def keep_only_first_graph_dataset(input_dataset: list) -> list:
     return output_dataset
 
 
-def keep_only_last_graph_dataset(input_dataset: list) -> list:
+def keep_only_last_graph_dataset(input_dataset: dict) -> list:
     """
     Since the graph_id counter is increased each time before a predict or retrain,
     several "versions" of the graph can be contained in the dataset. Return the dataset
     that only contains the last "version" of each graph.
 
-    :param input_dataset: Input dataset
-    :returns: Output dataset
+    :param input_dataset: Input dataset in the form of dictionary
+    :returns: Output dataset in the form of list that is going to be used for training or retraining
     """
 
     # [1.] Dictionary with keys the number of graph, and value the graph itself ----------------------------------------
     output_dataset_dict = {}
 
-    for input_graph in input_dataset:   # Iterate over all graphs ------------------------------------------------------
+    for input_graph_nr_in_dataset in input_dataset:  # [2.] Iterate over all graphs -----------------------------------
 
-        input_graph_numbering_ids = re.findall('[0-9]+', input_graph.graph_id)
-        input_graph_nr_in_dataset = input_graph_numbering_ids[0]
-        input_graph_cnt_in_dataset = input_graph_numbering_ids[1]
+        patient_graph_versions = input_dataset[input_graph_nr_in_dataset]
+        patient_graph_versions_counters = [int(x) for x in list(patient_graph_versions.keys())]
 
-        # [2.] If the graph number is already in the keys of the dictionary, then check the counter --------------------
-        if input_graph_nr_in_dataset in output_dataset_dict:
-            graph_already_in_dict = output_dataset_dict[input_graph_nr_in_dataset]
-            already_graph_cnt_in_dataset = re.findall('[0-9]+', graph_already_in_dict.graph_id)[1]
-            if already_graph_cnt_in_dataset < input_graph_cnt_in_dataset:   # The current counter is higher than the
-                # present one in the dictionary - update the graph -----------------------------------------------------
-
-                output_dataset_dict[input_graph_nr_in_dataset] = input_graph
-        # [3.] First time that one sees the graph with this number -----------------------------------------------------
-        else:
-            output_dataset_dict[input_graph_nr_in_dataset] = input_graph
+        # [3.] Get the min - works also in the case where there is only one element ------------------------------------
+        first_graph_cnt = max(patient_graph_versions_counters)
+        output_dataset_dict[input_graph_nr_in_dataset] = patient_graph_versions[str(first_graph_cnt)]
 
     # [4.] Return the values as list -----------------------------------------------------------------------------------
     output_dataset = list(output_dataset_dict.values())

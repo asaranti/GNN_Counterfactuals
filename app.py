@@ -507,7 +507,8 @@ def init_gnn(token):
     req_data = request.get_json()
     patient_id = req_data["patient_id"]
 
-    dataset = user_graph_data[str(token)][str(patient_id)]
+    dataset = user_graph_data[str(token)]
+    dataset = keep_only_first_graph_dataset(dataset)
 
     # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
     test_set_metrics_dict = gnn_actions_obj.gnn_init_train(dataset)
