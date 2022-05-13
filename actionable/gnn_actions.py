@@ -221,8 +221,12 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         normalized_graphs_dataset = graph_features_normalization(input_graphs)
 
-        re_train_loader = DataLoader(normalized_graphs_dataset, batch_size=self.batch_size, shuffle=True)
-        re_test_loader = DataLoader(normalized_graphs_dataset, batch_size=self.batch_size, shuffle=False)
+        train_normalized_graphs_dataset = [normalized_graphs_dataset[idx]
+                                           for idx in self.train_dataset_shuffled_indexes]
+        test_normalized_graphs_dataset = [normalized_graphs_dataset[idx] for idx in self.test_dataset_shuffled_indexes]
+
+        re_train_loader = DataLoader(train_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=True)
+        re_test_loader = DataLoader(test_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=False)
 
         ################################################################################################################
         # [1.] Load the GNN, get the architecture ======================================================================
