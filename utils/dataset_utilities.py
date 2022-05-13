@@ -6,8 +6,6 @@
     :date: 2022-05-10
 """
 
-import re
-
 
 def keep_only_first_graph_dataset(input_dataset: dict) -> list:
     """
@@ -56,8 +54,8 @@ def keep_only_last_graph_dataset(input_dataset: dict) -> list:
         patient_graph_versions_counters = [int(x) for x in list(patient_graph_versions.keys())]
 
         # [3.] Get the min - works also in the case where there is only one element ------------------------------------
-        first_graph_cnt = max(patient_graph_versions_counters)
-        output_dataset_dict[input_graph_nr_in_dataset] = patient_graph_versions[str(first_graph_cnt)]
+        last_graph_cnt = max(patient_graph_versions_counters)
+        output_dataset_dict[input_graph_nr_in_dataset] = patient_graph_versions[str(last_graph_cnt)]
 
     # [4.] Return the values as list -----------------------------------------------------------------------------------
     output_dataset = list(output_dataset_dict.values())

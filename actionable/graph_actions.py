@@ -68,6 +68,14 @@ def add_node(input_graph: torch_geometric.data.data.Data,
     output_pos = input_graph.pos
 
     ####################################################################################################################
+    # [3.] Take over the attribute labels of the edges, if they exist --------------------------------------------------
+    ####################################################################################################################
+    if hasattr(input_graph, 'edge_attr_labels'):
+        output_graph_edge_attr_labels = input_graph.edge_attr_labels
+    else:
+        output_graph_edge_attr_labels = None
+
+    ####################################################################################################################
     # [3.] Output graph ================================================================================================
     ####################################################################################################################
     output_graph_node_ids = copy.deepcopy(input_graph.node_ids)
@@ -83,7 +91,7 @@ def add_node(input_graph: torch_geometric.data.data.Data,
                         node_ids=output_graph_node_ids,
                         node_feature_labels=input_graph.node_feature_labels,
                         edge_ids=input_graph.edge_ids,
-                        edge_attr_labels=input_graph.edge_attr_labels,
+                        edge_attr_labels=output_graph_edge_attr_labels,
                         pos=output_pos,
                         graph_id=input_graph.graph_id
                         )
@@ -201,7 +209,13 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     # [7.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
 
-    # [8.] Output graph ------------------------------------------------------------------------------------------------
+    # [8.] Take over the attribute labels of the edges, if they exist --------------------------------------------------
+    if hasattr(input_graph, 'edge_attr_labels'):
+        output_graph_edge_attr_labels = input_graph.edge_attr_labels
+    else:
+        output_graph_edge_attr_labels = None
+
+    # [9.] Output graph ------------------------------------------------------------------------------------------------
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=output_graph_edge_index,
                         edge_attr=output_graph_edge_attr,
@@ -210,7 +224,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
                         node_ids=output_graph_node_ids,
                         node_feature_labels=input_graph.node_feature_labels,
                         edge_ids=output_graph_edge_ids,
-                        edge_attr_labels=input_graph.edge_attr_labels,
+                        edge_attr_labels=output_graph_edge_attr_labels,
                         pos=output_pos,
                         graph_id=input_graph.graph_id,
                         )
@@ -302,7 +316,13 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
     # [3.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
 
-    # [4.] Output graph ------------------------------------------------------------------------------------------------
+    # [4.] Take over the attribute labels of the edges, if they exist --------------------------------------------------
+    if hasattr(input_graph, 'edge_attr_labels'):
+        output_graph_edge_attr_labels = input_graph.edge_attr_labels
+    else:
+        output_graph_edge_attr_labels = None
+
+    # [5.] Output graph ------------------------------------------------------------------------------------------------
     output_graph = Data(x=input_graph.x,
                         edge_index=output_graph_edge_index,
                         edge_attr=output_graph_edge_attr,
@@ -311,7 +331,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
                         node_ids=input_graph.node_ids,
                         node_feature_labels=input_graph.node_feature_labels,
                         edge_ids=output_graph_edge_ids,
-                        edge_attr_labels=input_graph.edge_attr_labels,
+                        edge_attr_labels=output_graph_edge_attr_labels,
                         pos=output_pos,
                         graph_id=input_graph.graph_id
                         )
@@ -387,7 +407,13 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
     # [3.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
 
-    # [4.] Output graph ------------------------------------------------------------------------------------------------
+    # [4.] Take over the attribute labels of the edges, if they exist --------------------------------------------------
+    if hasattr(input_graph, 'edge_attr_labels'):
+        output_graph_edge_attr_labels = input_graph.edge_attr_labels
+    else:
+        output_graph_edge_attr_labels = None
+
+    # [5.] Output graph ------------------------------------------------------------------------------------------------
     output_graph = Data(x=input_graph.x,
                         edge_index=output_graph_edge_index,
                         edge_attr=output_graph_edge_attr,
@@ -396,7 +422,7 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
                         node_ids=input_graph.node_ids,
                         node_feature_labels=input_graph.node_feature_labels,
                         edge_ids=output_graph_edge_ids,
-                        edge_attr_labels=input_graph.edge_attr_labels,
+                        edge_attr_labels=output_graph_edge_attr_labels,
                         pos=output_pos,
                         graph_id=input_graph.graph_id
                         )

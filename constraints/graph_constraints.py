@@ -28,6 +28,9 @@ def check_data_format_consistency(input_graph: torch_geometric.data.data.Data):
     assert isinstance(input_graph.node_ids, list)
     assert isinstance(input_graph.node_feature_labels, list)
     assert isinstance(input_graph.edge_ids, list)
-    assert isinstance(input_graph.edge_attr_labels, list)   # corresponding to edge_attr None is the empty list [] ~~~~~
+
+    if hasattr(input_graph, 'edge_attr_labels'):
+        assert isinstance(input_graph.edge_attr_labels, list) or input_graph.edge_attr is None
+
     assert isinstance(input_graph.pos, torch.Tensor) or input_graph.pos is None
     assert isinstance(input_graph.graph_id, str)
