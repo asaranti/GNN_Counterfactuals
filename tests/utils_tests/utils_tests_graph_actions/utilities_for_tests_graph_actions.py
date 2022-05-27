@@ -141,6 +141,38 @@ def unchanged_fields_feature_add(graph_1: Data, graph_2: Data):
     assert graph_1.graph_id == graph_2.graph_id, "The input's and output's graph \"graph_id\" fields must be equal."
 
 
+def unchanged_fields_feature_remove(graph_1: Data, graph_2: Data):
+    """
+    Unchanged fields for feature add
+
+    :param graph_1: Input graph before feature addition
+    :param graph_2: Output graph after feature addition
+    """
+
+    # "edge_index", "edge_attr", "y", "node_labels", "node_ids", "edge_ids", "edge_attr_labels", "pos", "graph_id" -----
+    # stay intact - don't change ---------------------------------------------------------------------------------------
+
+    # TODO: Check if "edge_index" is principally allowed to be None ----------------------------------------------------
+    assert torch.equal(graph_1.edge_index, graph_2.edge_index), \
+        "The input's and output's graph \"edge_index\" fields must be equal."
+
+    if graph_1.edge_attr is None:
+        assert graph_2.edge_attr is None, "If the input graph's \"edge_attr\" is None, then after a node " \
+                                          "deletion should keep the \"edge_attr\" as None."
+    else:
+        assert torch.equal(graph_1.edge_attr, graph_2.edge_attr), \
+            "The input's and output's graph \"edge_attr\" fields must be equal."
+    assert graph_1.node_labels == graph_2.node_labels, \
+        "The input's and output's graph \"node_labels\" fields must be equal."
+    assert graph_1.node_ids == graph_2.node_ids, \
+        "The input's and output's graph \"node_ids\" fields must be equal."
+    assert torch.equal(graph_1.y, graph_2.y), "The input's and output's graph \"y\" fields must be equal."
+    assert graph_1.edge_ids == graph_2.edge_ids, "The input's and output's graph \"edge_ids\" fields must be equal."
+    assert graph_1.edge_attr_labels == graph_2.edge_attr_labels, \
+        "The input's and output's graph \"edge_attr_labels\" fields must be equal."
+    assert graph_1.pos == graph_2.pos, "The input's and output's graph \"pos\" fields must be equal."
+    assert graph_1.graph_id == graph_2.graph_id, "The input's and output's graph \"graph_id\" fields must be equal."
+
 
 ########################################################################################################################
 def check_edge_removal_after_node_remove(graph_1: torch_geometric.data.data.Data,

@@ -433,8 +433,7 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
 
 def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
                           new_input_node_feature: np.array,
-                          label : str) -> \
-        torch_geometric.data.data.Data:
+                          label : str) -> torch_geometric.data.data.Data:
     """
     Add a feature in all nodes. Basically, that means that the features field of all the nodes "x" will have
     another column. The number of rows of the input feature should be equal to the number of nodes. If the node's
@@ -520,6 +519,7 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, remove
            f"number of features {node_features_nr}"
 
     output_graph_x = np.delete(input_graph_x, removed_node_feature_idx, 1)
+    del input_graph.node_feature_labels[removed_node_feature_idx] # remove the label
 
     # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
