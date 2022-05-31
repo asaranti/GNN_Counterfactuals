@@ -77,12 +77,12 @@ def test_unit_remove_feature_to_all_nodes():
         output_graph = add_feature_all_nodes(input_graph, node_features, feature_label)
         input_graph = output_graph
 
-    # [3.] Try feature remove ------------------------------------------------------------------------------------------
+    # [3.] Try 10 times feature remove ---------------------------------------------------------------------------------
     for node_addition in range(feature_additions_nr):
 
         feature_nr = input_graph.x.size(dim=1)
         feature_index_to_remove = random.randint(0, feature_nr - 1)
-        del added_feature_label_list[feature_index_to_remove] # remove the feature also from our list
+        del added_feature_label_list[feature_index_to_remove] # remove the feature also from our test list
 
         output_graph = remove_feature_all_nodes(input_graph, feature_index_to_remove)
 
@@ -91,7 +91,6 @@ def test_unit_remove_feature_to_all_nodes():
 
         # [3.2] Copy and repeat ----------------------------------------------------------------------------------------
         input_graph = output_graph
-
 
     # [4.] Check if all removed node_feature_labels are really removed -------------------------------------------------
     assert input_graph.node_feature_labels == added_feature_label_list, \
