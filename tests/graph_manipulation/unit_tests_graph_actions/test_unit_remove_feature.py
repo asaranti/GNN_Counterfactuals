@@ -15,7 +15,7 @@ import uuid
 import numpy as np
 import torch_geometric
 
-from actionable.graph_actions import add_feature_all_nodes, remove_feature_all_nodes
+from actionable.graph_actions import add_feature, remove_feature
 from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import unchanged_fields_feature_remove
 
 
@@ -53,12 +53,14 @@ def check_feature_remove(input_graph: torch_geometric.data.data.Data,
 ########################################################################################################################
 # MAIN Test ============================================================================================================
 ########################################################################################################################
-def test_unit_remove_feature_to_all_nodes():
+def test_unit_remove_feature():
     """
-    Unit test add feature to all nodes
+    Unit test remove feature
     """
 
-    # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph -----------------------------------------------------
+    ####################################################################################################################
+    # [1.] Import graph data ===========================================================================================
+    ####################################################################################################################
     dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
     dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
 
@@ -66,33 +68,42 @@ def test_unit_remove_feature_to_all_nodes():
     graph_idx = random.randint(0, dataset_len - 1)
     input_graph = dataset[graph_idx]
 
-    # [2.] Add Nodes to the graph which can be removed -----------------------------------------------------------------
-    added_feature_label_list = [x for x in input_graph.node_feature_labels] # track all the labels from features
+    ####################################################################################################################
+    # [2.] Add features to the graph which can be removed in [3.] ======================================================
+    ####################################################################################################################
+    # [2.1.] Create test-list containing all feature labels  -----------------------------------------------------------
+    added_feature_label_list = [x for x in input_graph.node_feature_labels]
+
+    # [2.2.] add feature_removal_nr times features ---------------------------------------------------------------------
     feature_additions_nr = 10
-    for node_addition in range(feature_additions_nr):
+    for feature_addition in range(feature_additions_nr):
         feature_label = "label_" + str(uuid.uuid4())
         added_feature_label_list.append(feature_label) # add new created features to the list
         node_size = input_graph.x.size(dim=0)
-        node_features = np.random.randn(node_size, 1).astype(np.float32) # one new entry for each node
-        output_graph = add_feature_all_nodes(input_graph, node_features, feature_label)
+        node_features = np.random.randn(node_size, 1).astype(np.float32) # one new feature for each node
+        output_graph = add_feature(input_graph, node_features, feature_label)
         input_graph = output_graph
 
-    # [3.] Try 10 times feature remove ---------------------------------------------------------------------------------
-    for node_addition in range(feature_additions_nr):
+    ####################################################################################################################
+    # [3.] Remove feature_additions_nr times a features from input_graph ===============================================
+    ####################################################################################################################
+    for feature_removal in range(feature_additions_nr):
 
         feature_nr = input_graph.x.size(dim=1)
         feature_index_to_remove = random.randint(0, feature_nr - 1)
         del added_feature_label_list[feature_index_to_remove] # remove the feature also from our test list
 
-        output_graph = remove_feature_all_nodes(input_graph, feature_index_to_remove)
+        output_graph = remove_feature(input_graph, feature_index_to_remove)
 
-        # [3.1] Check that the node addition is successful -------------------------------------------------------------
+        # [3.1] Check that the feature addition is successful -------------------------------------------------------------
         check_feature_remove(input_graph, output_graph, feature_index_to_remove)
 
         # [3.2] Copy and repeat ----------------------------------------------------------------------------------------
         input_graph = output_graph
 
-    # [4.] Check if all removed node_feature_labels are really removed -------------------------------------------------
+    ####################################################################################################################
+    # [4.] Check the properties at the end of the feature removals =====================================================
+    ####################################################################################################################
+    # [4.1.] Check if all removed node_feature_labels are really removed -----------------------------------------------
     assert input_graph.node_feature_labels == added_feature_label_list, \
-    "The final graph's \"node_feature_labels\" must only contain \"node_feature_label\"'s' " \
-    "which were not removed"
+    "The final graph's \"node_feature_labels\" must only contain \"node_feature_label\"'s which were not removed"
