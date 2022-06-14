@@ -15,6 +15,7 @@ from captum.attr import Saliency, IntegratedGradients
 from sklearn.preprocessing import minmax_scale
 import torch
 from torch_geometric.data.data import Data
+from torch_geometric.nn import GNNExplainer
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 
@@ -56,6 +57,9 @@ def explain(method: str, model: GCN, data: Data, device: str, target_label: int)
         saliency = Saliency(model_forward)
         mask = saliency.attribute(input_mask, target=target_label,
                                   additional_forward_args=(model, data, device))
+    
+    elif method == 'gnnexplainer':
+
     else:
         raise Exception('Unknown explanation method')
 
