@@ -95,13 +95,15 @@ print("After ReTrain:")
 print(test_set_metrics_dict)
 
 
+
 # [5.] Explanation -----------------------------------------------------------------------------------------------------
-explanation_method = 'saliency'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+explanation_method = 'gnnexplainer'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
 explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~~~
 
 # GNNECPLAINER
-explain_sample("gnnexplainer", input_graph, explanation_label)
+node_mask = explain_sample(explanation_method , input_graph, explanation_label)
+len(node_mask[0])
 
 """
 # CAPTUM 
