@@ -1,5 +1,7 @@
 """
-    GNN explanations with Captum
+    GNN explanations with 
+        - Captum
+        - GNNexplainer
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
