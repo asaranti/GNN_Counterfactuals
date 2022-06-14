@@ -25,6 +25,10 @@ from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_las
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = 'cuda:0'
 
+#os.environ["CUDA_VISIBLE_DEVICES"]=""
+#device = torch.device("cpu")
+#device = 'cpu'
+
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph ---------------------------------------------------------
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), "rb"))
