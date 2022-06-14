@@ -63,7 +63,7 @@ def explain(method: str, model: GCN, data: Data, device: str, target_label: int)
     elif method == 'gnnexplainer':
         #@FIXME (do we need to convert input format?)
         explainer = GNNExplainer(model, epochs=200, allow_edge_mask=False, feat_mask_type='Feature', return_type='log_prob')
-        node_mask = explainer.explain_graph(x, edge_index, **kwargs): #@FIXME
+        node_mask = explainer.explain_graph(x, edge_index, **kwargs) #@FIXME
         # --> edge weight needs to be added when optimizing edge_mask: edge_weight=edge_weight
     else:
         raise Exception('Unknown explanation method')
