@@ -47,7 +47,7 @@ def index():
 
 
 # global
-dataset_names = ["Barabasi-Albert Dataset", "Kirc Dataset"]
+dataset_names = ["Synthetic Dataset", "KIRC Dataset"]
 graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
 root_folder = os.path.dirname(os.path.abspath(__file__))
 # interval to delete old sessions: 5 hours (hour * min * sec * ms)
@@ -100,13 +100,13 @@ def patient_name(token):
     if dataset_name == "Barabasi-Albert Dataset":       # get list of all graphs in pytorch format
         graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
 
-    elif dataset_name == "Kirc Dataset":                # get list of all graphs in pytorch format
+    elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
-        dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_ui")
+        dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
 
@@ -367,8 +367,6 @@ def nn_retrain(token):
     """
 
     # [1.] Get patient id to get the dataset that will be used in retrain ----------------------------------------------
-    req_data = request.get_json()
-
     dataset = user_graph_data[str(token)]
 
     # [2.] Keep only the last graph in the dataset ---------------------------------------------------------------------
@@ -504,9 +502,6 @@ def init_gnn(token):
     """
 
     # [1.] Get patient id to get the dataset that will be used in init -------------------------------------------------
-    req_data = request.get_json()
-    patient_id = req_data["patient_id"]
-
     dataset = user_graph_data[str(token)]
     dataset = keep_only_first_graph_dataset(dataset)
 
@@ -540,20 +535,34 @@ def node_importance(token):
     TODO: Node importances need to be returned as as list (see example values)
     """
 
+
     # graph and patient id
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
+    method = request.args.get("method")
 
-    # input graph
+    # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
     input_graph = graph_data[patient_id][graph_id]
 
     # get node ids
     node_ids = list(input_graph.node_ids)
-    node_ids = random.sample(node_ids, len(node_ids))
 
-    # get random positive relevance values
-    rel_pos = [random.randint(0, 100) for p in range(0, len(node_ids))]
+    # Explanation ------------------------------------------------------------------------------------------------------
+    if method == "gnnexplainer":
+        explanation_method = 'gnnexplainer'
+
+    ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
+    explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~
+
+    rel_pos = list(explain_sample(
+        explanation_method,
+        input_graph,
+        explanation_label,
+    ))
+
+    rel_pos = [str(round(node_relevance, 2)) for node_relevance in rel_pos]
+
     # get random positive and negative relevance values
     rel_pos_neg = [random.randint(-100, 100) for p in range(0, len(node_ids))]
 
