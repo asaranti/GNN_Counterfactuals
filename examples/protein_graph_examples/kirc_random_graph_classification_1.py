@@ -21,7 +21,8 @@ from torch_geometric.loader import DataLoader
 
 from actionable.gnn_explanations import explain_sample
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
-from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
+# from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
+from gnns.gnns_graph_classification.GIN_Graph_Classification import GIN
 from plots.graph_explanations_visualization import integrated_gradients_viz
 from preprocessing_data.graph_features_normalization import graph_features_normalization
 
@@ -39,7 +40,11 @@ input_dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_rand
 ########################################################################################################################
 
 # [2.1.] Input features preprocessing_files/normalization --------------------------------------------------------------
-normalized_graphs_dataset = graph_features_normalization(input_dataset)
+# normalized_graphs_dataset = graph_features_normalization(input_dataset)
+normalized_graphs_dataset = []
+for graph in input_dataset:
+    graph.to(device)
+    normalized_graphs_dataset.append(graph)
 
 # [2.2.] Split training/validation/test set ----------------------------------------------------------------------------
 graph_0 = normalized_graphs_dataset[0]
@@ -75,96 +80,81 @@ for step, data in enumerate(train_loader):
 # [3.] Graph Classification ============================================================================================
 ########################################################################################################################
 num_classes = 2
-model = GCN(num_node_features=num_features, hidden_channels=200, num_classes=num_classes).to(device)
+model = GIN(num_node_features=num_features, dim_h=100, num_classes=num_classes).to(device)
 print(model)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-criterion = torch.nn.CrossEntropyLoss().to(device)
+# optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+# criterion = torch.nn.CrossEntropyLoss().to(device)
 
 # Training for some epochs ---------------------------------------------------------------------------------------------
 date_time_obj = datetime.now()
 time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
 print(f'Training time start: {time_stamp_srt}')
 
-epochs_nr = 20
-for epoch in range(1, epochs_nr + 1):
 
-    train_model(model, train_loader, optimizer, criterion)
-    train_acc = use_trained_model(model, train_loader)
-    test_acc = use_trained_model(model, test_loader)
+def train(model, loader):
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(),
+                                 lr=0.01,
+                                 weight_decay=0.01)
+    epochs = 100
 
-    print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
-    print("-------------------------------------------------------------------------")
+    model.train()
+    for epoch in range(epochs + 1):
+
+        print(f"Epoch: {epoch}")
+
+        total_loss = 0
+        acc = 0
+        val_loss = 0
+        val_acc = 0
+
+        # Train on batches
+        for data in loader:
+            optimizer.zero_grad()
+            _, out = model(data.x, data.edge_index, data.batch)
+            loss = criterion(out, data.y)
+            total_loss += loss / len(loader)
+            acc += accuracy(out.argmax(dim=1), data.y) / len(loader)
+            loss.backward()
+            optimizer.step()
+
+            # Validation
+            val_loss, val_acc = test(model, test_loader)
+
+    # Print metrics every 10 epochs
+    if (epoch % 10 == 0):
+        print(f'Epoch {epoch:>3} | Train Loss: {total_loss:.2f} '
+              f'| Train Acc: {acc * 100:>5.2f}% '
+              f'| Val Loss: {val_loss:.2f} '
+              f'| Val Acc: {val_acc * 100:.2f}%')
+
+    test_loss, test_acc = test(model, test_loader)
+    print(f'Test Loss: {test_loss:.2f} | Test Acc: {test_acc * 100:.2f}%')
+
+    return model
+
+
+def test(model, loader):
+    criterion = torch.nn.CrossEntropyLoss()
+    model.eval()
+    loss = 0
+    acc = 0
+
+    for data in loader:
+        _, out = model(data.x, data.edge_index, data.batch)
+        loss += criterion(out, data.y) / len(loader)
+        acc += accuracy(out.argmax(dim=1), data.y) / len(loader)
+
+    return loss, acc
+
+
+def accuracy(pred_y, y):
+    """Calculate accuracy."""
+    return ((pred_y == y).sum() / len(y)).item()
+
+
+gin = train(model, train_loader)
 
 date_time_obj = datetime.now()
 time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
 print(f'Training time end: {time_stamp_srt}')
-
-test_acc = use_trained_model(model, test_loader)
-
-date_time_obj = datetime.now()
-time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
-print(f'Test time end: {time_stamp_srt}')
-
-########################################################################################################################
-# [5.] Explainable AI ==================================================================================================
-########################################################################################################################
-print("===============================================================================================================")
-print("================ Explainable AI ===============================================================================")
-print("===============================================================================================================")
-explanation_method = 'saliency'     # 'ig'
-output_data_path = os.path.join(os.path.join("data", "output", "KIRC_RANDOM", "plots", "explanations_plots",
-                                             # "integrated_gradients"
-                                             "saliency"
-                                             ))
-if os.path.exists(output_data_path):
-    shutil.rmtree(output_data_path)
-os.mkdir(output_data_path)
-
-for test_idx in range(len(test_dataset)):
-
-    print(f"Test sample index: {test_idx}")
-
-    test_sample_for_explanation = test_dataset[test_idx]
-
-    graph_id_all_array = test_sample_for_explanation.graph_id.split(' ')
-    graph_id_array = graph_id_all_array[1].split("_")
-    graph_id = graph_id_array[0].replace("id", "")
-
-    node_labels_list = test_sample_for_explanation.node_labels
-    ground_truth_label = test_sample_for_explanation.y.cpu().detach().numpy()[0]
-
-    batch_for_prediction = torch.zeros(test_sample_for_explanation.x.shape[0], dtype=int).to(device)
-    prediction = model(test_sample_for_explanation.x,
-                       test_sample_for_explanation.edge_index,
-                       batch_for_prediction).argmax(dim=1).cpu().detach().numpy()[0]
-
-    for explanation_label in [0, 1]:
-
-        print(f"Compute explanation towards label: {explanation_label}")
-
-        edge_mask_relevances = explain_sample(explanation_method, model, test_sample_for_explanation,
-                                              explanation_label, device)
-
-        print(f"Min: {min(edge_mask_relevances)}, Max: {max(edge_mask_relevances)}")
-        integrated_gradients_viz(test_sample_for_explanation, graph_id, edge_mask_relevances,
-                                 node_labels_list, ground_truth_label, prediction, explanation_label,
-                                 output_data_path)
-    print("===========================================================================================================")
-
-"""
-########################################################################################################################
-# [6.] Store the GNN ===================================================================================================
-########################################################################################################################
-date_time_obj = datetime.now()
-time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
-print(f'Store GNN start: {time_stamp_srt}')
-
-gnn_storage_folder = os.path.join("data", "output", "gnns")
-gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-torch.save(model, gnn_model_file_path)
-
-date_time_obj = datetime.now()
-time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
-print(f'Store GNN end: {time_stamp_srt}')
-########################################################################################################################
-"""
