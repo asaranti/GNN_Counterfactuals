@@ -39,7 +39,11 @@ input_dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, 'kirc_rand
 ########################################################################################################################
 
 # [2.1.] Input features preprocessing_files/normalization --------------------------------------------------------------
-normalized_graphs_dataset = graph_features_normalization(input_dataset)
+# normalized_graphs_dataset = graph_features_normalization(input_dataset)
+normalized_graphs_dataset = []
+for graph in input_dataset:
+    graph.to(device)
+    normalized_graphs_dataset.append(graph)
 
 # [2.2.] Split training/validation/test set ----------------------------------------------------------------------------
 graph_0 = normalized_graphs_dataset[0]
@@ -75,9 +79,9 @@ for step, data in enumerate(train_loader):
 # [3.] Graph Classification ============================================================================================
 ########################################################################################################################
 num_classes = 2
-model = GCN(num_node_features=num_features, hidden_channels=200, num_classes=num_classes).to(device)
+model = GCN(num_node_features=num_features, hidden_channels=100, num_classes=num_classes).to(device)
 print(model)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 criterion = torch.nn.CrossEntropyLoss().to(device)
 
 # Training for some epochs ---------------------------------------------------------------------------------------------
@@ -92,7 +96,8 @@ for epoch in range(1, epochs_nr + 1):
     train_acc = use_trained_model(model, train_loader)
     test_acc = use_trained_model(model, test_loader)
 
-    print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
+    print(f'Epoch: {epoch}, Train Acc: {train_acc[0]["accuracy"]}, '
+          f'Test Acc: {test_acc[0]["accuracy"]}')
     print("-------------------------------------------------------------------------")
 
 date_time_obj = datetime.now()
@@ -105,6 +110,7 @@ date_time_obj = datetime.now()
 time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
 print(f'Test time end: {time_stamp_srt}')
 
+"""
 ########################################################################################################################
 # [5.] Explainable AI ==================================================================================================
 ########################################################################################################################
@@ -150,6 +156,7 @@ for test_idx in range(len(test_dataset)):
                                  node_labels_list, ground_truth_label, prediction, explanation_label,
                                  output_data_path)
     print("===========================================================================================================")
+"""
 
 """
 ########################################################################################################################

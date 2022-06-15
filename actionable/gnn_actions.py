@@ -107,7 +107,11 @@ class GNN_Actions(torch.nn.Module):
 
         # [0.1.] Input features preprocessing_files/normalization ------------------------------------------------------
         graphs_nr = len(input_graphs)
-        normalized_graphs_dataset = graph_features_normalization(input_graphs)
+
+        for graph in input_graphs:
+            graph.to(device)
+
+        # normalized_graphs_dataset = graph_features_normalization(input_graphs)
         # for graph in input_graphs:
 
         #    x_features_array = graph.x.cpu().detach().numpy()
@@ -117,12 +121,12 @@ class GNN_Actions(torch.nn.Module):
         # normalized_graphs_dataset = input_graphs
 
         # [0.2.] Split training/validation/test set --------------------------------------------------------------------
-        graph_0 = normalized_graphs_dataset[0]
+        graph_0 = input_graphs[0]
         num_features = graph_0.num_node_features
 
         # [0.3.] Shuffle the dataset and keep the list indexes ---------------------------------------------------------
         # [0.4.] Split to training and test set ------------------------------------------------------------------------
-        train_loader, test_loader = self.gnn_init_preprocessing(normalized_graphs_dataset)
+        train_loader, test_loader = self.gnn_init_preprocessing(input_graphs)
 
         ################################################################################################################
         # [1.] Graph Classification ====================================================================================
@@ -219,11 +223,14 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [0.] Preprocessing - normalization ===========================================================================
         ################################################################################################################
-        normalized_graphs_dataset = graph_features_normalization(input_graphs)
+        # normalized_graphs_dataset = graph_features_normalization(input_graphs)
 
-        train_normalized_graphs_dataset = [normalized_graphs_dataset[idx]
+        for graph in input_graphs:
+            graph.to(device)
+
+        train_normalized_graphs_dataset = [input_graphs[idx]
                                            for idx in self.train_dataset_shuffled_indexes]
-        test_normalized_graphs_dataset = [normalized_graphs_dataset[idx] for idx in self.test_dataset_shuffled_indexes]
+        test_normalized_graphs_dataset = [input_graphs[idx] for idx in self.test_dataset_shuffled_indexes]
 
         re_train_loader = DataLoader(train_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=True)
         re_test_loader = DataLoader(test_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=False)
@@ -242,7 +249,7 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         model_state_dict = model.state_dict()
         input_features_model_nr = model_state_dict["conv1.lin.weight"].size(dim=1)
-        input_features_graph_nr = normalized_graphs_dataset[0].x.size(dim=1)
+        input_features_graph_nr = input_graphs[0].x.size(dim=1)
 
         # [2.1.] If the number of features did not change, then just reset the weights ---------------------------------
         if input_features_model_nr == input_features_graph_nr:
