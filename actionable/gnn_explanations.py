@@ -62,8 +62,9 @@ def explain(method: str, model: GCN, data: Data, device: str, target_label: int)
     
     elif method == 'gnnexplainer':    
         explainer = GNNExplainer(model, epochs=200, allow_edge_mask=False, feat_mask_type='scalar', return_type='log_prob')
-        node_mask = explainer.explain_graph(data.x, data.edge_index) 
-        return node_mask[0]  
+        node_mask = explainer.explain_graph(data.x, data.edge_index)
+        node_mask = np.abs(node_mask[0].cpu().detach().numpy())
+        return node_mask
         # Note, --> edge weight needs to be added when optimizing edge_mask: edge_weight=edge_weight
     else:
         raise Exception('Unknown explanation method')
