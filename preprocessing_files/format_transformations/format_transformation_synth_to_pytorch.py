@@ -89,7 +89,7 @@ def import_synthetic_data(input_dataset_folder: str,
         graph_x = graph_all_nodes_features.reshape(graph_all_nodes_features.shape[0], -1)
 
         graph = Data(
-            x=torch.from_numpy(graph_x),
+            x=torch.from_numpy(graph_x).to(dtype=torch.float32),
             edge_index=edge_idx,
             edge_attr=None,
             y=torch.tensor([label]),

@@ -44,11 +44,66 @@ graph_idx = random.randint(0, dataset_len - 1)  # Pick a random graph from the d
 input_graph = dataset[graph_idx]
 
 print(input_graph.edge_index)
+
 ########################################################################################################################
 # [3.] Let's do some actions -------------------------------------------------------------------------------------------
 ########################################################################################################################
-output_graph = remove_edge(input_graph, 1, 4)
-print(output_graph.edge_index)
+nodes_orig_nr = input_graph.x.shape[0]
+print(f"Nr. of nodes: {nodes_orig_nr}")
+edges_orig_nr = input_graph.edge_index.shape[1]
+print(f"Nr. of edges: {edges_orig_nr}")
+
+number_of_nodes_to_remain = 2
+
+for loop_idx in range(nodes_orig_nr - number_of_nodes_to_remain):  # <<<<<<<<<<<<<<
+
+    nodes_nr = input_graph.x.shape[0]
+
+    edge_index_current = input_graph.edge_index.cpu().detach().numpy()
+    edge_0 = edge_index_current[:, 0]
+    print(f"Edge: {edge_0}")
+
+    input_graph = remove_edge(input_graph, edge_0[0], edge_0[1])
+
+    print(input_graph)
+    edges_nr = input_graph.edge_index.size(dim=1)
+
+    if edges_nr < 5:
+
+        print("HERE")
+
+        x_new = torch.tensor(np.array([[1.0], [4.0]]), dtype=torch.float32).to(device)  # dtype=torch.float64
+        node_labels = ["1", "2"]
+        node_ids = [1, 2]
+        node_feature_labels = ["1", "2"]
+        edge_ids_new = [504]
+        edge_attr_labels = None
+        input_graph = Data(x=x_new,
+                           edge_index=torch.from_numpy(np.array([[0, 1]]).T),
+                           y=input_graph.y,
+                           node_labels=node_labels,
+                           node_ids=node_ids,
+                           node_feature_labels=node_feature_labels,
+                           edge_ids=edge_ids_new,
+                           edge_attr_labels=edge_attr_labels,
+                           graph_id=input_graph.graph_id)
+
+        predicted_class = gnn_actions_obj.gnn_retrain(dataset)
+        print(f"Predicted class: {predicted_class}")
+
+    elif edges_nr < 10:
+
+        predicted_class = gnn_actions_obj.gnn_retrain(dataset)
+        print(f"Predicted class: {predicted_class}")
+        print("-------------------------------------------------------------------------------------------------------")
+
+    else:
+        predicted_class = gnn_actions_obj.gnn_predict(input_graph)
+        print(f"Predicted class: {predicted_class}")
+        print("-------------------------------------------------------------------------------------------------------")
+
+    print("Resulting graph:")
+    print(input_graph)
 
 """
 ########################################################################################################################
@@ -69,7 +124,7 @@ predicted_label, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph
 print(which_dataset, ground_truth_label, predicted_label, prediction_confidence)
 print(type(which_dataset), type(ground_truth_label), type(predicted_label), type(prediction_confidence))
 
-"""
+
 ########################################################################################################################
 # [5.] Explanation -----------------------------------------------------------------------------------------------------
 # [5.1.] Compute the explanation values --------------------------------------------------------------------------------
@@ -99,4 +154,4 @@ output_data_path = os.path.join(os.path.join("data", "output", "Synthetic", "plo
 
 integrated_gradients_viz(input_graph, graph_idx, rel_pos, input_graph.node_labels, ground_truth_label,
                          int(predicted_class), explanation_label, output_data_path)
-
+"""

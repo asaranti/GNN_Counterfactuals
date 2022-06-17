@@ -61,19 +61,20 @@ graph_idx = random.randint(0, dataset_len - 1)
 input_graph = dataset[graph_idx]
 nodes_orig_nr = input_graph.x.shape[0]
 print(f"Nr. of nodes: {nodes_orig_nr}")
-
-# input_graph.x = torch.from_numpy(np.ones((20, 2))).to(device)
-# input_graph.edge_index = torch.from_numpy(np.empty((2, 0))).to(device)
-# input_graph.edge_index = torch.from_numpy(np.array([[0, 1]]).T).to(device)
-# print(input_graph)
-# input_graph.edge_index = None
+edges_orig_nr = input_graph.edge_index.shape[1]
+print(f"Nr. of edges: {edges_orig_nr}")
 
 number_of_nodes_to_remain = 2
 
 for loop_idx in range(nodes_orig_nr - number_of_nodes_to_remain):  # <<<<<<<<<<<<<<
 
     nodes_nr = input_graph.x.shape[0]
-    input_graph = remove_node(input_graph, 0)
+
+    edge_index_current = input_graph.edge_index.cpu().detach().numpy()
+    edge_0 = edge_index_current[:, 0]
+    print(f"Edge: {edge_0}")
+
+    input_graph = remove_edge(input_graph, edge_0[0], edge_0[1])
 
     print(input_graph)
     edges_nr = input_graph.edge_index.size(dim=1)

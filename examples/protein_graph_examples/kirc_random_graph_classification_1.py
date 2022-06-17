@@ -21,7 +21,7 @@ from torch_geometric.loader import DataLoader
 
 from actionable.gnn_explanations import explain_sample
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
-# from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
+from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.GIN_Graph_Classification import GIN
 from plots.graph_explanations_visualization import integrated_gradients_viz
 from preprocessing_data.graph_features_normalization import graph_features_normalization
@@ -80,17 +80,15 @@ for step, data in enumerate(train_loader):
 # [3.] Graph Classification ============================================================================================
 ########################################################################################################################
 num_classes = 2
-<<<<<<< HEAD
+
 model = GIN(num_node_features=num_features, dim_h=100, num_classes=num_classes).to(device)
 print(model)
 # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 # criterion = torch.nn.CrossEntropyLoss().to(device)
-=======
-model = GCN(num_node_features=num_features, hidden_channels=100, num_classes=num_classes).to(device)
-print(model)
+# model = GCN(num_node_features=num_features, hidden_channels=100, num_classes=num_classes).to(device)
+# print(model)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 criterion = torch.nn.CrossEntropyLoss().to(device)
->>>>>>> d0779e3a6f0db3e1f02018905b6233f4eb3dbf35
 
 # Training for some epochs ---------------------------------------------------------------------------------------------
 date_time_obj = datetime.now()
@@ -99,20 +97,16 @@ print(f'Training time start: {time_stamp_srt}')
 
 
 def train(model, loader):
+
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=0.01,
                                  weight_decay=0.01)
     epochs = 100
 
-<<<<<<< HEAD
+
     model.train()
     for epoch in range(epochs + 1):
-=======
-    print(f'Epoch: {epoch}, Train Acc: {train_acc[0]["accuracy"]}, '
-          f'Test Acc: {test_acc[0]["accuracy"]}')
-    print("-------------------------------------------------------------------------")
->>>>>>> d0779e3a6f0db3e1f02018905b6233f4eb3dbf35
 
         print(f"Epoch: {epoch}")
 
@@ -121,7 +115,6 @@ def train(model, loader):
         val_loss = 0
         val_acc = 0
 
-<<<<<<< HEAD
         # Train on batches
         for data in loader:
             optimizer.zero_grad()
@@ -131,7 +124,7 @@ def train(model, loader):
             acc += accuracy(out.argmax(dim=1), data.y) / len(loader)
             loss.backward()
             optimizer.step()
-=======
+
 """
 ########################################################################################################################
 # [5.] Explainable AI ==================================================================================================
@@ -177,20 +170,10 @@ def test(model, loader):
         acc += accuracy(out.argmax(dim=1), data.y) / len(loader)
 
     return loss, acc
-
-
-<<<<<<< HEAD
-def accuracy(pred_y, y):
-    """Calculate accuracy."""
-    return ((pred_y == y).sum() / len(y)).item()
-=======
-        print(f"Min: {min(edge_mask_relevances)}, Max: {max(edge_mask_relevances)}")
-        integrated_gradients_viz(test_sample_for_explanation, graph_id, edge_mask_relevances,
-                                 node_labels_list, ground_truth_label, prediction, explanation_label,
-                                 output_data_path)
-    print("===========================================================================================================")
 """
->>>>>>> d0779e3a6f0db3e1f02018905b6233f4eb3dbf35
+
+def accuracy(pred_y, y):
+    return ((pred_y == y).sum() / len(y)).item()
 
 
 gin = train(model, train_loader)
