@@ -57,7 +57,7 @@ class GNN_Actions(torch.nn.Module):
         b_is_in_train = True
 
         graph_numbering_ids = re.findall('[0-9]+', graph_id)
-        graph_nr_in_dataset = graph_numbering_ids[0]
+        graph_nr_in_dataset = int(graph_numbering_ids[0])
 
         if graph_nr_in_dataset in self.test_dataset_shuffled_indexes:
             b_is_in_train = False
@@ -132,7 +132,7 @@ class GNN_Actions(torch.nn.Module):
         # [1.] Graph Classification ====================================================================================
         ################################################################################################################
         num_classes = 2
-        model = GCN(num_node_features=num_features, hidden_channels=20, num_classes=num_classes).to(device)
+        model = GCN(num_node_features=num_features, hidden_channels=5, num_classes=num_classes).to(device)
         print(model)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)

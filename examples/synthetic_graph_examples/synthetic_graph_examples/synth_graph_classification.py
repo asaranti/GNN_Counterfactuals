@@ -48,6 +48,7 @@ print(input_graph.edge_index)
 ########################################################################################################################
 # [3.] Let's do some actions -------------------------------------------------------------------------------------------
 ########################################################################################################################
+"""
 nodes_orig_nr = input_graph.x.shape[0]
 print(f"Nr. of nodes: {nodes_orig_nr}")
 edges_orig_nr = input_graph.edge_index.shape[1]
@@ -104,27 +105,32 @@ for loop_idx in range(nodes_orig_nr - number_of_nodes_to_remain):  # <<<<<<<<<<<
 
     print("Resulting graph:")
     print(input_graph)
-
 """
+
 ########################################################################################################################
 # [4.] Get some patient info -------------------------------------------------------------------------------------------
 ########################################################################################################################
 ground_truth_label = str(input_graph.y.cpu().detach().numpy()[0])
 
 # Check if it is in the training or test dataset -----------------------------------------------------------------------
-current_graph_id = input_graph.graph_id
-b_is_in_train = gnn_actions_obj.is_in_training_set(current_graph_id)
-which_dataset = "Test Data"
-if b_is_in_train:
-    which_dataset = "Training Data"
+for try_out in range(10):
 
-# Get its prediction label and prediction performance (or confidence for the prediction) -------------------------------
-predicted_label, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph)
+    graph_idx = random.randint(0, dataset_len - 1)  # Pick a random graph from the dataset ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    input_graph = dataset[graph_idx]
+    current_graph_id = input_graph.graph_id
+    b_is_in_train = gnn_actions_obj.is_in_training_set(current_graph_id)
+    print(f">>>>>>>>>> Is graph in training dataset? {b_is_in_train}")
+    which_dataset = "Test Data"
+    if b_is_in_train:
+        which_dataset = "Training Data"
 
-print(which_dataset, ground_truth_label, predicted_label, prediction_confidence)
-print(type(which_dataset), type(ground_truth_label), type(predicted_label), type(prediction_confidence))
+    # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
+    predicted_label, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph)
 
+    print(which_dataset, ground_truth_label, predicted_label, prediction_confidence)
+    print(type(which_dataset), type(ground_truth_label), type(predicted_label), type(prediction_confidence))
 
+"""
 ########################################################################################################################
 # [5.] Explanation -----------------------------------------------------------------------------------------------------
 # [5.1.] Compute the explanation values --------------------------------------------------------------------------------
