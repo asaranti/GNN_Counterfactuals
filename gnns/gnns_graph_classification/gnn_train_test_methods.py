@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 import torch
 from torch_geometric.loader.dataloader import DataLoader
 from torch.nn.modules.loss import CrossEntropyLoss
+import torch.nn.functional as F
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 

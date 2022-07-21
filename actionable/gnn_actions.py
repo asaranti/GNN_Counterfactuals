@@ -10,6 +10,7 @@ from operator import itemgetter
 import os
 import random
 import re
+import sys
 
 import numpy as np
 import torch
@@ -33,13 +34,16 @@ class GNN_Actions(torch.nn.Module):
 
         super(GNN_Actions, self).__init__()
 
+        # [1.] Data splitting parameters -------------------------------------------------------------------------------
         self.proportion_of_training_set = 3/4
         self.train_dataset_shuffled_indexes = None
         self.test_dataset_shuffled_indexes = None
 
+        # [2.] GNN training parameters ---------------------------------------------------------------------------------
         self.batch_size = 8
         self.epochs_nr = 100
 
+        # [3.] Data structures for the performance metrics -------------------------------------------------------------
         self.train_set_metrics_dict = None
         self.train_outputs_predictions_dict = None
         self.test_set_metrics_dict = None
@@ -104,6 +108,7 @@ class GNN_Actions(torch.nn.Module):
         # [0.0.] Choose device -----------------------------------------------------------------------------------------
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         device = 'cuda:0'
+        # device = 'cpu'
 
         # [0.1.] Input features preprocessing_files/normalization ------------------------------------------------------
         graphs_nr = len(input_graphs)
@@ -112,13 +117,13 @@ class GNN_Actions(torch.nn.Module):
             graph.to(device)
 
         # normalized_graphs_dataset = graph_features_normalization(input_graphs)
-        # for graph in input_graphs:
+        for graph in input_graphs:
 
-        #    x_features_array = graph.x.cpu().detach().numpy()
-        #    graph.x = torch.tensor(x_features_array).to(dtype=torch.float32)    # float32 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            x_features_array = graph.x.cpu().detach().numpy()
+            graph.x = torch.tensor(x_features_array).to(dtype=torch.float32)    # float32 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        #    graph.to(device)
-        # normalized_graphs_dataset = input_graphs
+            graph.to(device)
+        # input_graphs = normalized_graphs_dataset
 
         # [0.2.] Split training/validation/test set --------------------------------------------------------------------
         graph_0 = input_graphs[0]
@@ -137,15 +142,42 @@ class GNN_Actions(torch.nn.Module):
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
 
+        last_accuracy = sys.float_info.min
+        patience = 5
+        trigger_times = 0
+
+        # [2.] Iterate over several epochs -----------------------------------------------------------------------------
         for epoch in range(1, self.epochs_nr + 1):
+
+            print(f"Epoch: {epoch}")
+
+            # [3.] Train the model and gather the performance metrics of the training and test set ---------------------
             train_model(model, train_loader, optimizer, criterion)
 
-        self.train_set_metrics_dict, self.train_outputs_predictions_dict = use_trained_model(model, train_loader)
-        self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, test_loader)
+            self.train_set_metrics_dict, self.train_outputs_predictions_dict = use_trained_model(model, train_loader)
+            self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, test_loader)
+
+            current_test_set_accuracy = float(self.test_set_metrics_dict['accuracy'])
+
+            # [4.] Apply early stopping --------------------------------------------------------------------------------
+            if current_test_set_accuracy < last_accuracy:
+                trigger_times += 1
+
+                if trigger_times >= patience:
+                    print(f'Early stopping at epoch {epoch}.')
+                    break
+
+            else:
+                print('Trigger times reset to 0.')
+                trigger_times = 0
+
+            last_accuracy = current_test_set_accuracy
+
+        # [5.] Print the end test set metrics --------------------------------------------------------------------------
         print(self.test_set_metrics_dict)
 
         ################################################################################################################
-        # [2.] GNN store ===============================================================================================
+        # [6.] GNN store ===============================================================================================
         ################################################################################################################
         gnn_storage_folder = os.path.join("data", "output", "gnns")
         gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
@@ -273,22 +305,46 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
+
+        last_accuracy = sys.float_info.min
+        patience = 5
+        trigger_times = 0
+
+        # [4.] Iterate over several epochs -----------------------------------------------------------------------------
         for epoch in range(1, self.epochs_nr + 1):
 
+            print(f"Epoch: {epoch}")
+
+            # [5.] Retrain the model and gather the performance metrics of the training and test set -------------------
             train_model(model, re_train_loader, optimizer, criterion)
             self.train_set_metrics_dict, self.train_outputs_predictions_dict = \
                 use_trained_model(model, re_train_loader)
+            self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, re_test_loader)
+
+            # [6.] Apply early stopping --------------------------------------------------------------------------------
+            current_test_set_accuracy = float(self.test_set_metrics_dict['accuracy'])
+
+            if current_test_set_accuracy < last_accuracy:
+                trigger_times += 1
+
+                if trigger_times >= patience:
+                    print(f'Early stopping at epoch {epoch}.')
+                    break
+
+            else:
+                print('Trigger times reset to 0.')
+                trigger_times = 0
+
+            last_accuracy = current_test_set_accuracy
 
         ################################################################################################################
-        # [4.] Recompute the new test set metrics after re-train =======================================================
-        ################################################################################################################
-        self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, re_test_loader)
-
-        ################################################################################################################
-        # [5.] GNN store ===============================================================================================
+        # [7.] GNN store ===============================================================================================
         ################################################################################################################
         gnn_storage_folder = os.path.join("data", "output", "gnns")
         gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
         torch.save(model, gnn_model_file_path)
 
+        ################################################################################################################
+        # [8.] Return the new test set metrics after re-train ==========================================================
+        ################################################################################################################
         return self.test_set_metrics_dict

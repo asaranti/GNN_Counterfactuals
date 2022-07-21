@@ -1,6 +1,5 @@
 """
     GCN for classification
-
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2021-10-05
@@ -21,7 +20,6 @@ class GCN(torch.nn.Module):
     def __init__(self, num_node_features: int, hidden_channels: int, num_classes: int):
         """
         Init
-
         :param num_node_features:
         :param hidden_channels:
         :param num_classes:
@@ -43,7 +41,6 @@ class GCN(torch.nn.Module):
     def forward(self, x, edge_index, batch, edge_weight=None):
         """
         Forward
-
         :param x:
         :param edge_index:
         :param batch:
@@ -70,5 +67,26 @@ class GCN(torch.nn.Module):
         # 3. Apply a final classifier ----------------------------------------------------------------------------------
         x = F.dropout(x, p=0.2, training=self.training)
         x = self.lin(x)
+
+        """
+        # 1. Obtain node embeddings ------------------------------------------------------------------------------------
+        x = self.conv1(x, edge_index, edge_weight)
+        x = F.sigmoid(x)
+        x = self.conv2(x, edge_index, edge_weight)
+        x = F.sigmoid(x)
+        x = self.conv3(x, edge_index, edge_weight)
+        x = F.sigmoid(x)
+        x = self.conv4(x, edge_index, edge_weight)
+        x = F.sigmoid(x)
+        x = self.conv5(x, edge_index, edge_weight)
+        x = F.sigmoid(x)
+        x = self.conv6(x, edge_index, edge_weight)
+
+        # 2. Readout layer ---------------------------------------------------------------------------------------------
+        x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
+
+        # 3. Apply a final classifier ----------------------------------------------------------------------------------
+        x = F.log_softmax(x, dim=1)
+        """
 
         return x

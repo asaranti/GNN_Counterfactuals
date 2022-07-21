@@ -54,6 +54,7 @@ def graph_features_normalization(graphs_dataset: list) -> list:
 
         x_features_array = graph.x.cpu().detach().numpy()
         x_features_transformed = (x_features_array - x_min_all) / (x_max_all - x_min_all)
+
         graph.x = torch.tensor(x_features_transformed).to(dtype=torch.float32)                          # float32 ~~~~~~
 
         if graph.edge_attr is not None:
