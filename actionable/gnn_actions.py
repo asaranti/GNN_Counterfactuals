@@ -38,7 +38,7 @@ class GNN_Actions(torch.nn.Module):
         self.test_dataset_shuffled_indexes = None
 
         self.batch_size = 8
-        self.epochs_nr = 20
+        self.epochs_nr = 100
 
         self.train_set_metrics_dict = None
         self.train_outputs_predictions_dict = None
@@ -132,7 +132,7 @@ class GNN_Actions(torch.nn.Module):
         # [1.] Graph Classification ====================================================================================
         ################################################################################################################
         num_classes = 2
-        model = GCN(num_node_features=num_features, hidden_channels=5, num_classes=num_classes).to(device)
+        model = GCN(num_node_features=num_features, hidden_channels=100, num_classes=num_classes).to(device)
         print(model)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
@@ -283,5 +283,12 @@ class GNN_Actions(torch.nn.Module):
         # [4.] Recompute the new test set metrics after re-train =======================================================
         ################################################################################################################
         self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, re_test_loader)
+
+        ################################################################################################################
+        # [5.] GNN store ===============================================================================================
+        ################################################################################################################
+        gnn_storage_folder = os.path.join("data", "output", "gnns")
+        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+        torch.save(model, gnn_model_file_path)
 
         return self.test_set_metrics_dict

@@ -25,9 +25,9 @@ from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_las
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = 'cuda:0'
 
-#os.environ["CUDA_VISIBLE_DEVICES"]=""
-#device = torch.device("cpu")
-#device = 'cpu'
+# os.environ["CUDA_VISIBLE_DEVICES"]=""
+# device = torch.device("cpu")
+# device = 'cpu'
 
 # [1.] Transformation Experiment ::: From PPI to Pytorch_Graph ---------------------------------------------------------
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
@@ -39,6 +39,7 @@ print(type(dataset[0].node_labels))
 gnn_actions_obj = GNN_Actions()
 performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 
+"""
 # [3.] Tryout the predict function -------------------------------------------------------------------------------------
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len - 1)
@@ -53,7 +54,6 @@ explanation_label = ground_truth_label  # Can also be the opposite - all possibl
 node_mask = explain_sample(explanation_method , input_graph, explanation_label)
 len(node_mask)
 
-"""
 # CAPTUM 
 # rel_pos = list(explain_sample(
 #        explanation_method,
