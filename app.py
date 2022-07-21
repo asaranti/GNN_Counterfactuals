@@ -24,7 +24,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from actionable.gnn_actions import GNN_Actions
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
-    add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
+    add_feature, remove_feature, add_feature_all_edges, remove_feature_all_edges
 from actionable.gnn_explanations import explain_sample
 
 from tests.utils_tests.utils_tests_gnns.jsonification import graph_to_json
@@ -681,7 +681,7 @@ def add_feature_to_all_nodes(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # Add the new feature in the graph ---------------------------------------------------------------------------------
-    output_graph = add_feature_all_nodes(input_graph, new_nodes_feature)
+    output_graph = add_feature(input_graph, new_nodes_feature)
     output_graph_json = graph_to_json(output_graph)
 
     return output_graph_json
@@ -707,7 +707,7 @@ def remove_feature_from_all_nodes(token):
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # Remove the feature from all nodes --------------------------------------------------------------------------------
-    output_graph = remove_feature_all_nodes(input_graph, removed_node_feature_idx)
+    output_graph = remove_feature(input_graph, removed_node_feature_idx)
     output_graph_json = graph_to_json(output_graph)
 
     return output_graph_json
