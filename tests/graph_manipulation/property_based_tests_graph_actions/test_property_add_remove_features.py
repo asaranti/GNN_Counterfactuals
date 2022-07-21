@@ -16,9 +16,9 @@ from hypothesis import given, settings
 from hypothesis.strategies import integers
 import numpy as np
 
-from actionable.graph_actions import add_feature, remove_feature
-from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import unchanged_fields_feature_remove, \
-    unchanged_fields_feature_add
+from actionable.graph_actions import add_feature_all_nodes, remove_feature_all_nodes
+from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import \
+    unchanged_fields_feature_remove, unchanged_fields_feature_add
 
 
 @given(feature_additions_nr=integers(min_value=1, max_value=10))
@@ -51,7 +51,7 @@ def test_property_add_features(feature_additions_nr: int):
 
         node_features = np.random.randn(node_size, 1).astype(np.float32)  # one new feature for each node
 
-        output_graph = add_feature(input_graph, node_features, feature_label)
+        output_graph = add_feature_all_nodes(input_graph, node_features, feature_label)
 
         # [2.1.] Copy and repeat ---------------------------------------------------------------------------------------
         input_graph = output_graph
@@ -71,11 +71,7 @@ def test_property_add_features(feature_additions_nr: int):
     # [3.3.] "node_feature_labels" change accordingly ------------------------------------------------------------------
     assert len(input_graph_original.node_feature_labels) + feature_additions_nr == \
            len(input_graph.node_feature_labels), \
-        f"The length of the \"node_feature_labels\" must be increased exactly by the number of added features."
-
-
-
-
+           f"The length of the \"node_feature_labels\" must be increased exactly by the number of added features."
 
 
 @given(feature_removals_nr=integers(min_value=1, max_value=10))
@@ -97,7 +93,6 @@ def test_property_remove_features(feature_removals_nr: int):
     graph_idx = random.randint(0, dataset_len - 1)
     input_graph = dataset[graph_idx]
 
-
     ####################################################################################################################
     # [2.] Add features to the graph which can be removed in [3.] ======================================================
     ####################################################################################################################
@@ -111,7 +106,7 @@ def test_property_remove_features(feature_removals_nr: int):
         node_size = input_graph.x.size(dim=0)
         node_features = np.random.randn(node_size, 1).astype(np.float32) # one new feature for each node
 
-        output_graph = add_feature(input_graph, node_features, feature_label)
+        output_graph = add_feature_all_nodes(input_graph, node_features, feature_label)
         input_graph = output_graph
 
     # [2.3.] copy the new created graph for checks in [4.]  ------------------------------------------------------------
@@ -126,11 +121,10 @@ def test_property_remove_features(feature_removals_nr: int):
         feature_index_to_remove = random.randint(0, feature_nr - 1)
         del added_feature_label_list[feature_index_to_remove] # remove the feature also from our test-list
 
-        output_graph = remove_feature(input_graph, feature_index_to_remove)
+        output_graph = remove_feature_all_nodes(input_graph, feature_index_to_remove)
 
-        # [3.3.] Copy and repeat ---------------------------------------------------------------------------------------
+        # [3.1.] Copy and repeat ---------------------------------------------------------------------------------------
         input_graph = output_graph
-
 
     ####################################################################################################################
     # [4.] Check the properties at the end of the feature removals =====================================================
@@ -151,5 +145,5 @@ def test_property_remove_features(feature_removals_nr: int):
 
     # [4.4] Check if all removed node_feature_labels are really removed ------------------------------------------------
     assert input_graph.node_feature_labels == added_feature_label_list, \
-    "The final graph's \"node_feature_labels\" may only contain \"node_feature_label\"'s which were not removed"
+           "The final graph's \"node_feature_labels\" may only contain \"node_feature_label\"'s which were not removed"
 

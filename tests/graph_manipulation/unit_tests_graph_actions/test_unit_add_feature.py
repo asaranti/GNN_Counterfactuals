@@ -9,20 +9,19 @@
 import os
 import pickle
 import random
-import torch
 import uuid
 
 import numpy as np
 import torch_geometric
 
-from actionable.graph_actions import add_feature
+from actionable.graph_actions import add_feature_all_nodes
 from tests.utils_tests.utils_tests_graph_actions.utilities_for_tests_graph_actions import unchanged_fields_feature_add
 
 
 def check_feature_add(input_graph: torch_geometric.data.data.Data,
                       output_graph: torch_geometric.data.data.Data,
                       node_features: np.array,
-                      last_feature_label: str, ):
+                      last_feature_label: str):
     """
     Check the feature addition
 
@@ -36,9 +35,9 @@ def check_feature_add(input_graph: torch_geometric.data.data.Data,
     input_graph_x = input_graph.x.cpu().detach().numpy()
     output_graph_x = output_graph.x.cpu().detach().numpy()
 
-    assert np.array_equal(node_features[:,0], output_graph_x[:, -1]), "The last column of the \"x\" field of the " \
-                                                                    "output graph must equal the \"node_features\"" \
-                                                                    "of the input graph."
+    assert np.array_equal(node_features[:, 0], output_graph_x[:, -1]), "The last column of the \"x\" field of the " \
+                                                                       "output graph must equal the \"node_features\"" \
+                                                                       "of the input graph."
 
     assert np.array_equal(input_graph_x, output_graph_x[:, :-1]), "All columns of the \"x\" field of the output " \
                                                                   "graph except the last one, must equal the columns " \
@@ -55,7 +54,6 @@ def check_feature_add(input_graph: torch_geometric.data.data.Data,
     assert input_graph.node_feature_labels == output_graph.node_feature_labels[:-1], \
         "All elements of the \"node_feature_labels\" field of the output graph except the las one, must equal the " \
         "elements of the \"node_feature_labels\" field of the input graph"
-
 
 
 ########################################################################################################################
@@ -85,12 +83,12 @@ def test_unit_add_feature():
         feature_label = "label_" + str(uuid.uuid4())
         node_size = input_graph.x.size(dim=0)
 
-        node_features = np.random.randn(node_size, 1).astype(np.float32) # one new feature for each node
+        node_features = np.random.randn(node_size, 1).astype(np.float32)    # one new feature for each node ------------
 
-        output_graph = add_feature(input_graph, node_features, feature_label)
+        output_graph = add_feature_all_nodes(input_graph, node_features, feature_label)
 
-        # [2.1.] Check that the feature addition is successful --------------------------------------------------------------
+        # [2.1.] Check that the feature addition is successful ---------------------------------------------------------
         check_feature_add(input_graph, output_graph, node_features, feature_label)
 
-        # [2.2.] Copy and repeat -----------------------------------------------------------------------------------------
+        # [2.2.] Copy and repeat ---------------------------------------------------------------------------------------
         input_graph = output_graph

@@ -1,5 +1,6 @@
 """
     GNN actions - Predict & Retrain
+    Dataset contains only homogeneous actions
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
@@ -41,7 +42,7 @@ class GNN_Actions(torch.nn.Module):
 
         # [2.] GNN training parameters ---------------------------------------------------------------------------------
         self.batch_size = 8
-        self.epochs_nr = 100
+        self.epochs_nr = 10
 
         # [3.] Data structures for the performance metrics -------------------------------------------------------------
         self.train_set_metrics_dict = None
@@ -137,7 +138,7 @@ class GNN_Actions(torch.nn.Module):
         # [1.] Graph Classification ====================================================================================
         ################################################################################################################
         num_classes = 2
-        model = GCN(num_node_features=num_features, hidden_channels=100, num_classes=num_classes).to(device)
+        model = GCN(num_node_features=num_features, hidden_channels=20, num_classes=num_classes).to(device)
         print(model)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)

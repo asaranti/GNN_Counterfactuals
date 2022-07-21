@@ -431,9 +431,9 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
     return output_graph
 
 
-def add_feature(input_graph: torch_geometric.data.data.Data,
-                new_input_node_feature: np.array,
-                label : str) -> torch_geometric.data.data.Data:
+def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
+                          new_input_node_feature: np.array,
+                          label: str) -> torch_geometric.data.data.Data:
     """
     Add a feature in all nodes. Basically, that means that the features field of all the nodes "x" will have
     another column. The number of rows of the input feature should be equal to the number of nodes. If the node's
@@ -461,12 +461,11 @@ def add_feature(input_graph: torch_geometric.data.data.Data,
 
     # [0.3.] Check the type of node features ---------------------------------------------------------------------------
     assert new_input_node_feature.dtype == np.float32, f"The type of the node features must be: \"np.float32\".\n" \
-                                              f"Instead it is: {new_input_node_feature.dtype}"
+                                                       f"Instead it is: {new_input_node_feature.dtype}"
 
     ####################################################################################################################
     # [1.] Add the feature to each node ================================================================================
     ####################################################################################################################
-
     input_graph_x = input_graph.x.cpu().detach().numpy()
     if input_graph_x is None:
         output_graph_x = np.array(new_input_node_feature)
@@ -497,7 +496,7 @@ def add_feature(input_graph: torch_geometric.data.data.Data,
     return output_graph
 
 
-def remove_feature(input_graph: torch_geometric.data.data.Data, removed_node_feature_idx: int) -> \
+def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, removed_node_feature_idx: int) -> \
         torch_geometric.data.data.Data:
     """
     Remove a feature in all the nodes. The features' field of all the nodes "x" will have one column less.
@@ -509,6 +508,7 @@ def remove_feature(input_graph: torch_geometric.data.data.Data, removed_node_fea
 
     :return: The updated graph
     """
+
     ####################################################################################################################
     # [0.] Constraints/Requirements ====================================================================================
     ####################################################################################################################
@@ -530,7 +530,6 @@ def remove_feature(input_graph: torch_geometric.data.data.Data, removed_node_fea
         f"The feature labels {len(input_graph.node_feature_labels)} must be equal " \
         f"to the number of features in the input graph"
 
-
     ####################################################################################################################
     # [1.] Remove the feature for each node  ---------------------------------------------------------------------------
     ####################################################################################################################
@@ -541,7 +540,6 @@ def remove_feature(input_graph: torch_geometric.data.data.Data, removed_node_fea
     ####################################################################################################################
     # [2.] Output graph ------------------------------------------------------------------------------------------------
     ####################################################################################################################
-
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
