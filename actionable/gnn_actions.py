@@ -174,7 +174,7 @@ class GNN_Actions(torch.nn.Module):
             last_accuracy = current_test_set_accuracy
 
         # [5.] Print the end test set metrics --------------------------------------------------------------------------
-        print(self.test_set_metrics_dict)
+        # print(self.test_set_metrics_dict)
 
         ################################################################################################################
         # [6.] GNN store ===============================================================================================
