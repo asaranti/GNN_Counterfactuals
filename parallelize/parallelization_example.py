@@ -1,6 +1,5 @@
 """
     Parallelization example
-
     :author: Anna Saranti
     :copyright: © 2022 HCI-KDD (ex-AI) group
     :date: 2022-07-22
@@ -53,5 +52,3 @@ print(synthetic_graph_50_list)
 print("Parallelize now: ")
 with Pool(processes_nr) as p:
     print(p.map(change_graph_id, synthetic_graph_50_list))
-
-
