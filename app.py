@@ -646,6 +646,66 @@ def patient_information(token):
     return json.dumps([which_dataset, ground_truth_label, predicted_label, prediction_confidence])
 
 
+########################################################################################################################
+# [19.] Save Final Results  ============================================================================================
+########################################################################################################################
+@app.route('/<uuid:token>/save/results', methods=['GET'])
+def results(token):
+    pat_results = []
+    # get graph data of user by token
+    graph_data = user_graph_data[str(token)]
+
+    # iterate over patient graphs in dictionary
+    for patient_id in range(len(graph_data)):
+        # get all modified graphs for this patient
+        selected_graphs = graph_data[str(patient_id)]
+
+        # get latest graph id (the indexes start with 0 so subtract length by 1)
+        latest_graph_id = len(selected_graphs.keys()) - 1
+
+        # get latest modified graph
+        latest_graph = graph_data[str(patient_id)][str(latest_graph_id)]
+
+        # transform into ui format
+        nodelist, edgelist = transform_from_pytorch_to_ui(latest_graph, "", "", "")
+
+        # get node relevances to append to results ---------------------------------------------------------------------
+        gnn_exp = list(explain_sample(
+            'gnnexplainer',
+            latest_graph,
+            int(latest_graph.y.cpu().detach().numpy()[0]),
+        ))
+
+        gnn_exp = [str(round(node_relevance, 2)) for node_relevance in gnn_exp]
+
+        # append node relevances to nodelist
+        nodelist["GNNExplainer"] = gnn_exp
+
+        # get edge relevances to append to results ---------------------------------------------------------------------
+        sal = list(explain_sample(
+            'saliency',
+            latest_graph,
+            int(latest_graph.y.cpu().detach().numpy()[0]),
+        ))
+
+        sal = [str(round(edge_relevance, 2)) for edge_relevance in sal]
+        # append edge relevances to edgelist
+        edgelist["Saliency"] = sal
+
+        ig = list(explain_sample(
+            'ig',
+            latest_graph,
+            int(latest_graph.y.cpu().detach().numpy()[0]),
+        ))
+
+        ig = [str(round(edge_relevance, 2)) for edge_relevance in ig]
+        # append edge relevances to edgelist
+        edgelist["IntegratedGradients"] = ig
+
+        pat_results.append([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+
+    return json.dumps(pat_results)
+
 ### Don't know if needed
 
 ########################################################################################################################
