@@ -95,11 +95,12 @@ class GNN_Actions(torch.nn.Module):
 
         return train_loader, test_loader
 
-    def gnn_init_train(self, input_graphs: list) -> dict:
+    def gnn_init_train(self, input_graphs: list, user_token) -> dict:
         """
         Method that implements the first training of the GNN
 
         :param input_graphs: Original dataset - List of graphs
+        :param user_token: Identifies a user
         """
 
         ################################################################################################################
@@ -179,17 +180,20 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [6.] GNN store ===============================================================================================
         ################################################################################################################
+        gcn_model_file_name = "gcn_model_" + str(user_token) + ".pth"
         gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-        torch.save(model, gnn_model_file_path)
+        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
+        with open(gnn_model_file_path, 'wb') as f:
+            torch.save(model, f)
 
         return self.test_set_metrics_dict
 
-    def gnn_predict(self, input_graph: Data) -> tuple:
+    def gnn_predict(self, input_graph: Data, user_token) -> tuple:
         """
         GNN predict function.
 
         :param input_graph: The input graph that we need its prediction
+        :param user_token: Identifies a user
 
         [1.] Load the GNN from the file system.
         [2.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN.
@@ -210,8 +214,9 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [1.] Load the GNN from the file system =======================================================================
         ################################################################################################################
+        gcn_model_file_name = "gcn_model_" + str(user_token) + ".pth"
         gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
         model = torch.load(gnn_model_file_path).to(device)
         model.eval()
 
@@ -239,7 +244,7 @@ class GNN_Actions(torch.nn.Module):
 
         return str(prediction_label_of_testing), str(round(prediction_confidence_of_testing, 2))
 
-    def gnn_retrain(self, input_graphs: list) -> dict:
+    def gnn_retrain(self, input_graphs: list, user_token) -> dict:
         """
         GNN retrain function
 
@@ -270,8 +275,9 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [1.] Load the GNN, get the architecture ======================================================================
         ################################################################################################################
+        gcn_model_file_name = "gcn_model_" + str(user_token) + ".pth"
         gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
         model = torch.load(gnn_model_file_path).to(device)
         model.eval()
 
@@ -341,8 +347,9 @@ class GNN_Actions(torch.nn.Module):
         # [7.] GNN store ===============================================================================================
         ################################################################################################################
         gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-        torch.save(model, gnn_model_file_path)
+        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
+        with open(gnn_model_file_path, 'wb') as f:
+            torch.save(model, gnn_model_file_path)
 
         ################################################################################################################
         # [8.] Return the new test set metrics after re-train ==========================================================

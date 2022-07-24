@@ -96,13 +96,14 @@ def aggregate_edge_directions(edge_mask, data):
     return edge_mask_dict
 
 
-def explain_sample(method: str, input_graph: Data, target_label: int) -> list:
+def explain_sample(method: str, input_graph: Data, target_label: int, user_token) -> list:
     """
     Explain input sample
 
     :param method: Explanation method
     :param input_graph: Input data
     :param target_label: Target label
+    :param user_token: Identifies a user
 
     :return: List of edge relevances
     """
@@ -111,8 +112,9 @@ def explain_sample(method: str, input_graph: Data, target_label: int) -> list:
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = 'cuda:0'
 
+    gcn_model_file_name = "gcn_model_" + str(user_token) + ".pth"
     gnn_storage_folder = os.path.join("data", "output", "gnns")
-    gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+    gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
     model = torch.load(gnn_model_file_path)
     model.eval()
 

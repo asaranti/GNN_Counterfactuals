@@ -53,6 +53,7 @@ root_folder = os.path.dirname(os.path.abspath(__file__))
 # interval to delete old sessions: 5 hours (hour * min * sec * ms)
 INTERVAL = 5 * 60 * 60 * 1000
 user_last_updated = {}
+connected_users = []
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
@@ -65,6 +66,7 @@ gnn_actions_obj = GNN_Actions()
 @app.route('/', methods=['GET'])
 def initialize():
     token = uuid.uuid4()
+    connected_users.append(token)
     return json.dumps(str(token))
 
 
@@ -349,7 +351,7 @@ def nn_predict(token):
 
     # predicted class --------------------------------------------------------------------------------------------------
     input_graph.x = input_graph.x.to(dtype=torch.float32)
-    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph)
+    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph, token)
 
     return "done"
 
@@ -373,7 +375,7 @@ def nn_retrain(token):
     dataset = keep_only_last_graph_dataset(dataset)
 
     # [3.] Retrain the GNN ---------------------------------------------------------------------------------------------
-    test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset)
+    test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset, token)
 
     # [4.] Save performance values in global variable ------------------------------------------------------------------
     global perf_values
@@ -469,7 +471,7 @@ def graph(token):
 ########################################################################################################################
 def remove_session_graphs():
     """
-    Remove graphs from outdated user sessions (last update > 1 hour)
+    Remove graphs from outdated user sessions (last update > 5 hour)
     """
     # get time in ms
     current_time = round(time.time() * 1000)
@@ -478,7 +480,7 @@ def remove_session_graphs():
     if len(user_last_updated) == 0:
         return
 
-    # find outdated session: last modification > 1 hour (INTERVAL)
+    # find outdated session: last modification > 5 hour (INTERVAL)
     for key, value in user_last_updated.items():
         if value + INTERVAL <= current_time:
             keys_to_remove.append(key)
@@ -506,7 +508,7 @@ def init_gnn(token):
     dataset = keep_only_first_graph_dataset(dataset)
 
     # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
-    test_set_metrics_dict = gnn_actions_obj.gnn_init_train(dataset)
+    test_set_metrics_dict = gnn_actions_obj.gnn_init_train(dataset, token)
 
     # [3.] -------------------------------------------------------------------------------------------------------------
     # save performance values in global variable
@@ -559,6 +561,7 @@ def node_importance(token):
         explanation_method,
         input_graph,
         explanation_label,
+        token,
     ))
 
     rel_pos = [str(round(node_relevance, 2)) for node_relevance in rel_pos]
@@ -604,6 +607,7 @@ def edge_importance(token):
         explanation_method,
         input_graph,
         explanation_label,
+        token,
     ))
 
     rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
@@ -641,9 +645,31 @@ def patient_information(token):
         which_dataset = "Training Data"
 
     # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
-    predicted_label, prediction_confidence = gnn_actions_obj.gnn_predict(current_graph)
+    predicted_label, prediction_confidence = gnn_actions_obj.gnn_predict(current_graph, token)
 
     return json.dumps([which_dataset, ground_truth_label, predicted_label, prediction_confidence])
+
+
+########################################################################################################################
+# [19.] Callback Interval to remove 'outdated' gcn_model files =========================================================
+########################################################################################################################
+def remove_gcn_model_files():
+    """
+    Remove gcn_model files from outdated user sessions (modification time > 5 hours)
+    """
+    # get time in ms
+    current_time = round(time.time() * 1000)
+    gnn_storage_folder = os.path.join("data", "output", "gnns")
+
+    # find outdated files: last modification > 5 hours (INTERVAL)
+    for token in connected_users:
+        gcn_model_file_name = "gcn_model_" + str(token) + ".pth"
+        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
+        if os.path.exists(gnn_model_file_path):
+            modification_time = os.path.getmtime(gnn_model_file_path)
+            if modification_time + INTERVAL <= current_time:
+                os.remove(gnn_model_file_path)
+                connected_users.remove(token)
 
 
 ### Don't know if needed
@@ -774,6 +800,7 @@ if __name__ == "__main__":
     time_in_hours = INTERVAL / 60 / 60 / 1000
     scheduler = BackgroundScheduler(timezone="Europe/Vienna")
     scheduler.add_job(func=remove_session_graphs, trigger="interval", hours=time_in_hours)
+    scheduler.add_job(func=remove_gcn_model_files, trigger="interval", hours=time_in_hours)
     scheduler.start()
 
     app.run(debug=True)
