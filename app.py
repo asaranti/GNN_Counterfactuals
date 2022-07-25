@@ -17,7 +17,7 @@ import os
 import re
 import numpy as np
 import pickle
-from multiprocessing import Pool
+from torch.multiprocessing import Pool
 
 import torch
 from flask import Flask, request
@@ -55,7 +55,7 @@ root_folder = os.path.dirname(os.path.abspath(__file__))
 # interval to delete old sessions: 5 hours (hour * min * sec * ms)
 INTERVAL = 5 * 60 * 60 * 1000
 user_last_updated = {}
-processes_nr = 5
+processes_nr = 100
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
@@ -110,7 +110,7 @@ def patient_name(token):
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_pytorch")
-        with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch_50_graphs.pkl'), 'rb') as f:
+        with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
 
     # turn list into dictionary format

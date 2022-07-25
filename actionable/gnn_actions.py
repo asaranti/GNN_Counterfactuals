@@ -41,7 +41,7 @@ class GNN_Actions(torch.nn.Module):
 
         # [2.] GNN training parameters ---------------------------------------------------------------------------------
         self.batch_size = 8
-        self.epochs_nr = 1
+        self.epochs_nr = 100
 
         # [3.] Data structures for the performance metrics -------------------------------------------------------------
         self.train_set_metrics_dict = None
