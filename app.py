@@ -17,6 +17,7 @@ import os
 import re
 import numpy as np
 import pickle
+from multiprocessing import Pool
 
 import torch
 from flask import Flask, request
@@ -33,6 +34,7 @@ from preprocessing_files.format_transformations.format_transformation_pytorch_to
 
 from examples.synthetic_graph_examples.ba_graphs_examples.ba_graphs_generator import ba_graphs_gen
 from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_last_graph_dataset
+from utils.results_utilities import transform_to_results
 
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -53,6 +55,7 @@ root_folder = os.path.dirname(os.path.abspath(__file__))
 # interval to delete old sessions: 5 hours (hour * min * sec * ms)
 INTERVAL = 5 * 60 * 60 * 1000
 user_last_updated = {}
+processes_nr = 5
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
@@ -651,59 +654,25 @@ def patient_information(token):
 ########################################################################################################################
 @app.route('/<uuid:token>/save/results', methods=['GET'])
 def results(token):
-    pat_results = []
     # get graph data of user by token
     graph_data = user_graph_data[str(token)]
 
-
-    # iterate over patient graphs in dictionary
+    # [1.] Turn dictionary into a list of graphs =======================================================================
+    graph_data_list = []
     for patient_id in range(len(graph_data)):
         # get all modified graphs for this patient
         selected_graphs = graph_data[str(patient_id)]
 
         # get latest graph id (the indexes start with 0 so subtract length by 1)
         latest_graph_id = len(selected_graphs.keys()) - 1
-
-        # get latest modified graph
         latest_graph = graph_data[str(patient_id)][str(latest_graph_id)]
 
-        # transform into ui format
-        nodelist, edgelist = transform_from_pytorch_to_ui(latest_graph, "", "", "")
+        # get latest modified graph
+        graph_data_list.append(latest_graph)
 
-        # get node relevances to append to results ---------------------------------------------------------------------
-        gnn_exp = list(explain_sample(
-            'gnnexplainer',
-            latest_graph,
-            int(latest_graph.y.cpu().detach().numpy()[0]),
-        ))
-
-        gnn_exp = [str(round(node_relevance, 2)) for node_relevance in gnn_exp]
-
-        # append node relevances to nodelist
-        nodelist["GNNExplainer"] = gnn_exp
-
-        # get edge relevances to append to results ---------------------------------------------------------------------
-        sal = list(explain_sample(
-            'saliency',
-            latest_graph,
-            int(latest_graph.y.cpu().detach().numpy()[0]),
-        ))
-
-        sal = [str(round(edge_relevance, 2)) for edge_relevance in sal]
-        # append edge relevances to edgelist
-        edgelist["Saliency"] = sal
-
-        ig = list(explain_sample(
-            'ig',
-            latest_graph,
-            int(latest_graph.y.cpu().detach().numpy()[0]),
-        ))
-
-        ig = [str(round(edge_relevance, 2)) for edge_relevance in ig]
-        # append edge relevances to edgelist
-        edgelist["IntegratedGradients"] = ig
-
-        pat_results.append([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+    # [2.] Run parallel ================================================================================================
+    with Pool(processes_nr) as p:
+        pat_results = p.map(transform_to_results, graph_data_list)
 
     return json.dumps(pat_results)
 

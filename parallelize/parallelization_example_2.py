@@ -18,14 +18,14 @@ from preprocessing_files.format_transformations.format_transformation_synth_to_p
 from actionable.gnn_explanations import explain_sample
 
 
-def transform(graph):
+def transform_to_results(graph):
     # transform to ui format
     nodelist, edgelist = transform_from_pytorch_to_ui(graph, "", "", "")
 
     # get node relevances to append to results ---------------------------------------------------------------------
     gnn_exp = list(explain_sample(
         'gnnexplainer',
-        graph.to('cpu'),
+        graph.to('cuda:0'),
         int(graph.y.cpu().detach().numpy()[0]),
     ))
 
@@ -37,7 +37,7 @@ def transform(graph):
     # get edge relevances to append to results ---------------------------------------------------------------------
     sal = list(explain_sample(
         'saliency',
-        graph.to('cpu'),
+        graph.to('cuda:0'),
         int(graph.y.cpu().detach().numpy()[0]),
     ))
 
@@ -47,7 +47,7 @@ def transform(graph):
 
     ig = list(explain_sample(
         'ig',
-        graph.to('cpu'),
+        graph.to('cuda:0'),
         int(graph.y.cpu().detach().numpy()[0]),
     ))
 
@@ -55,9 +55,8 @@ def transform(graph):
     # append edge relevances to edgelist
     edgelist["IntegratedGradients"] = ig
 
-    pat_results.append([nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')])
+    return [nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')]
 
-    return pat_results
 
 
 if __name__ == '__main__':
@@ -79,7 +78,7 @@ if __name__ == '__main__':
     )
 
     # [2.] Select randomly a smaller amount of graphs ======================================================================
-    processes_nr = 5
+    processes_nr = 8
 
     graphs_nr = 50
     synthetic_graph_50_list = synthetic_graph_list[:graphs_nr]  # random.choices(synthetic_graph_list, k=graphs_nr)
@@ -128,7 +127,9 @@ if __name__ == '__main__':
 
     # [5.] Run parallel ================================================================================================
     # the results from transform() should be appended to this list...
-    pat_results = []
+
     print("Parallelize now: ")
     with Pool(processes_nr) as p:
-        print(p.map(transform, graph_data_list))
+        results = p.map(transform_to_results, graph_data_list)
+
+    print(results)
