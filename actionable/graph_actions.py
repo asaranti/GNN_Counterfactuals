@@ -9,8 +9,11 @@
 import copy
 from typing import Optional
 
+import cupy as cp
 import numpy as np
 import torch
+from torch.utils.dlpack import to_dlpack
+from torch.utils.dlpack import from_dlpack
 import torch_geometric
 from torch_geometric.data import Data
 
@@ -41,11 +44,12 @@ def add_node(input_graph: torch_geometric.data.data.Data,
     check_data_format_consistency(input_graph)
 
     # [0.2.] Check the type of node features ---------------------------------------------------------------------------
-    assert node_features.dtype == np.float32, f"The type of the node features must be: \"np.float32\".\n" \
+    assert node_features.dtype == cp.float32, f"The type of the node features must be: \"cp.float32\".\n" \
                                               f"Instead it is: {node_features.dtype}"
 
     # [0.3.] Constraint: the new node's features needs to be the same length (type) ------------------------------------
-    input_graph_x = input_graph.x.cpu().detach().numpy()
+    input_graph_x_to_dlpack = to_dlpack(input_graph.x.cuda())
+    input_graph_x = cp.from_dlpack(input_graph_x_to_dlpack)
     if input_graph_x is not None:
         print(input_graph_x.shape[1], node_features.shape[1])
         assert input_graph_x.shape[1] == node_features.shape[1], \
@@ -56,10 +60,9 @@ def add_node(input_graph: torch_geometric.data.data.Data,
     # [1.] Add the node's features =====================================================================================
     ####################################################################################################################
     if input_graph_x is not None:
-        output_graph_x = np.row_stack((input_graph_x,
-                                       node_features))
+        output_graph_x = cp.concatenate((input_graph_x, node_features), axis=0)
     else:
-        output_graph_x = np.array([node_features])
+        output_graph_x = cp.array([node_features])
 
     ####################################################################################################################
     # [2.] If pos is not None, then it needs to contain a new pos ======================================================
@@ -83,7 +86,7 @@ def add_node(input_graph: torch_geometric.data.data.Data,
     output_graph_node_ids.append(node_id)
     output_graph_node_labels.append(label)
 
-    output_graph = Data(x=torch.from_numpy(output_graph_x),
+    output_graph = Data(x=from_dlpack(output_graph_x.toDlpack()),
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
                         y=input_graph.y,
