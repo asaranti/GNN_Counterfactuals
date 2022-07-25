@@ -17,6 +17,7 @@ import os
 import re
 import numpy as np
 import pickle
+from torch.multiprocessing import Pool
 
 import torch
 from flask import Flask, request
@@ -33,6 +34,7 @@ from preprocessing_files.format_transformations.format_transformation_pytorch_to
 
 from examples.synthetic_graph_examples.ba_graphs_examples.ba_graphs_generator import ba_graphs_gen
 from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_last_graph_dataset
+from utils.results_utilities import transform_to_results
 
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -54,6 +56,7 @@ root_folder = os.path.dirname(os.path.abspath(__file__))
 INTERVAL = 5 * 60 * 60 * 1000
 user_last_updated = {}
 connected_users = []
+processes_nr = 100
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
@@ -537,7 +540,6 @@ def node_importance(token):
     TODO: Node importances need to be returned as as list (see example values)
     """
 
-
     # graph and patient id
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
@@ -651,7 +653,7 @@ def patient_information(token):
 
 
 ########################################################################################################################
-# [19.] Callback Interval to remove 'outdated' gcn_model files =========================================================
+# [20.] Callback Interval to remove 'outdated' gcn_model files =========================================================
 ########################################################################################################################
 def remove_gcn_model_files():
     """
@@ -671,8 +673,35 @@ def remove_gcn_model_files():
                 os.remove(gnn_model_file_path)
                 connected_users.remove(token)
 
+########################################################################################################################
+# [19.] Save Final Results  ============================================================================================
+########################################################################################################################
+@app.route('/<uuid:token>/save/results', methods=['GET'])
+def results(token):
+    # get graph data of user by token
+    graph_data = user_graph_data[str(token)]
+
+    # [1.] Turn dictionary into a list of graphs =======================================================================
+    graph_data_list = []
+    for patient_id in range(len(graph_data)):
+        # get all modified graphs for this patient
+        selected_graphs = graph_data[str(patient_id)]
+
+        # get latest graph id (the indexes start with 0 so subtract length by 1)
+        latest_graph_id = len(selected_graphs.keys()) - 1
+        latest_graph = graph_data[str(patient_id)][str(latest_graph_id)]
+
+        # get latest modified graph
+        graph_data_list.append(latest_graph)
+
+    # [2.] Run parallel ================================================================================================
+    with Pool(processes_nr) as p:
+        pat_results = p.map(transform_to_results, graph_data_list)
+
+    return json.dumps(pat_results)
 
 ### Don't know if needed
+
 
 ########################################################################################################################
 # [11.] Backup =========================================================================================================
