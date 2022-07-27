@@ -10,7 +10,7 @@ from preprocessing_files.format_transformations.format_transformation_pytorch_to
 from actionable.gnn_explanations import explain_sample
 
 
-def transform_to_results(graph):
+def transform_to_results(graph, user_token):
     """
     Transform a graph from pytorch format to ui and then append all relevance values for nodes and edges.
     Return in a way that the UI can handle.
@@ -24,6 +24,7 @@ def transform_to_results(graph):
         'gnnexplainer',
         graph.to('cuda:0'),
         int(graph.y.cpu().detach().numpy()[0]),
+        user_token,
     ))
     # round value
     gnn_exp = [str(round(node_relevance, 2)) for node_relevance in gnn_exp]
@@ -36,6 +37,7 @@ def transform_to_results(graph):
         'saliency',
         graph.to('cuda:0'),
         int(graph.y.cpu().detach().numpy()[0]),
+        user_token,
     ))
     # round value
     sal = [str(round(edge_relevance, 2)) for edge_relevance in sal]
@@ -46,6 +48,7 @@ def transform_to_results(graph):
         'ig',
         graph.to('cuda:0'),
         int(graph.y.cpu().detach().numpy()[0]),
+        user_token,
     ))
     # round value
     ig = [str(round(edge_relevance, 2)) for edge_relevance in ig]

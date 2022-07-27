@@ -696,7 +696,7 @@ def results(token):
 
     # [2.] Run parallel ================================================================================================
     with Pool(processes_nr) as p:
-        pat_results = p.map(transform_to_results, graph_data_list)
+        pat_results = p.map(transform_to_results, graph_data_list, token)
 
     return json.dumps(pat_results)
 
