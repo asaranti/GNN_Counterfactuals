@@ -17,11 +17,11 @@ import os
 import re
 import numpy as np
 import pickle
-from torch.multiprocessing import Pool
-
 import torch
+from torch.multiprocessing import Pool
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
+from functools import partial
 
 from actionable.gnn_actions import GNN_Actions
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
@@ -41,7 +41,6 @@ from utils.results_utilities import transform_to_results
 ########################################################################################################################
 app = Flask(__name__)
 
-
 # Start: Index ---------------------------------------------------------------------------------------------------------
 @app.route('/index')
 def index():
@@ -56,7 +55,7 @@ root_folder = os.path.dirname(os.path.abspath(__file__))
 INTERVAL = 5 * 60 * 60 * 1000
 user_last_updated = {}
 connected_users = []
-processes_nr = 100
+processes_nr = 2
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
@@ -661,7 +660,7 @@ def remove_gcn_model_files():
     """
     # get time in ms
     current_time = round(time.time() * 1000)
-    gnn_storage_folder = os.path.join("data", "output", "gnns")
+    gnn_storage_folder = os.path.join(data_folder, "output", "gnns")
 
     # find outdated files: last modification > 5 hours (INTERVAL)
     for token in connected_users:
@@ -695,8 +694,11 @@ def results(token):
         graph_data_list.append(latest_graph)
 
     # [2.] Run parallel ================================================================================================
+    # simplify the method -> user_token stays the same for every execution of a specific user
+    transform = partial(transform_to_results, user_token=str(token))
+
     with Pool(processes_nr) as p:
-        pat_results = p.map(transform_to_results, graph_data_list, token)
+        pat_results = p.map(transform, graph_data_list)
 
     return json.dumps(pat_results)
 
