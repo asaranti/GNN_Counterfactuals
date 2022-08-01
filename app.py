@@ -111,7 +111,7 @@ def patient_name(token):
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_pytorch")
-        with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
+        with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch_50_graphs.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
 
     # turn list into dictionary format
@@ -680,9 +680,14 @@ def results(token):
     # get graph data of user by token
     graph_data = user_graph_data[str(token)]
 
+    # graph and patient id ---------------------------------------------------------------------------------------------
+    from_pat = request.args.get("from_pat")
+    to_pat = request.args.get("to_pat")
+
     # [1.] Turn dictionary into a list of graphs =======================================================================
     graph_data_list = []
-    for patient_id in range(len(graph_data)):
+    for patient_id in range(int(from_pat), int(to_pat)+1):
+
         # get all modified graphs for this patient
         selected_graphs = graph_data[str(patient_id)]
 
@@ -827,6 +832,7 @@ def remove_feature_from_all_edges(token):
 # MAIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
 if __name__ == "__main__":
+    torch.multiprocessing.set_start_method('spawn')
     # scheduler to update / remove sessions (every 5 hours)
     time_in_hours = INTERVAL / 60 / 60 / 1000
     scheduler = BackgroundScheduler(timezone="Europe/Vienna")
