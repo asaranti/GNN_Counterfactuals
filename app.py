@@ -111,7 +111,7 @@ def patient_name(token):
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_pytorch")
-        with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch_50_graphs.pkl'), 'rb') as f:
+        with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
 
     # turn list into dictionary format
