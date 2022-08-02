@@ -67,7 +67,7 @@ def graph_viz(graph_data: torch_geometric.data.data.Data, graph_idx: int):
         graph_viz,
         with_labels=True,
     )
-    # plt.show()
+    plt.show()
 
     output_data_path = os.path.join(os.path.join("data", "output", "KIRC_RANDOM", "plots", "graph_plots"))
     fig.savefig(os.path.join(output_data_path,  f"graph_{graph_idx}.png"))
