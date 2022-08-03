@@ -3,7 +3,7 @@
     Transform a part of the KIRC_RANDOM dataset to pytorch-compatible format
 
     :author: Anna Saranti
-    :copyright: © 2021 HCI-KDD (ex-AI) group
+    :copyright: © 2022 HCI-KDD (ex-AI) group
     :date: 2022-08-02
 """
 
@@ -16,6 +16,7 @@ import torch
 from torch_geometric.data import Data
 
 from plots.graph_visualization import graph_viz
+from utils.graph_utilities import remove_duplicate_edges
 
 ########################################################################################################################
 # [0.] Transformation Experiment ::: From PPI to Pytorch_Graph =========================================================
@@ -134,7 +135,11 @@ for edge_line in edges_list_original:
 
         edge_ids.append(edge_id)
 
-edge_idx = torch.tensor([edges_left_indexes, edges_right_indexes], dtype=torch.long)
+
+edge_idx_np = np.array([edges_left_indexes, edges_right_indexes])
+edge_idx_np = remove_duplicate_edges(edge_idx_np)
+
+edge_idx = torch.tensor(edge_idx_np, dtype=torch.long)
 edge_attr = torch.tensor(np.array(edge_attr), dtype=torch.float64)
 
 ########################################################################################################################
@@ -190,5 +195,3 @@ for row_nr in range(nr_of_graphs):
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 with open(os.path.join(dataset_pytorch_folder, 'kirc_subnet_pytorch.pkl'), 'wb') as f:
     pickle.dump(graph_all, f)
-
-
