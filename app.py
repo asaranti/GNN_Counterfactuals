@@ -48,7 +48,7 @@ def index():
 
 
 # global
-dataset_names = ["Synthetic Dataset", "KIRC Dataset"]
+dataset_names = ["Synthetic Dataset", "KIRC Dataset", "KIRC SubNet"]
 graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
 root_folder = os.path.dirname(os.path.abspath(__file__))
 # interval to delete old sessions: 5 hours (hour * min * sec * ms)
@@ -101,8 +101,10 @@ def patient_name(token):
     graph_data = {}
 
     # get patient ids corresponding to dataset
-    if dataset_name == "Barabasi-Albert Dataset":       # get list of all graphs in pytorch format
-        graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
+    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+        dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
+        with open(os.path.join(dataset_pytorch_folder, 'kirc_subnet_pytorch.pkl'), 'rb') as f:
+            graphs_list = pickle.load(f)
 
     elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
