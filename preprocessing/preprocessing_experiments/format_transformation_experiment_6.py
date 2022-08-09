@@ -16,7 +16,8 @@ import torch
 from torch_geometric.data import Data
 
 from plots.graph_visualization import graph_viz
-from utils.graph_utilities import remove_duplicate_edges
+from preprocessing.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+
 
 ########################################################################################################################
 # [0.] Transformation Experiment ::: From PPI to Pytorch_Graph =========================================================
@@ -130,14 +131,22 @@ for edge_line in edges_list_original:
         node_left_idx = allowed_nodes_names.index(node_left_name)
         node_right_idx = allowed_nodes_names.index(node_right_name)
 
-        edges_left_indexes.append(node_left_idx)
-        edges_right_indexes.append(node_right_idx)
+        b_edge_exists_already = False
+        for edge_idx_current in range(len(edges_left_indexes)):
+            if (edges_left_indexes[edge_idx_current] == node_left_idx and
+                edges_right_indexes[edge_idx_current] == node_right_idx) or \
+                    (edges_left_indexes[edge_idx_current] == node_right_idx and
+                     edges_right_indexes[edge_idx_current] == node_left_idx):
+                b_edge_exists_already = True
+                break
 
-        edge_ids.append(edge_id)
+        if not b_edge_exists_already:
+            edges_left_indexes.append(node_left_idx)
+            edges_right_indexes.append(node_right_idx)
 
+            edge_ids.append(edge_id)
 
 edge_idx_np = np.array([edges_left_indexes, edges_right_indexes])
-edge_idx_np = remove_duplicate_edges(edge_idx_np)
 
 edge_idx = torch.tensor(edge_idx_np, dtype=torch.long)
 edge_attr = torch.tensor(np.array(edge_attr), dtype=torch.float64)
@@ -172,22 +181,21 @@ for row_nr in range(nr_of_graphs):
         graph_id=f"graph_id_{row_nr}_0"
     )
 
-    """
-    print(graph_orig.x)
-    print(graph_orig.edge_index)
-    print(graph_orig.y)
-    print(graph_orig.node_labels)
-    print(graph_orig.node_ids)
-    print(graph_orig.node_feature_labels)
-    print(graph_orig.edge_ids)
-    print(graph_orig.edge_attr_labels)
-    print("----------------------------------------------------------------------------------")
-    """
+    # print(graph_orig.x)
+    # print(graph_orig.edge_index)
+    # print(graph_orig.y)
+    # print(graph_orig.node_labels)
+    # print(type(graph_orig.node_ids))
+    # print(graph_orig.node_feature_labels)
+    # print(graph_orig.edge_ids)
+    # print(graph_orig.edge_attr_labels)
+    # print("----------------------------------------------------------------------------------")
 
     # print(graph_orig.edge_index)
     # graph_viz(graph_orig, row_nr)
 
     graph_all.append(graph_orig)
+
 
 ########################################################################################################################
 # [5.] Store the Pytorch Dataset =======================================================================================
@@ -195,3 +203,20 @@ for row_nr in range(nr_of_graphs):
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 with open(os.path.join(dataset_pytorch_folder, 'kirc_subnet_pytorch.pkl'), 'wb') as f:
     pickle.dump(graph_all, f)
+
+########################################################################################################################
+# [6.] Transform it to UI format =======================================================================================
+########################################################################################################################
+dataset_ui_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_subnet_ui")
+
+graphs_nr = len(graph_all)
+graph_idx = 0
+for graph_idx in range(graphs_nr):
+
+    transform_from_pytorch_to_ui(graph_all[graph_idx],
+                                 dataset_ui_folder,
+                                 f"kirc_subnet_nodes_ui_format_{graph_idx}.csv",
+                                 f"kirc_subnet_egdes_ui_format_{graph_idx}.csv")
+
+    graph_idx += 1
+
