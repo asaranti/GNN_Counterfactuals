@@ -131,6 +131,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     # [0.] Constraints/Requirements ====================================================================================
     ####################################################################################################################
     # [0.1.] Check the types of the input graph's object ---------------------------------------------------------------
+    print("Start consistency check")
     check_data_format_consistency(input_graph)
 
     # [0.2.] Check that the index of the deleted node is valid ---------------------------------------------------------
@@ -228,6 +229,8 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
                         pos=output_pos,
                         graph_id=input_graph.graph_id,
                         )
+
+    print("End consistency check")
     check_data_format_consistency(output_graph)
 
     return output_graph
