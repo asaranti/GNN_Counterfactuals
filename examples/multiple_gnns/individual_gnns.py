@@ -9,11 +9,13 @@
 import os
 import pickle
 import random
+import torch
 
 from actionable.gnn_actions import GNN_Actions
 from actionable.gnn_explanations import explain_sample
 from actionable.graph_actions import add_node, remove_node
 from gnns.gnn_selectors.gnn_definitions import define_gnn
+from gnns.gnn_utils import load_gnn_model
 
 # [0.] -----------------------------------------------------------------------------------------------------------------
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -25,13 +27,12 @@ device = 'cuda:0'
 # dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 
 # [1.b.] KIRC random nodes ui ------------------------------------------------------------------------------------------
-dataset_name = "kirc_random_nodes_ui"
-dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
+# dataset_name = "kirc_random_nodes_ui"
+# dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 
 # [1.c.] Synthetic -----------------------------------------------------------------------------------------------------
-# dataset_name = "synthetic"
-# dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_pytorch")
-
+dataset_name = "synthetic"
+dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_pytorch")
 
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}_pytorch.pkl'), "rb"))
 
@@ -41,13 +42,15 @@ print(gnn_architecture_params_dict)
 
 # [3.] Train the GNN for the first time --------------------------------------------------------------------------------
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
-model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-print(performance_values_dict)
+# model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
+# print(performance_values_dict)
+model = load_gnn_model(dataset_name)["model"]
 
-# [4.] Delete one node -------------------------------------------------------------------------------------------------
+# [4.] Delete one node and make a predict with the stored model --------------------------------------------------------
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len - 1)
 input_graph = dataset[graph_idx]
+input_graph.to(device)
 print(input_graph)
 
 nodes_orig_nr = input_graph.x.shape[0]
@@ -60,6 +63,9 @@ print(f"Nr. of nodes after node delete: {nodes_output_nr}")
 
 dataset[graph_idx] = output_graph
 
+prediction_label_of_testing, prediction_confidence_of_testing = gnn_actions_obj.gnn_predict(output_graph)
+print(prediction_label_of_testing, prediction_confidence_of_testing)
+
 # [5.] Explanation -----------------------------------------------------------------------------------------------------
 explanation_method = 'gnnexplainer'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
@@ -68,7 +74,6 @@ explanation_label = ground_truth_label  # Can also be the opposite - all possibl
 # GNNECPLAINER ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 node_mask = explain_sample(explanation_method, model, input_graph, explanation_label)
 print(f"\nGNNExplainer mask: {node_mask}")
-
 
 # CAPTUM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rel_pos = list(explain_sample(
@@ -86,6 +91,4 @@ print(type(rel_pos[0]))
 # [6.] Retrain ---------------------------------------------------------------------------------------------------------
 model, performance_values_dict = gnn_actions_obj.gnn_retrain(dataset)
 print(performance_values_dict)
-
-
 

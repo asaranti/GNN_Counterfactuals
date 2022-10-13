@@ -20,7 +20,7 @@ from torch_geometric.loader import DataLoader
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
-from gnns.gnn_utils import save_gnn_model
+from gnns.gnn_utils import load_gnn_model, save_gnn_model
 from preprocessing_data.graph_features_normalization import graph_features_normalization
 
 
@@ -194,7 +194,11 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [6.] GNN store ===============================================================================================
         ################################################################################################################
-        save_gnn_model(model, self.dataset_name)
+        save_gnn_model(model,
+                       self.train_set_metrics_dict, self.test_set_metrics_dict,
+                       self.train_dataset_shuffled_indexes, self.test_dataset_shuffled_indexes,
+                       self.train_outputs_predictions_dict, self.test_outputs_predictions_dict,
+                       self.dataset_name)
 
         return model, self.test_set_metrics_dict
 
@@ -223,16 +227,13 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [1.] Load the GNN from the file system =======================================================================
         ################################################################################################################
-        gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-        model = torch.load(gnn_model_file_path).to(device)
-        model.eval()
+        model = load_gnn_model(self.dataset_name)["model"]
 
         ################################################################################################################
         # [2.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN  ===
         ################################################################################################################
         model_state_dict = model.state_dict()
-        input_features_model_nr = model_state_dict["conv1.lin.weight"].size(dim=1)
+        input_features_model_nr = model_state_dict["gcns_modules.0.lin.weight"].size(dim=1)
         input_features_graph_nr = input_graph.x.size(dim=1)
         assert input_features_model_nr == input_features_graph_nr, \
             f"The number of features of the nodes that the model expects {input_features_model_nr},\n" \
@@ -275,6 +276,11 @@ class GNN_Actions(torch.nn.Module):
         for graph in input_graphs:
             graph.to(device)
 
+        if self.train_dataset_shuffled_indexes is None or self.test_dataset_shuffled_indexes is None:
+            gnn_model_info = load_gnn_model(self.dataset_name)
+            self.train_dataset_shuffled_indexes = gnn_model_info["train_dataset_shuffled_indexes"]
+            self.test_dataset_shuffled_indexes = gnn_model_info["test_dataset_shuffled_indexes"]
+
         train_normalized_graphs_dataset = [input_graphs[idx]
                                            for idx in self.train_dataset_shuffled_indexes]
         test_normalized_graphs_dataset = [input_graphs[idx] for idx in self.test_dataset_shuffled_indexes]
@@ -285,10 +291,7 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [1.] Load the GNN, get the architecture ======================================================================
         ################################################################################################################
-        gnn_storage_folder = "models"
-        gnn_model_file_path = os.path.join(gnn_storage_folder, f"{self.dataset_name}_model.pth")
-        model = torch.load(gnn_model_file_path).to(device)
-        model.eval()
+        model = load_gnn_model(self.dataset_name)["model"]
 
         ################################################################################################################
         # [2.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN ====
@@ -355,7 +358,11 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [7.] GNN store ===============================================================================================
         ################################################################################################################
-        save_gnn_model(model, self.dataset_name)
+        save_gnn_model(model,
+                       self.train_set_metrics_dict, self.test_set_metrics_dict,
+                       self.train_dataset_shuffled_indexes, self.test_dataset_shuffled_indexes,
+                       self.train_outputs_predictions_dict, self.test_outputs_predictions_dict,
+                       self.dataset_name)
 
         ################################################################################################################
         # [8.] Return the new test set metrics after re-train ==========================================================

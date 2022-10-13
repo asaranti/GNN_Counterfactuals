@@ -74,6 +74,7 @@ class GCN(torch.nn.Module):
             gcn_module = self.gcns_modules[gcn_module_idx]
 
             if gcn_module_idx < gcn_modules_len - 1:
+
                 x = gcn_module(x, edge_index, edge_weight)
                 x = x.relu()
             else:
