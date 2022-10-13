@@ -20,6 +20,7 @@ from torch_geometric.loader import DataLoader
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
+from gnns.gnn_utils import save_gnn_model
 from preprocessing_data.graph_features_normalization import graph_features_normalization
 
 
@@ -28,9 +29,12 @@ class GNN_Actions(torch.nn.Module):
     GNN Actions
     """
 
-    def __init__(self):
+    def __init__(self, gnn_architecture_params_dict: dict, dataset_name: str):
         """
-        Init
+        Init the GNN actions
+
+        :param gnn_architecture_params_dict: Dictionary of architecture parameters
+        :param dataset_name: Dataset name
         """
 
         super(GNN_Actions, self).__init__()
@@ -40,11 +44,15 @@ class GNN_Actions(torch.nn.Module):
         self.train_dataset_shuffled_indexes = None
         self.test_dataset_shuffled_indexes = None
 
-        # [2.] GNN training parameters ---------------------------------------------------------------------------------
+        # [2.] GNN architecture parameters -----------------------------------------------------------------------------
+        self.gnn_architecture_params_dict = gnn_architecture_params_dict
+        self.dataset_name = dataset_name
+
+        # [3.] GNN training parameters ---------------------------------------------------------------------------------
         self.batch_size = 8
         self.epochs_nr = 30
 
-        # [3.] Data structures for the performance metrics -------------------------------------------------------------
+        # [4.] Data structures for the performance metrics -------------------------------------------------------------
         self.train_set_metrics_dict = None
         self.train_outputs_predictions_dict = None
         self.test_set_metrics_dict = None
@@ -96,11 +104,12 @@ class GNN_Actions(torch.nn.Module):
 
         return train_loader, test_loader
 
-    def gnn_init_train(self, input_graphs: list) -> dict:
+    def gnn_init_train(self, input_graphs: list) -> tuple:
         """
         Method that implements the first training of the GNN
 
         :param input_graphs: Original dataset - List of graphs
+        :return: Tuple of model and dictionary of performance metrics
         """
 
         ################################################################################################################
@@ -138,7 +147,12 @@ class GNN_Actions(torch.nn.Module):
         # [1.] Graph Classification ====================================================================================
         ################################################################################################################
         num_classes = 2
-        model = GCN(num_node_features=num_features, hidden_channels=10, num_classes=num_classes).to(device)
+        model = GCN(
+            num_node_features=num_features,
+            hidden_channels=self.gnn_architecture_params_dict["hidden_channels"],
+            layers_nr=self.gnn_architecture_params_dict["layers_nr"],
+            num_classes=num_classes).\
+            to(device)
         print(model)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
@@ -180,11 +194,9 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [6.] GNN store ===============================================================================================
         ################################################################################################################
-        gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-        torch.save(model, gnn_model_file_path)
+        save_gnn_model(model, self.dataset_name)
 
-        return self.test_set_metrics_dict
+        return model, self.test_set_metrics_dict
 
     def gnn_predict(self, input_graph: Data) -> tuple:
         """
@@ -240,7 +252,7 @@ class GNN_Actions(torch.nn.Module):
 
         return str(prediction_label_of_testing), str(round(prediction_confidence_of_testing, 2))
 
-    def gnn_retrain(self, input_graphs: list) -> dict:
+    def gnn_retrain(self, input_graphs: list) -> tuple:
         """
         GNN retrain function
 
@@ -248,6 +260,8 @@ class GNN_Actions(torch.nn.Module):
         [2.] Make the check if the (generally) changed input graphs conform to the architecture of the stored GNN.
              If the requirements are not fulfilled, then the predict function cannot be applied.
         [3.] Apply the predict function on the GNN
+
+        :return: Tuple of model and dictionary of performance metrics
         """
 
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -271,8 +285,8 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [1.] Load the GNN, get the architecture ======================================================================
         ################################################################################################################
-        gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
+        gnn_storage_folder = "models"
+        gnn_model_file_path = os.path.join(gnn_storage_folder, f"{self.dataset_name}_model.pth")
         model = torch.load(gnn_model_file_path).to(device)
         model.eval()
 
@@ -281,7 +295,7 @@ class GNN_Actions(torch.nn.Module):
         #      Use the first graph for now =============================================================================
         ################################################################################################################
         model_state_dict = model.state_dict()
-        input_features_model_nr = model_state_dict["conv1.lin.weight"].size(dim=1)
+        input_features_model_nr = model_state_dict["gcns_modules.0.lin.weight"].size(dim=1)
         input_features_graph_nr = input_graphs[0].x.size(dim=1)
 
         # [2.1.] If the number of features did not change, then just reset the weights ---------------------------------
@@ -341,11 +355,9 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [7.] GNN store ===============================================================================================
         ################################################################################################################
-        gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-        torch.save(model, gnn_model_file_path)
+        save_gnn_model(model, self.dataset_name)
 
         ################################################################################################################
         # [8.] Return the new test set metrics after re-train ==========================================================
         ################################################################################################################
-        return self.test_set_metrics_dict
+        return model, self.test_set_metrics_dict

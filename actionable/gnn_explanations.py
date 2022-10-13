@@ -96,11 +96,12 @@ def aggregate_edge_directions(edge_mask, data):
     return edge_mask_dict
 
 
-def explain_sample(method: str, input_graph: Data, target_label: int) -> list:
+def explain_sample(method: str, model: GCN, input_graph: Data, target_label: int) -> list:
     """
     Explain input sample
 
     :param method: Explanation method
+    :param model: Input model
     :param input_graph: Input data
     :param target_label: Target label
 
@@ -110,11 +111,6 @@ def explain_sample(method: str, input_graph: Data, target_label: int) -> list:
     # [0.] Model and device are hardwired ------------------------------------------------------------------------------
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = 'cuda:0'
-
-    gnn_storage_folder = os.path.join("data", "output", "gnns")
-    gnn_model_file_path = os.path.join(gnn_storage_folder, "gcn_model.pth")
-    model = torch.load(gnn_model_file_path)
-    model.eval()
 
     # [1.] Edge mask ---------------------------------------------------------------------------------------------------
     edge_mask = explain(method, model, input_graph, device, target_label)
