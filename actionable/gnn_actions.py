@@ -72,6 +72,10 @@ class GNN_Actions(torch.nn.Module):
         graph_numbering_ids = re.findall('[0-9]+', graph_id)
         graph_nr_in_dataset = int(graph_numbering_ids[0])
 
+        if self.test_dataset_shuffled_indexes is None:
+            gnn_model_info = load_gnn_model(self.dataset_name)
+            self.test_dataset_shuffled_indexes = gnn_model_info["test_dataset_shuffled_indexes"]
+
         if graph_nr_in_dataset in self.test_dataset_shuffled_indexes:
             b_is_in_train = False
 
