@@ -56,23 +56,24 @@ def use_trained_model(model: GCN, data_loader: DataLoader) -> dict:
     y_test = []
     y_pred = []
 
-    outputs_all = []
-    predictions_all = []
+    prediction_confidences_all = []
+    output_classes_all = []
 
     for data in data_loader:                                    # Iterate in batches over the training/test dataset.
 
         out = model(data.x, data.edge_index, data.batch)
         pred = out.argmax(dim=1)                                # Use the class with highest probability.
 
-        outputs_all.append(out)
-        predictions_all.append(pred)
+        prediction_confidences_all.append(out)
+        output_classes_all.append(pred)
 
         y_test += list(data.y.cpu().detach().numpy())
         y_pred += list(pred.cpu().detach().numpy())
 
     # [2.] Gather the predictions --------------------------------------------------------------------------------------
-    outputs_all_tensor = np.around(torch.cat(outputs_all, dim=0).cpu().detach().numpy(), decimals=2).astype('str')
-    predictions_all_tensor = torch.cat(predictions_all, dim=0).cpu().detach().numpy().astype('str')
+    prediction_confidences_all_tensor = np.around(torch.cat(prediction_confidences_all, dim=0).cpu().detach().numpy(),
+                                                  decimals=2).astype('str')
+    output_classes_all_tensor = torch.cat(output_classes_all, dim=0).cpu().detach().numpy().astype('str')
 
     # [3.] Gather the metrics ------------------------------------------------------------------------------------------
     conf_matrix = confusion_matrix(y_test, y_pred)
@@ -94,6 +95,7 @@ def use_trained_model(model: GCN, data_loader: DataLoader) -> dict:
                             "sensitivity": str(round(sensitivity, 2)),
                             "specificity": str(round(specificity, 2))}
 
-    dataset_outputs_predictions_dict = {"outputs": outputs_all_tensor, "predictions": predictions_all_tensor}
+    dataset_outputs_predictions_dict = {"prediction_confidences": prediction_confidences_all_tensor,
+                                        "output_classes": output_classes_all_tensor}
 
     return dataset_metrics_dict, dataset_outputs_predictions_dict

@@ -201,8 +201,10 @@ class GNN_Actions(torch.nn.Module):
         save_gnn_model(model,
                        self.train_set_metrics_dict, self.test_set_metrics_dict,
                        self.train_dataset_shuffled_indexes, self.test_dataset_shuffled_indexes,
-                       self.train_outputs_predictions_dict["predictions"], self.test_outputs_predictions_dict["predictions"],
-                       self.train_outputs_predictions_dict["outputs"], self.test_outputs_predictions_dict["outputs"],
+                       self.train_outputs_predictions_dict["prediction_confidences"],
+                       self.test_outputs_predictions_dict["prediction_confidences"],
+                       self.train_outputs_predictions_dict["output_classes"],
+                       self.test_outputs_predictions_dict["output_classes"],
                        self.dataset_name)
 
         return model, self.test_set_metrics_dict
@@ -366,9 +368,10 @@ class GNN_Actions(torch.nn.Module):
         save_gnn_model(model,
                        self.train_set_metrics_dict, self.test_set_metrics_dict,
                        self.train_dataset_shuffled_indexes, self.test_dataset_shuffled_indexes,
-                       self.train_outputs_predictions_dict["predictions"],
-                       self.test_outputs_predictions_dict["predictions"],
-                       self.train_outputs_predictions_dict["outputs"], self.test_outputs_predictions_dict["outputs"],
+                       self.train_outputs_predictions_dict["prediction_confidences"],
+                       self.test_outputs_predictions_dict["prediction_confidences"],
+                       self.train_outputs_predictions_dict["output_classes"],
+                       self.test_outputs_predictions_dict["output_classes"],
                        self.dataset_name)
 
         ################################################################################################################

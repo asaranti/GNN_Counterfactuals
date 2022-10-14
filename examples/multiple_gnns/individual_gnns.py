@@ -23,17 +23,16 @@ device = 'cuda:0'
 
 # [1.] Select dataset --------------------------------------------------------------------------------------------------
 # [1.a.] KIRC Subnet ---------------------------------------------------------------------------------------------------
-# dataset_name = "kirc_subnet"
-# dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
+dataset_name = "kirc_subnet"
+dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 
 # [1.b.] KIRC random nodes ui ------------------------------------------------------------------------------------------
 # dataset_name = "kirc_random_nodes_ui"
 # dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
 
 # [1.c.] Synthetic -----------------------------------------------------------------------------------------------------
-dataset_name = "synthetic"
-dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_pytorch")
-
+# dataset_name = "synthetic"
+# dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_pytorch")
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}_pytorch.pkl'), "rb"))
 
 # [2.] Select GNN architecture -----------------------------------------------------------------------------------------
@@ -42,9 +41,9 @@ print(gnn_architecture_params_dict)
 
 # [3.] Train the GNN for the first time --------------------------------------------------------------------------------
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
-# model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-# print(performance_values_dict)
-model = load_gnn_model(dataset_name)["model"]
+model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
+
+# model = load_gnn_model(dataset_name)["model"]
 
 # [4.] Delete one node and make a predict with the stored model --------------------------------------------------------
 dataset_len = len(dataset)
