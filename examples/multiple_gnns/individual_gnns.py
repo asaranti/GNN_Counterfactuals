@@ -29,6 +29,7 @@ device = 'cuda:0'
 # Global variable containing the dictionaries
 global_gnn_models_dict = {}
 
+"""
 # [1.] Select dataset --------------------------------------------------------------------------------------------------
 # [1.a.] KIRC Subnet ---------------------------------------------------------------------------------------------------
 dataset_name = "kirc_subnet"
@@ -40,6 +41,7 @@ dataset_name = "kirc_subnet"
 model = load_gnn_model(dataset_name)["model"]
 global_gnn_models_dict[dataset_name] = {'0': model}
 
+
 # [1.b.] KIRC random nodes ui ------------------------------------------------------------------------------------------
 dataset_name = "kirc_random_nodes_ui"
 # dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
@@ -49,6 +51,7 @@ dataset_name = "kirc_random_nodes_ui"
 # model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 model = load_gnn_model(dataset_name)["model"]
 global_gnn_models_dict[dataset_name] = {'0': model}
+"""
 
 # [1.c.] Synthetic -----------------------------------------------------------------------------------------------------
 dataset_name = "synthetic"
@@ -56,12 +59,12 @@ dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}_pytorch.pkl'), "rb"))
 gnn_architecture_params_dict = define_gnn(dataset_name)
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
-model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-global_gnn_models_dict[dataset_name] = {'0': model}
+# model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
+model = load_gnn_model(dataset_name)["model"]
+global_gnn_models_dict['0'] = {model}
+
 
 # [2.] Select GNN architecture -----------------------------------------------------------------------------------------
-
-print(gnn_architecture_params_dict)
 
 # [3.] Load the model --------------------------------------------------------------------------------------------------
 
@@ -111,12 +114,9 @@ print(type(rel_pos[0]))
 model, performance_values_dict = gnn_actions_obj.gnn_retrain(dataset)
 print(performance_values_dict)
 
-global_gnn_models_of_dataset_dict = global_gnn_models_dict[dataset_name]
-model_numbering_keys_str_list = list(global_gnn_models_of_dataset_dict.keys())
+model_numbering_keys_str_list = list(global_gnn_models_dict.keys())
 model_numbering_keys_int_list = [int(model_nr) for model_nr in model_numbering_keys_str_list]
 max_model_nr = max(model_numbering_keys_int_list)
-global_gnn_models_of_dataset_dict[str(max_model_nr + 1)] = model
-global_gnn_models_dict[dataset_name] = global_gnn_models_of_dataset_dict
+global_gnn_models_dict[str(max_model_nr + 1)] = model
 print(global_gnn_models_dict)
-
 
