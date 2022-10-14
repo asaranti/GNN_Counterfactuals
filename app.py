@@ -1,7 +1,6 @@
 """
     Flask application instance for the main graph presentation and
     actions on them (addition/removal of nodes and edges as well as features thereof)
-
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2021-10-18
@@ -17,10 +16,11 @@ import os
 import re
 import numpy as np
 import pickle
-
 import torch
+from torch.multiprocessing import Pool
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
+from functools import partial
 
 from actionable.gnn_actions import GNN_Actions
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
@@ -30,15 +30,16 @@ from actionable.gnn_explanations import explain_sample
 from tests.utils_tests.utils_tests_gnns.jsonification import graph_to_json
 
 from preprocessing_files.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from gnns.gnn_selectors.gnn_definitions import define_gnn
 
 from examples.synthetic_graph_examples.ba_graphs_examples.ba_graphs_generator import ba_graphs_gen
 from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_last_graph_dataset
-
+from utils.results_utilities import transform_to_results
+from gnns.gnn_utils import load_gnn_model
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
 app = Flask(__name__)
-
 
 # Start: Index ---------------------------------------------------------------------------------------------------------
 @app.route('/index')
@@ -47,16 +48,18 @@ def index():
 
 
 # global
-dataset_names = ["Synthetic Dataset", "KIRC Dataset"]
+dataset_names = ["Synthetic Dataset", "KIRC Dataset", "KIRC SubNet"]
 graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
 root_folder = os.path.dirname(os.path.abspath(__file__))
 # interval to delete old sessions: 5 hours (hour * min * sec * ms)
 INTERVAL = 5 * 60 * 60 * 1000
 user_last_updated = {}
+connected_users = []
+processes_nr = 2
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
-gnn_actions_obj = GNN_Actions()
+
 
 
 ########################################################################################################################
@@ -65,6 +68,7 @@ gnn_actions_obj = GNN_Actions()
 @app.route('/', methods=['GET'])
 def initialize():
     token = uuid.uuid4()
+    connected_users.append(token)
     return json.dumps(str(token))
 
 
@@ -93,22 +97,34 @@ def patient_name(token):
 
     # init the structure
     global user_graph_data
+    global gnn_actions_obj
     user_graph_data = {}
     graph_data = {}
 
     # get patient ids corresponding to dataset
-    if dataset_name == "Barabasi-Albert Dataset":       # get list of all graphs in pytorch format
-        graphs_list = ba_graphs_gen(6, 10, 2, 5, 4)
+    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+        dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
+        with open(os.path.join(dataset_pytorch_folder, 'kirc_subnet_pytorch.pkl'), 'rb') as f:
+            graphs_list = pickle.load(f)
+        # load model
+        gnn_architecture_params_dict = define_gnn("kirc_subnet")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
 
     elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
+        # load model
+        gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
+        # load model
+        gnn_architecture_params_dict = define_gnn("synthetic")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
 
     # turn list into dictionary format
     for graph in graphs_list:
@@ -138,6 +154,7 @@ def patient_name(token):
     # save graph and session id
     user_graph_data[str(token)] = graph_data
 
+    gnn_actions_obj.gnn_init_train(user_graph_data[str(token)])
     # save user id (token) and last updated time in ms
     user_last_updated[str(token)] = round(time.time() * 1000)
 
@@ -331,9 +348,7 @@ def performance_values(token):
 def nn_predict(token):
     """
     Apply a new prediction with the current graphs dataset
-
     :return:
-
     Prediction of Graph with GNN need to be done
     Return the predicted class
     """
@@ -349,7 +364,7 @@ def nn_predict(token):
 
     # predicted class --------------------------------------------------------------------------------------------------
     input_graph.x = input_graph.x.to(dtype=torch.float32)
-    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph)
+    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph, token)
 
     return "done"
 
@@ -362,7 +377,6 @@ def nn_retrain(token):
     """
     GNN needs to be retrained on the latest graphs of every patient
     Performance values need to be saved in "perf_values" variable
-
     :return:
     """
 
@@ -373,7 +387,7 @@ def nn_retrain(token):
     dataset = keep_only_last_graph_dataset(dataset)
 
     # [3.] Retrain the GNN ---------------------------------------------------------------------------------------------
-    test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset)
+    test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset, token)
 
     # [4.] Save performance values in global variable ------------------------------------------------------------------
     global perf_values
@@ -395,7 +409,6 @@ def nn_retrain(token):
 def deep_copy(token):
     """
     Apply a new retrain with the current graphs dataset
-
     :return:
     """
     # Get patient id and graph id -----------------------------------------------------------------
@@ -469,7 +482,7 @@ def graph(token):
 ########################################################################################################################
 def remove_session_graphs():
     """
-    Remove graphs from outdated user sessions (last update > 1 hour)
+    Remove graphs from outdated user sessions (last update > 5 hour)
     """
     # get time in ms
     current_time = round(time.time() * 1000)
@@ -478,7 +491,7 @@ def remove_session_graphs():
     if len(user_last_updated) == 0:
         return
 
-    # find outdated session: last modification > 1 hour (INTERVAL)
+    # find outdated session: last modification > 5 hour (INTERVAL)
     for key, value in user_last_updated.items():
         if value + INTERVAL <= current_time:
             keys_to_remove.append(key)
@@ -501,12 +514,21 @@ def init_gnn(token):
     Save GNN and performance scores in global variables
     """
 
-    # [1.] Get patient id to get the dataset that will be used in init -------------------------------------------------
-    dataset = user_graph_data[str(token)]
-    dataset = keep_only_first_graph_dataset(dataset)
+    # Get dataset_name -----------------------------------------------------------------
+    req_data = request.get_json()
 
-    # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
-    test_set_metrics_dict = gnn_actions_obj.gnn_init_train(dataset)
+    # graph and patient id
+    dataset_name = req_data["dataset_name"]
+
+    # get patient ids corresponding to dataset
+    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+        test_set_metrics_dict = load_gnn_model("kirc_subnet")["test_set_metrics_dict"]
+
+    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+        test_set_metrics_dict = load_gnn_model("kirc_random_nodes_ui")["test_set_metrics_dict"]
+
+    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+        test_set_metrics_dict = load_gnn_model("synthetic")["test_set_metrics_dict"]
 
     # [3.] -------------------------------------------------------------------------------------------------------------
     # save performance values in global variable
@@ -530,11 +552,9 @@ def node_importance(token):
     """
     Calculate node importance for patient graph
     return: list of importances and corresponding node ids
-
     TODO: Node importances need to be calculated
     TODO: Node importances need to be returned as as list (see example values)
     """
-
 
     # graph and patient id
     patient_id = request.args.get("patient_id")
@@ -559,6 +579,7 @@ def node_importance(token):
         explanation_method,
         input_graph,
         explanation_label,
+        token,
     ))
 
     rel_pos = [str(round(node_relevance, 2)) for node_relevance in rel_pos]
@@ -604,6 +625,7 @@ def edge_importance(token):
         explanation_method,
         input_graph,
         explanation_label,
+        token,
     ))
 
     rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
@@ -618,7 +640,6 @@ def edge_importance(token):
 def patient_information(token):
     """
     Get the following information of the Patient:
-
     [1.] Is he in Train or Test Data
     [2.] Ground truth label
     [3.] Predicted label
@@ -628,6 +649,7 @@ def patient_information(token):
     # graph and patient id ---------------------------------------------------------------------------------------------
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
+    dataset_name = request.args.get("dataset_name")
 
     # Ground truth label is already stored -----------------------------------------------------------------------------
     current_graph = user_graph_data[str(token)][patient_id][graph_id]
@@ -635,18 +657,90 @@ def patient_information(token):
 
     # Check if it is in the training or test dataset -------------------------------------------------------------------
     current_graph_id = current_graph.graph_id
+
     b_is_in_train = gnn_actions_obj.is_in_training_set(current_graph_id)
     which_dataset = "Test Data"
     if b_is_in_train:
         which_dataset = "Training Data"
 
     # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
-    predicted_label, prediction_confidence = gnn_actions_obj.gnn_predict(current_graph)
+    # get patient ids corresponding to dataset
+    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+        models_dicts = load_gnn_model("kirc_subnet")
 
-    return json.dumps([which_dataset, ground_truth_label, predicted_label, prediction_confidence])
+    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+        models_dicts = load_gnn_model("kirc_random_nodes_ui")
 
+    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+        models_dicts = load_gnn_model("synthetic")
+
+    indexes = list(models_dicts['train_dataset_shuffled_indexes']) + list(models_dicts['test_dataset_shuffled_indexes'])
+    predicted_labels = models_dicts['train_outputs_predictions_dict'].tolist() + models_dicts['test_outputs_predictions_dict'].tolist()
+    prediction_conf = models_dicts['train_prediction_confidence_dict'].tolist() + models_dicts['test_prediction_confidence_dict'].tolist()
+
+    pat_idx = indexes.index(int(patient_id))
+
+    return json.dumps([which_dataset, ground_truth_label, predicted_labels[pat_idx], max(prediction_conf[pat_idx])])
+
+
+########################################################################################################################
+# [20.] Callback Interval to remove 'outdated' gcn_model files =========================================================
+########################################################################################################################
+def remove_gcn_model_files():
+    """
+    Remove gcn_model files from outdated user sessions (modification time > 5 hours)
+    """
+    # get time in ms
+    current_time = round(time.time() * 1000)
+    gnn_storage_folder = os.path.join(data_folder, "output", "gnns")
+
+    # find outdated files: last modification > 5 hours (INTERVAL)
+    for token in connected_users:
+        gcn_model_file_name = "gcn_model_" + str(token) + ".pth"
+        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
+        if os.path.exists(gnn_model_file_path):
+            modification_time = os.path.getmtime(gnn_model_file_path)
+            if modification_time + INTERVAL <= current_time:
+                os.remove(gnn_model_file_path)
+                connected_users.remove(token)
+
+########################################################################################################################
+# [19.] Save Final Results  ============================================================================================
+########################################################################################################################
+@app.route('/<uuid:token>/save/results', methods=['GET'])
+def results(token):
+    # get graph data of user by token
+    graph_data = user_graph_data[str(token)]
+
+    # graph and patient id ---------------------------------------------------------------------------------------------
+    from_pat = request.args.get("from_pat")
+    to_pat = request.args.get("to_pat")
+
+    # [1.] Turn dictionary into a list of graphs =======================================================================
+    graph_data_list = []
+    for patient_id in range(int(from_pat), int(to_pat)+1):
+
+        # get all modified graphs for this patient
+        selected_graphs = graph_data[str(patient_id)]
+
+        # get latest graph id (the indexes start with 0 so subtract length by 1)
+        latest_graph_id = len(selected_graphs.keys()) - 1
+        latest_graph = graph_data[str(patient_id)][str(latest_graph_id)]
+
+        # get latest modified graph
+        graph_data_list.append(latest_graph)
+
+    # [2.] Run parallel ================================================================================================
+    # simplify the method -> user_token stays the same for every execution of a specific user
+    transform = partial(transform_to_results, user_token=str(token))
+
+    with Pool(processes_nr) as p:
+        pat_results = p.map(transform, graph_data_list)
+
+    return json.dumps(pat_results)
 
 ### Don't know if needed
+
 
 ########################################################################################################################
 # [11.] Backup =========================================================================================================
@@ -655,7 +749,6 @@ def patient_information(token):
 def backup():
     """
     Backup data and model (snapshot)
-
     :return:
     """
 
@@ -770,10 +863,12 @@ def remove_feature_from_all_edges(token):
 # MAIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
 if __name__ == "__main__":
+    torch.multiprocessing.set_start_method('spawn')
     # scheduler to update / remove sessions (every 5 hours)
     time_in_hours = INTERVAL / 60 / 60 / 1000
     scheduler = BackgroundScheduler(timezone="Europe/Vienna")
     scheduler.add_job(func=remove_session_graphs, trigger="interval", hours=time_in_hours)
+    scheduler.add_job(func=remove_gcn_model_files, trigger="interval", hours=time_in_hours)
     scheduler.start()
 
     app.run(debug=True)
