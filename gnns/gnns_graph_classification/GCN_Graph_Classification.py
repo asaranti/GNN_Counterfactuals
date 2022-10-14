@@ -68,7 +68,7 @@ class GCN(torch.nn.Module):
         :return:
         """
 
-        # 1. Obtain node embeddings ------------------------------------------------------------------------------------
+        # [1.] Obtain node embeddings ----------------------------------------------------------------------------------
         gcn_modules_len = len(self.gcns_modules)
         for gcn_module_idx in range(gcn_modules_len):
 
@@ -81,10 +81,10 @@ class GCN(torch.nn.Module):
             else:
                 x = gcn_module(x, edge_index, edge_weight)
 
-        # 2. Readout layer ---------------------------------------------------------------------------------------------
+        # [2.] Readout layer -------------------------------------------------------------------------------------------
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
 
-        # 3. Apply a final classifier ----------------------------------------------------------------------------------
+        # [3.] Apply a final classifier --------------------------------------------------------------------------------
         x = F.dropout(x, p=0.2, training=self.training)
         x = self.lin(x)
 
