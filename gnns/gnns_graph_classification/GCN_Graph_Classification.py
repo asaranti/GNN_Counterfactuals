@@ -60,6 +60,7 @@ class GCN(torch.nn.Module):
     def forward(self, x, edge_index, batch, edge_weight=None):
         """
         Forward
+
         :param x:
         :param edge_index:
         :param batch:

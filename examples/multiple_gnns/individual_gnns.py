@@ -85,7 +85,7 @@ print(f"Nr. of nodes after node delete: {nodes_output_nr}")
 
 dataset[graph_idx] = output_graph
 
-prediction_label_of_testing, prediction_confidence_of_testing = gnn_actions_obj.gnn_predict(output_graph)
+prediction_label_of_testing, prediction_confidence_of_testing = gnn_actions_obj.gnn_predict(model, output_graph)
 print(prediction_label_of_testing, prediction_confidence_of_testing)
 
 # [5.] Explanation -----------------------------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ print(f"Captum relevances: {rel_pos}")
 print(type(rel_pos[0]))
 
 # [6.] Retrain and store in the "global_gnn_models_dict" ---------------------------------------------------------------
-model, performance_values_dict = gnn_actions_obj.gnn_retrain(dataset)
+model, performance_values_dict = gnn_actions_obj.gnn_retrain(model, dataset)
 print(performance_values_dict)
 
 model_numbering_keys_str_list = list(global_gnn_models_dict.keys())
