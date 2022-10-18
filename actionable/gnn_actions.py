@@ -108,12 +108,11 @@ class GNN_Actions(torch.nn.Module):
 
         return train_loader, test_loader
 
-    def gnn_init_train(self, input_graphs: list, user_token: str) -> dict:
+    def gnn_init_train(self, input_graphs: list) -> dict:
         """
         Method that implements the first training of the GNN
 
         :param input_graphs: Original dataset - List of graphs
-        :param user_token: Identifies a user
 
         :return: Tuple of model and dictionary of performance metrics
         """
@@ -231,6 +230,8 @@ class GNN_Actions(torch.nn.Module):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         device = 'cuda:0'
 
+        user_token = str(user_token)
+
         ################################################################################################################
         # [0.] Preprocessing ===========================================================================================
         ################################################################################################################
@@ -279,6 +280,8 @@ class GNN_Actions(torch.nn.Module):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         device = 'cuda:0'
 
+        user_token = str(user_token)
+
         ################################################################################################################
         # [0.] Preprocessing - normalization ===========================================================================
         ################################################################################################################
@@ -288,7 +291,7 @@ class GNN_Actions(torch.nn.Module):
             graph.to(device)
 
         if self.train_dataset_shuffled_indexes is None or self.test_dataset_shuffled_indexes is None:
-            gnn_model_info = load_gnn_model(self.dataset_name, False)
+            gnn_model_info = load_gnn_model(self.dataset_name, False, user_token)
             self.train_dataset_shuffled_indexes = gnn_model_info["train_dataset_shuffled_indexes"]
             self.test_dataset_shuffled_indexes = gnn_model_info["test_dataset_shuffled_indexes"]
 
@@ -372,7 +375,8 @@ class GNN_Actions(torch.nn.Module):
                        self.train_outputs_predictions_dict["output_classes"],
                        self.test_outputs_predictions_dict["output_classes"],
                        self.dataset_name,
-                       False)
+                       False,
+                       user_token)
 
         ################################################################################################################
         # [7.] Return the new test set metrics after re-train ==========================================================

@@ -16,7 +16,7 @@ import torch
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 
 
-def load_gnn_model(dataset_name: str, b_initial: bool) -> dict:
+def load_gnn_model(dataset_name: str, b_initial: bool, user_token: str = None) -> dict:
     """
     Load all model-relevant information from local storage
 
@@ -28,6 +28,8 @@ def load_gnn_model(dataset_name: str, b_initial: bool) -> dict:
 
     :param dataset_name: Dataset name that specifies the name of the model too
     :param b_initial: Load the initial or the latest model
+    :param user_token: The user token that defines the subfolder where the model will be loaded from
+                       If b_initial is True, then any "user_token" content will be ignored
 
     :return: Dictionary of all the restored data
     """
@@ -35,13 +37,21 @@ def load_gnn_model(dataset_name: str, b_initial: bool) -> dict:
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = 'cuda:0'
 
+    if b_initial and user_token is not None:
+        print("\"b_initial\" is True, the content of \"user_token\" will be ignored")
+
     gnn_storage_folder = os.path.join("models", dataset_name)
 
-    # [0.] If init get the initial, else the latest one after the last retrain -----------------------------------------
+    # [0.] If init get the initial, else the latest one after the last retrain - if exists one -------------------------
     if b_initial:
         gnn_storage_subfolder = os.path.join(gnn_storage_folder, "init_" + dataset_name)
     else:
-        gnn_storage_subfolder = os.path.join(gnn_storage_folder, "latest_" + dataset_name)
+        # Use the latest one after the last retrain - if there was one. ------------------------------------------------
+        # If there wasn't one before, then use the one of init ---------------------------------------------------------
+        if os.path.exists(os.path.join(gnn_storage_folder, user_token)):
+            gnn_storage_subfolder = os.path.join(gnn_storage_folder, user_token, "latest_" + dataset_name)
+        else:
+            gnn_storage_subfolder = os.path.join(gnn_storage_folder, "init_" + dataset_name)
 
     # [1.] The model in ".pth" format ----------------------------------------------------------------------------------
     model = torch.load(os.path.join(gnn_storage_subfolder, f"{dataset_name}_model.pth")).to(device)
@@ -87,7 +97,8 @@ def save_gnn_model(model: GCN,
                    train_prediction_confidence_dict: dict, test_prediction_confidence_dict: dict,
                    train_output_class_dict: dict, test_output_class_dict: dict,
                    dataset_name: str,
-                   b_initial: bool):
+                   b_initial: bool,
+                   user_token: str = None):
     """
     Save all model-relevant information locally.
     They will be needed for further retraining or presentation purposes.
@@ -111,12 +122,22 @@ def save_gnn_model(model: GCN,
     :param test_output_class_dict: The predicted classes of the test set graphs
     :param dataset_name: Dataset name that specifies the name of the model too
     :param b_initial: Is it the initial save or another which comes at retrain
+    :param user_token: The user token that defines the subfolder where the model will be stored to
+                       If b_initial is True, then any "user_token" content will be ignored
     """
+
+    if b_initial and user_token is not None:
+        print("\"b_initial\" is True, the content of \"user_token\" will be ignored")
 
     # [0.1.] Create the folder of storing the GNN-relevant information -------------------------------------------------
     gnn_storage_folder = os.path.join("models", dataset_name)
     if not os.path.exists(gnn_storage_folder):
         os.makedirs(gnn_storage_folder)
+
+    if not b_initial:
+        gnn_storage_folder = os.path.join(gnn_storage_folder, user_token)
+        if not os.path.exists(gnn_storage_folder):
+            os.makedirs(gnn_storage_folder)
 
     # [0.2.] If it is the initial save of the model information, then it is saved in a subfolder -----------------------
     #        starting with the "init_" substring -----------------------------------------------------------------------
@@ -164,7 +185,8 @@ def save_gnn_model(model: GCN,
         pickle.dump(test_output_class_dict, f)
 
     # [6.] Write and keep the "latest_" folder -------------------------------------------------------------------------
-    latest_gnn_storage_subfolder = os.path.join(gnn_storage_folder, "latest_" + dataset_name)
-    if os.path.exists(latest_gnn_storage_subfolder):
-        shutil.rmtree(latest_gnn_storage_subfolder)
-    shutil.copytree(gnn_storage_subfolder, latest_gnn_storage_subfolder)
+    if not b_initial:
+        latest_gnn_storage_subfolder = os.path.join(gnn_storage_folder, "latest_" + dataset_name)
+        if os.path.exists(latest_gnn_storage_subfolder):
+            shutil.rmtree(latest_gnn_storage_subfolder)
+        shutil.copytree(gnn_storage_subfolder, latest_gnn_storage_subfolder)

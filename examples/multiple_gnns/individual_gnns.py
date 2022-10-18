@@ -26,9 +26,13 @@ from gnns.gnn_utils import load_gnn_model
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = 'cuda:0'
 
-# Global variable containing the dictionaries
+# Global variable containing the dictionaries --------------------------------------------------------------------------
 global_gnn_models_dict = {}
 
+# Define user ----------------------------------------------------------------------------------------------------------
+user_token = "user_B"
+
+"""
 # [1.] Select dataset --------------------------------------------------------------------------------------------------
 # [1.a.] KIRC Subnet ---------------------------------------------------------------------------------------------------
 dataset_name = "kirc_subnet"
@@ -40,7 +44,6 @@ gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 model = load_gnn_model(dataset_name, True)["model"]
 global_gnn_models_dict['0'] = {model}
 
-"""
 # [1.b.] KIRC random nodes ui ------------------------------------------------------------------------------------------
 dataset_name = "kirc_random_nodes_ui"
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
@@ -51,22 +54,20 @@ model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 # model = load_gnn_model(dataset_name, True)["model"]
 # global_gnn_models_dict['0'] = {model}
 
+"""
 # [1.c.] Synthetic -----------------------------------------------------------------------------------------------------
 dataset_name = "synthetic"
 dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_pytorch")
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}_pytorch.pkl'), "rb"))
 gnn_architecture_params_dict = define_gnn(dataset_name)
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
-# model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-model = load_gnn_model(dataset_name, True)["model"]
-global_gnn_models_dict['0'] = {model}
+model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
+# model = load_gnn_model(dataset_name, True)["model"]
+# global_gnn_models_dict['0'] = {model}
+
+
 """
-
-# [2.] Select GNN architecture -----------------------------------------------------------------------------------------
-
-# [3.] Load the model --------------------------------------------------------------------------------------------------
-
-# [4.] Delete one node and make a predict with the stored model --------------------------------------------------------
+# [2.] Delete one node and make a predict with the stored model --------------------------------------------------------
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len - 1)
 input_graph = dataset[graph_idx]
@@ -83,16 +84,18 @@ print(f"Nr. of nodes after node delete: {nodes_output_nr}")
 
 dataset[graph_idx] = output_graph
 
-prediction_label_of_testing, prediction_confidence_of_testing = gnn_actions_obj.gnn_predict(model, output_graph)
+prediction_label_of_testing, prediction_confidence_of_testing = gnn_actions_obj.gnn_predict(model,
+                                                                                            output_graph,
+                                                                                            user_token)
 print(prediction_label_of_testing, prediction_confidence_of_testing)
 
-# [5.] Explanation -----------------------------------------------------------------------------------------------------
+# [3.] Explanation -----------------------------------------------------------------------------------------------------
 explanation_method = 'gnnexplainer'     # Also possible: 'ig' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
 explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~~~~~
 
 # GNNECPLAINER ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-node_mask = explain_sample(explanation_method, model, input_graph, explanation_label)
+node_mask = explain_sample(explanation_method, model, input_graph, explanation_label, user_token)
 print(f"\nGNNExplainer mask: {node_mask}")
 
 # CAPTUM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,6 +104,7 @@ rel_pos = list(explain_sample(
         model,
         input_graph,
         explanation_label,
+        user_token
     ))
 rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
 
@@ -108,8 +112,8 @@ print(rel_pos)
 print(f"Captum relevances: {rel_pos}")
 print(type(rel_pos[0]))
 
-# [6.] Retrain and store in the "global_gnn_models_dict" ---------------------------------------------------------------
-model, performance_values_dict = gnn_actions_obj.gnn_retrain(model, dataset)
+# [4.] Retrain and store in the "global_gnn_models_dict" ---------------------------------------------------------------
+model, performance_values_dict = gnn_actions_obj.gnn_retrain(model, dataset, user_token)
 print(performance_values_dict)
 
 model_numbering_keys_str_list = list(global_gnn_models_dict.keys())
@@ -117,4 +121,4 @@ model_numbering_keys_int_list = [int(model_nr) for model_nr in model_numbering_k
 max_model_nr = max(model_numbering_keys_int_list)
 global_gnn_models_dict[str(max_model_nr + 1)] = model
 print(global_gnn_models_dict)
-
+"""
