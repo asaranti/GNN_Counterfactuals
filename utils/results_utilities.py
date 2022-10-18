@@ -1,9 +1,5 @@
 """
     Results utilities: Transformation methods ...
-<<<<<<< HEAD
-
-=======
->>>>>>> feature/format_transformation
     :author: Jacqueline Michelle Beinecke
     :copyright: © 2022 HCI-KDD (ex-AI) group
     :date: 2022-07-25
@@ -59,8 +55,4 @@ def transform_to_results(graph, user_token):
     # append edge relevances to edgelist
     edgelist["IntegratedGradients"] = ig
 
-<<<<<<< HEAD
     return [nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')]
-=======
-    return [nodelist.to_dict(orient='split'), edgelist.to_dict(orient='split')]
->>>>>>> feature/format_transformation
