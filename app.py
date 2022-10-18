@@ -385,7 +385,7 @@ def nn_predict(token):
 
     # predicted class --------------------------------------------------------------------------------------------------
     input_graph.x = input_graph.x.to(dtype=torch.float32)
-    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(model, input_graph)
+    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(model, input_graph, str(token))
 
     return "done"
 
@@ -426,7 +426,7 @@ def nn_retrain(token):
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
 
     # [3.] Retrain the GNN ---------------------------------------------------------------------------------------------
-    model, test_set_metrics_dict = gnn_actions_obj.gnn_retrain(model, dataset)
+    model, test_set_metrics_dict = gnn_actions_obj.gnn_retrain(model, dataset, str(token))
 
     model_numbering_keys_str_list = list(user_model_data[str(token)].keys())
     model_numbering_keys_int_list = [int(model_nr) for model_nr in model_numbering_keys_str_list]
@@ -624,13 +624,14 @@ def node_importance(token):
     ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
     explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~
 
-    node_mask = explain_sample(explanation_method, model, input_graph, explanation_label)
+    node_mask = explain_sample(explanation_method, model, input_graph, explanation_label, str(token))
 
     rel_pos = list(explain_sample(
         explanation_method,
         model,
         input_graph,
         explanation_label,
+        str(token)
     ))
 
     rel_pos = [str(round(node_relevance, 2)) for node_relevance in rel_pos]
@@ -676,13 +677,14 @@ def edge_importance(token):
     ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
     explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~
 
-    edge_mask = explain_sample(explanation_method, model, input_graph, explanation_label)
+    edge_mask = explain_sample(explanation_method, model, input_graph, explanation_label, str(token))
 
     rel_pos = list(explain_sample(
         explanation_method,
         model,
         input_graph,
         explanation_label,
+        str(token)
     ))
 
     rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
@@ -776,7 +778,7 @@ def patient_information(token):
     if b_is_in_train:
         which_dataset = "Training Data"
 
-    predicted_label, prediction_conf = gnn_actions_obj.gnn_predict(current_model, current_graph)
+    predicted_label, prediction_conf = gnn_actions_obj.gnn_predict(current_model, current_graph, str(token))
 
     return json.dumps([which_dataset, ground_truth_label, predicted_label, prediction_conf])
 
