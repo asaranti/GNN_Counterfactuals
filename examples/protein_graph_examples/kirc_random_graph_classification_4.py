@@ -1,5 +1,7 @@
 """
     Graph classification of KIRC RANDOM dataset
+    Tryout several actions of node addition + removal,
+    edge addition+removal
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group

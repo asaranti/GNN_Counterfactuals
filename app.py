@@ -1,7 +1,6 @@
 """
     Flask application instance for the main graph presentation and
     actions on them (addition/removal of nodes and edges as well as features thereof)
-
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2021-10-18
@@ -31,11 +30,12 @@ from actionable.gnn_explanations import explain_sample
 from tests.utils_tests.utils_tests_gnns.jsonification import graph_to_json
 
 from preprocessing_files.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
+from gnns.gnn_selectors.gnn_definitions import define_gnn
 
 from examples.synthetic_graph_examples.ba_graphs_examples.ba_graphs_generator import ba_graphs_gen
 from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_last_graph_dataset
 from utils.results_utilities import transform_to_results
-
+from gnns.gnn_utils import load_gnn_model
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
@@ -56,10 +56,12 @@ INTERVAL = 5 * 60 * 60 * 1000
 user_last_updated = {}
 connected_users = []
 processes_nr = 2
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+device = 'cuda:0'
 
 # Graphs dataset paths -------------------------------------------------------------------------
 data_folder = os.path.join(root_folder, "data")
-gnn_actions_obj = GNN_Actions()
+
 
 
 ########################################################################################################################
@@ -97,6 +99,8 @@ def patient_name(token):
 
     # init the structure
     global user_graph_data
+    global user_model_data
+    user_model_data = {}
     user_graph_data = {}
     graph_data = {}
 
@@ -105,16 +109,23 @@ def patient_name(token):
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_subnet_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
+        # load model
+        model = load_gnn_model("kirc_subnet", True)["model"]
 
     elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
+        # load model
+        model = load_gnn_model("kirc_random_nodes_ui", True)["model"]
+
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
+        # load model
+        model = load_gnn_model("synthetic", True)["model"]
 
     # turn list into dictionary format
     for graph in graphs_list:
@@ -143,6 +154,9 @@ def patient_name(token):
 
     # save graph and session id
     user_graph_data[str(token)] = graph_data
+
+    # save model
+    user_model_data[str(token)] = {'0': model}
 
     # save user id (token) and last updated time in ms
     user_last_updated[str(token)] = round(time.time() * 1000)
@@ -194,13 +208,13 @@ def adding_node(token):
 
     # node features
     node_features = np.array(req_data["features"]).astype(np.float32).reshape(-1, 1).T
-    print('got features: ', req_data["features"])
-    print('features: ', node_features)
-    print('f type: ',  node_features.dtype)
+    #print('got features: ', req_data["features"])
+    #print('features: ', node_features)
+    #print('f type: ',  node_features.dtype)
 
     # Add the node with its features -----------------------------------------------------------------------------------
     output_graph = add_node(input_graph, node_features, node_label, node_id)
-    print('out x: ', output_graph.x.dtype)
+    #print('out x: ', output_graph.x.dtype)
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
@@ -337,9 +351,7 @@ def performance_values(token):
 def nn_predict(token):
     """
     Apply a new prediction with the current graphs dataset
-
     :return:
-
     Prediction of Graph with GNN need to be done
     Return the predicted class
     """
@@ -348,14 +360,32 @@ def nn_predict(token):
     req_data = request.get_json()
     patient_id = req_data["patient_id"]
     graph_id = req_data["graph_id"]
+    dataset_name = req_data["dataset_name"]
+
+    # current model
+    model = user_model_data[str(token)][str(len(user_model_data[str(token)]) - 1)]
+
+    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("kirc_subnet")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
+
+    elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
+
+    elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("synthetic")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
+
 
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
+    input_graph.to(device)
 
     # predicted class --------------------------------------------------------------------------------------------------
     input_graph.x = input_graph.x.to(dtype=torch.float32)
-    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(input_graph, token)
+    predicted_class, prediction_confidence = gnn_actions_obj.gnn_predict(model, input_graph)
 
     return "done"
 
@@ -368,9 +398,11 @@ def nn_retrain(token):
     """
     GNN needs to be retrained on the latest graphs of every patient
     Performance values need to be saved in "perf_values" variable
-
     :return:
     """
+    req_data = request.get_json()
+    dataset_name = req_data["dataset_name"]
+
 
     # [1.] Get patient id to get the dataset that will be used in retrain ----------------------------------------------
     dataset = user_graph_data[str(token)]
@@ -378,8 +410,29 @@ def nn_retrain(token):
     # [2.] Keep only the last graph in the dataset ---------------------------------------------------------------------
     dataset = keep_only_last_graph_dataset(dataset)
 
+    # current model
+    model = user_model_data[str(token)][str(len(user_model_data[str(token)]) - 1)]
+
+    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("kirc_subnet")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
+
+    elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
+
+    elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("synthetic")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
+
     # [3.] Retrain the GNN ---------------------------------------------------------------------------------------------
-    test_set_metrics_dict = gnn_actions_obj.gnn_retrain(dataset, token)
+    model, test_set_metrics_dict = gnn_actions_obj.gnn_retrain(model, dataset)
+
+    model_numbering_keys_str_list = list(user_model_data[str(token)].keys())
+    model_numbering_keys_int_list = [int(model_nr) for model_nr in model_numbering_keys_str_list]
+    max_model_nr = max(model_numbering_keys_int_list)
+    user_model_data[str(token)][str(max_model_nr + 1)] = model
+    print(user_model_data[str(token)])
 
     # [4.] Save performance values in global variable ------------------------------------------------------------------
     global perf_values
@@ -401,7 +454,6 @@ def nn_retrain(token):
 def deep_copy(token):
     """
     Apply a new retrain with the current graphs dataset
-
     :return:
     """
     # Get patient id and graph id -----------------------------------------------------------------
@@ -507,12 +559,21 @@ def init_gnn(token):
     Save GNN and performance scores in global variables
     """
 
-    # [1.] Get patient id to get the dataset that will be used in init -------------------------------------------------
-    dataset = user_graph_data[str(token)]
-    dataset = keep_only_first_graph_dataset(dataset)
+    # Get dataset_name -----------------------------------------------------------------
+    req_data = request.get_json()
 
-    # [2.] Train the GNN for the first time ----------------------------------------------------------------------------
-    test_set_metrics_dict = gnn_actions_obj.gnn_init_train(dataset, token)
+    # graph and patient id
+    dataset_name = req_data["dataset_name"]
+
+    # get patient ids corresponding to dataset
+    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+        test_set_metrics_dict = load_gnn_model("kirc_subnet", True)["test_set_metrics_dict"]
+
+    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+        test_set_metrics_dict = load_gnn_model("kirc_random_nodes_ui", True)["test_set_metrics_dict"]
+
+    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+        test_set_metrics_dict = load_gnn_model("synthetic", True)["test_set_metrics_dict"]
 
     # [3.] -------------------------------------------------------------------------------------------------------------
     # save performance values in global variable
@@ -536,7 +597,6 @@ def node_importance(token):
     """
     Calculate node importance for patient graph
     return: list of importances and corresponding node ids
-
     TODO: Node importances need to be calculated
     TODO: Node importances need to be returned as as list (see example values)
     """
@@ -546,9 +606,13 @@ def node_importance(token):
     graph_id = request.args.get("graph_id")
     method = request.args.get("method")
 
+    # current model
+    model = user_model_data[str(token)][str(len(user_model_data[str(token)])-1)]
+
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
     input_graph = graph_data[patient_id][graph_id]
+    input_graph.to(device)
 
     # get node ids
     node_ids = list(input_graph.node_ids)
@@ -560,11 +624,13 @@ def node_importance(token):
     ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
     explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~
 
+    node_mask = explain_sample(explanation_method, model, input_graph, explanation_label)
+
     rel_pos = list(explain_sample(
         explanation_method,
+        model,
         input_graph,
         explanation_label,
-        token,
     ))
 
     rel_pos = [str(round(node_relevance, 2)) for node_relevance in rel_pos]
@@ -590,9 +656,13 @@ def edge_importance(token):
     graph_id = request.args.get("graph_id")
     method = request.args.get("method")
 
+    # current model
+    model = user_model_data[str(token)][str(len(user_model_data[str(token)]) - 1)]
+
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
     input_graph = graph_data[patient_id][graph_id]
+    input_graph.to(device)
 
     # get node ids -----------------------------------------------------------------------------------------------------
     edge_ids = list(input_graph.edge_ids)
@@ -606,11 +676,13 @@ def edge_importance(token):
     ground_truth_label = int(input_graph.y.cpu().detach().numpy()[0])
     explanation_label = ground_truth_label  # Can also be the opposite - all possible combinations of 0 and 1 ~~~~~~~~~~
 
+    edge_mask = explain_sample(explanation_method, model, input_graph, explanation_label)
+
     rel_pos = list(explain_sample(
         explanation_method,
+        model,
         input_graph,
         explanation_label,
-        token,
     ))
 
     rel_pos = [str(round(edge_relevance, 2)) for edge_relevance in rel_pos]
@@ -621,11 +693,10 @@ def edge_importance(token):
 ########################################################################################################################
 # [18.] Get Patient information ========================================================================================
 ########################################################################################################################
-@app.route('/<uuid:token>/patients', methods=['GET'])
-def patient_information(token):
+@app.route('/<uuid:token>/patients/init', methods=['GET'])
+def init_patient_information(token):
     """
     Get the following information of the Patient:
-
     [1.] Is he in Train or Test Data
     [2.] Ground truth label
     [3.] Predicted label
@@ -635,22 +706,79 @@ def patient_information(token):
     # graph and patient id ---------------------------------------------------------------------------------------------
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
+    dataset_name = request.args.get("dataset_name")
 
     # Ground truth label is already stored -----------------------------------------------------------------------------
     current_graph = user_graph_data[str(token)][patient_id][graph_id]
     ground_truth_label = str(current_graph.y.cpu().detach().numpy()[0])
 
-    # Check if it is in the training or test dataset -------------------------------------------------------------------
-    current_graph_id = current_graph.graph_id
-    b_is_in_train = gnn_actions_obj.is_in_training_set(current_graph_id)
+    # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
+    # get patient ids corresponding to dataset
+    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+        models_dicts = load_gnn_model("kirc_subnet", True)
+
+    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+        models_dicts = load_gnn_model("kirc_random_nodes_ui", True)
+
+    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+        models_dicts = load_gnn_model("synthetic", True)
+
+    # check if patient is in train or test
+    if int(patient_id) in list(models_dicts['test_dataset_shuffled_indexes']):
+        which_dataset = "Test Data"
+    else:
+        which_dataset = "Training Data"
+
+    indexes = list(models_dicts['train_dataset_shuffled_indexes']) + list(models_dicts['test_dataset_shuffled_indexes'])
+    predicted_labels = models_dicts['train_outputs_predictions_dict'].tolist() + models_dicts['test_outputs_predictions_dict'].tolist()
+    prediction_conf = models_dicts['train_prediction_confidence_dict'].tolist() + models_dicts['test_prediction_confidence_dict'].tolist()
+
+    pat_idx = indexes.index(int(patient_id))
+
+    return json.dumps([which_dataset, ground_truth_label, predicted_labels[pat_idx], max(prediction_conf[pat_idx])])
+
+@app.route('/<uuid:token>/patients/pat_info', methods=['GET'])
+def patient_information(token):
+    """
+    Get the following information of the Patient:
+    [1.] Is he in Train or Test Data
+    [2.] Ground truth label
+    [3.] Predicted label
+    [4.] Prediction confidence
+    """
+
+    # graph and patient id ---------------------------------------------------------------------------------------------
+    patient_id = request.args.get("patient_id")
+    graph_id = request.args.get("graph_id")
+    dataset_name = request.args.get("dataset_name")
+
+    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("kirc_subnet")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
+
+    elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
+
+    elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
+        gnn_architecture_params_dict = define_gnn("synthetic")
+        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
+
+    # Ground truth label is already stored -----------------------------------------------------------------------------
+    current_graph = user_graph_data[str(token)][patient_id][graph_id]
+    ground_truth_label = str(current_graph.y.cpu().detach().numpy()[0])
+
+    current_model = user_model_data[str(token)][str(len(user_model_data[str(token)])-1)]
+
+    # check if patient is in train or test
+    b_is_in_train = gnn_actions_obj.is_in_training_set(current_graph.graph_id)
     which_dataset = "Test Data"
     if b_is_in_train:
         which_dataset = "Training Data"
 
-    # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
-    predicted_label, prediction_confidence = gnn_actions_obj.gnn_predict(current_graph, token)
+    predicted_label, prediction_conf = gnn_actions_obj.gnn_predict(current_model, current_graph)
 
-    return json.dumps([which_dataset, ground_truth_label, predicted_label, prediction_confidence])
+    return json.dumps([which_dataset, ground_truth_label, predicted_label, prediction_conf])
 
 
 ########################################################################################################################
@@ -719,7 +847,6 @@ def results(token):
 def backup():
     """
     Backup data and model (snapshot)
-
     :return:
     """
 

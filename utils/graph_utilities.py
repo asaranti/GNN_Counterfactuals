@@ -75,3 +75,18 @@ def compare_node_features_values(graph_dataset: list):
         print("-------------------------------------------------------------------------------------------------------")
 
 
+def remove_duplicate_edges(edge_index_input: np.array) -> np.array:
+    """
+    Remove duplicate edges from the edge_index
+
+    :param edge_index_input: Edge index input array
+    :return: An array that has only unique edges
+    """
+
+    edges_pairs = list(zip(*edge_index_input))
+    edges_pairs_sorted = [tuple(sorted(list(x))) for x in edges_pairs]
+    edges_pairs_sorted = np.array(list(set(edges_pairs_sorted)))
+
+    edges_pairs_sorted_array = np.transpose(edges_pairs_sorted)
+
+    return edges_pairs_sorted_array

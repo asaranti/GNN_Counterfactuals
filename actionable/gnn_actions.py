@@ -1,5 +1,6 @@
 """
     GNN actions - Predict & Retrain
+    Dataset contains only homogeneous actions
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
@@ -19,6 +20,7 @@ from torch_geometric.loader import DataLoader
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
+from gnns.gnn_utils import load_gnn_model, save_gnn_model
 from preprocessing_data.graph_features_normalization import graph_features_normalization
 
 
@@ -27,9 +29,12 @@ class GNN_Actions(torch.nn.Module):
     GNN Actions
     """
 
-    def __init__(self):
+    def __init__(self, gnn_architecture_params_dict: dict, dataset_name: str):
         """
-        Init
+        Init the GNN actions
+
+        :param gnn_architecture_params_dict: Dictionary of architecture parameters
+        :param dataset_name: Dataset name
         """
 
         super(GNN_Actions, self).__init__()
@@ -39,11 +44,15 @@ class GNN_Actions(torch.nn.Module):
         self.train_dataset_shuffled_indexes = None
         self.test_dataset_shuffled_indexes = None
 
-        # [2.] GNN training parameters ---------------------------------------------------------------------------------
-        self.batch_size = 8
-        self.epochs_nr = 100
+        # [2.] GNN architecture parameters -----------------------------------------------------------------------------
+        self.gnn_architecture_params_dict = gnn_architecture_params_dict
+        self.dataset_name = dataset_name
 
-        # [3.] Data structures for the performance metrics -------------------------------------------------------------
+        # [3.] GNN training parameters ---------------------------------------------------------------------------------
+        self.batch_size = 8
+        self.epochs_nr = 30
+
+        # [4.] Data structures for the performance metrics -------------------------------------------------------------
         self.train_set_metrics_dict = None
         self.train_outputs_predictions_dict = None
         self.test_set_metrics_dict = None
@@ -62,6 +71,10 @@ class GNN_Actions(torch.nn.Module):
 
         graph_numbering_ids = re.findall('[0-9]+', graph_id)
         graph_nr_in_dataset = int(graph_numbering_ids[0])
+
+        if self.test_dataset_shuffled_indexes is None:
+            gnn_model_info = load_gnn_model(self.dataset_name, False)
+            self.test_dataset_shuffled_indexes = gnn_model_info["test_dataset_shuffled_indexes"]
 
         if graph_nr_in_dataset in self.test_dataset_shuffled_indexes:
             b_is_in_train = False
@@ -95,12 +108,14 @@ class GNN_Actions(torch.nn.Module):
 
         return train_loader, test_loader
 
-    def gnn_init_train(self, input_graphs: list, user_token) -> dict:
+    def gnn_init_train(self, input_graphs: list, user_token: str) -> dict:
         """
         Method that implements the first training of the GNN
 
         :param input_graphs: Original dataset - List of graphs
         :param user_token: Identifies a user
+
+        :return: Tuple of model and dictionary of performance metrics
         """
 
         ################################################################################################################
@@ -138,7 +153,12 @@ class GNN_Actions(torch.nn.Module):
         # [1.] Graph Classification ====================================================================================
         ################################################################################################################
         num_classes = 2
-        model = GCN(num_node_features=num_features, hidden_channels=100, num_classes=num_classes).to(device)
+        model = GCN(
+            num_node_features=num_features,
+            hidden_channels=self.gnn_architecture_params_dict["hidden_channels"],
+            layers_nr=self.gnn_architecture_params_dict["layers_nr"],
+            num_classes=num_classes).\
+            to(device)
         print(model)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
@@ -180,18 +200,23 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [6.] GNN store ===============================================================================================
         ################################################################################################################
-        gcn_model_file_name = "gcn_model_" + str(user_token) + ".pth"
-        gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
-        with open(gnn_model_file_path, 'wb') as f:
-            torch.save(model, f)
+        save_gnn_model(model,
+                       self.train_set_metrics_dict, self.test_set_metrics_dict,
+                       self.train_dataset_shuffled_indexes, self.test_dataset_shuffled_indexes,
+                       self.train_outputs_predictions_dict["prediction_confidences"],
+                       self.test_outputs_predictions_dict["prediction_confidences"],
+                       self.train_outputs_predictions_dict["output_classes"],
+                       self.test_outputs_predictions_dict["output_classes"],
+                       self.dataset_name,
+                       True)
 
-        return self.test_set_metrics_dict
+        return model, self.test_set_metrics_dict
 
-    def gnn_predict(self, input_graph: Data, user_token) -> tuple:
+    def gnn_predict(self, model: GCN, input_graph: Data, user_token: str) -> tuple:
         """
         GNN predict function.
 
+        :param model: The GNN model
         :param input_graph: The input graph that we need its prediction
         :param user_token: Identifies a user
 
@@ -212,26 +237,17 @@ class GNN_Actions(torch.nn.Module):
         input_graph.to(device)
 
         ################################################################################################################
-        # [1.] Load the GNN from the file system =======================================================================
-        ################################################################################################################
-        gcn_model_file_name = "gcn_model_" + str(user_token) + ".pth"
-        gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
-        model = torch.load(gnn_model_file_path).to(device)
-        model.eval()
-
-        ################################################################################################################
-        # [2.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN  ===
+        # [1.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN  ===
         ################################################################################################################
         model_state_dict = model.state_dict()
-        input_features_model_nr = model_state_dict["conv1.lin.weight"].size(dim=1)
+        input_features_model_nr = model_state_dict["gcns_modules.0.lin.weight"].size(dim=1)
         input_features_graph_nr = input_graph.x.size(dim=1)
         assert input_features_model_nr == input_features_graph_nr, \
             f"The number of features of the nodes that the model expects {input_features_model_nr},\n" \
             f"is unequal to the actual number of features of the nodes in the changed graph: {input_features_graph_nr}."
 
         ################################################################################################################
-        # [3.] Predict =================================================================================================
+        # [2.] Predict =================================================================================================
         ################################################################################################################
         testing_graph_list = [input_graph]
         testing_graph_loader = DataLoader(testing_graph_list, batch_size=1, shuffle=False)
@@ -244,14 +260,20 @@ class GNN_Actions(torch.nn.Module):
 
         return str(prediction_label_of_testing), str(round(prediction_confidence_of_testing, 2))
 
-    def gnn_retrain(self, input_graphs: list, user_token) -> dict:
+    def gnn_retrain(self, model: GCN, input_graphs: list, user_token: str) -> tuple:
         """
         GNN retrain function
+
+        :param model: The GNN model
+        :param input_graphs: The input graphs that we need its prediction
+        :param user_token: Identifies a user
 
         [1.] Get the architectural characteristics of the GNN in the file system - you don't have to load it.
         [2.] Make the check if the (generally) changed input graphs conform to the architecture of the stored GNN.
              If the requirements are not fulfilled, then the predict function cannot be applied.
         [3.] Apply the predict function on the GNN
+
+        :return: Tuple of model and dictionary of performance metrics
         """
 
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -265,6 +287,11 @@ class GNN_Actions(torch.nn.Module):
         for graph in input_graphs:
             graph.to(device)
 
+        if self.train_dataset_shuffled_indexes is None or self.test_dataset_shuffled_indexes is None:
+            gnn_model_info = load_gnn_model(self.dataset_name, False)
+            self.train_dataset_shuffled_indexes = gnn_model_info["train_dataset_shuffled_indexes"]
+            self.test_dataset_shuffled_indexes = gnn_model_info["test_dataset_shuffled_indexes"]
+
         train_normalized_graphs_dataset = [input_graphs[idx]
                                            for idx in self.train_dataset_shuffled_indexes]
         test_normalized_graphs_dataset = [input_graphs[idx] for idx in self.test_dataset_shuffled_indexes]
@@ -273,28 +300,19 @@ class GNN_Actions(torch.nn.Module):
         re_test_loader = DataLoader(test_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=False)
 
         ################################################################################################################
-        # [1.] Load the GNN, get the architecture ======================================================================
-        ################################################################################################################
-        gcn_model_file_name = "gcn_model_" + str(user_token) + ".pth"
-        gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
-        model = torch.load(gnn_model_file_path).to(device)
-        model.eval()
-
-        ################################################################################################################
-        # [2.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN ====
+        # [1.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN ====
         #      Use the first graph for now =============================================================================
         ################################################################################################################
         model_state_dict = model.state_dict()
-        input_features_model_nr = model_state_dict["conv1.lin.weight"].size(dim=1)
+        input_features_model_nr = model_state_dict["gcns_modules.0.lin.weight"].size(dim=1)
         input_features_graph_nr = input_graphs[0].x.size(dim=1)
 
-        # [2.1.] If the number of features did not change, then just reset the weights ---------------------------------
+        # [1.1.] If the number of features did not change, then just reset the weights ---------------------------------
         if input_features_model_nr == input_features_graph_nr:
             for layer in model.children():
                 if hasattr(layer, 'reset_parameters'):
                     layer.reset_parameters()
-        # [2.2.] If the number of features did change, you need a new architecture -------------------------------------
+        # [1.2.] If the number of features did change, you need a new architecture -------------------------------------
         else:
             print(f"The number of features of the nodes that the model expects {input_features_model_nr},\n"
                   f"is unequal to the actual number of features of the nodes in the changed graph: "
@@ -307,7 +325,7 @@ class GNN_Actions(torch.nn.Module):
                         num_classes=num_classes).to(device)
 
         ################################################################################################################
-        # [3.] Retrain =================================================================================================
+        # [2.] Retrain =================================================================================================
         ################################################################################################################
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss().to(device)
@@ -316,18 +334,18 @@ class GNN_Actions(torch.nn.Module):
         patience = 5
         trigger_times = 0
 
-        # [4.] Iterate over several epochs -----------------------------------------------------------------------------
+        # [3.] Iterate over several epochs -----------------------------------------------------------------------------
         for epoch in range(1, self.epochs_nr + 1):
 
             print(f"Epoch: {epoch}")
 
-            # [5.] Retrain the model and gather the performance metrics of the training and test set -------------------
+            # [4.] Retrain the model and gather the performance metrics of the training and test set -------------------
             train_model(model, re_train_loader, optimizer, criterion)
             self.train_set_metrics_dict, self.train_outputs_predictions_dict = \
                 use_trained_model(model, re_train_loader)
             self.test_set_metrics_dict, self.test_outputs_predictions_dict = use_trained_model(model, re_test_loader)
 
-            # [6.] Apply early stopping --------------------------------------------------------------------------------
+            # [5.] Apply early stopping --------------------------------------------------------------------------------
             current_test_set_accuracy = float(self.test_set_metrics_dict['accuracy'])
 
             if current_test_set_accuracy < last_accuracy:
@@ -344,14 +362,19 @@ class GNN_Actions(torch.nn.Module):
             last_accuracy = current_test_set_accuracy
 
         ################################################################################################################
-        # [7.] GNN store ===============================================================================================
+        # [6.] GNN store ===============================================================================================
         ################################################################################################################
-        gnn_storage_folder = os.path.join("data", "output", "gnns")
-        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
-        with open(gnn_model_file_path, 'wb') as f:
-            torch.save(model, gnn_model_file_path)
+        save_gnn_model(model,
+                       self.train_set_metrics_dict, self.test_set_metrics_dict,
+                       self.train_dataset_shuffled_indexes, self.test_dataset_shuffled_indexes,
+                       self.train_outputs_predictions_dict["prediction_confidences"],
+                       self.test_outputs_predictions_dict["prediction_confidences"],
+                       self.train_outputs_predictions_dict["output_classes"],
+                       self.test_outputs_predictions_dict["output_classes"],
+                       self.dataset_name,
+                       False)
 
         ################################################################################################################
-        # [8.] Return the new test set metrics after re-train ==========================================================
+        # [7.] Return the new test set metrics after re-train ==========================================================
         ################################################################################################################
-        return self.test_set_metrics_dict
+        return model, self.test_set_metrics_dict

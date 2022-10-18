@@ -131,6 +131,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     # [0.] Constraints/Requirements ====================================================================================
     ####################################################################################################################
     # [0.1.] Check the types of the input graph's object ---------------------------------------------------------------
+    print("Start consistency check")
     check_data_format_consistency(input_graph)
 
     # [0.2.] Check that the index of the deleted node is valid ---------------------------------------------------------
@@ -228,6 +229,8 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
                         pos=output_pos,
                         graph_id=input_graph.graph_id,
                         )
+
+    print("End consistency check")
     check_data_format_consistency(output_graph)
 
     return output_graph
@@ -431,45 +434,67 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
     return output_graph
 
 
-def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data, new_input_node_feature: np.array) -> \
-        torch_geometric.data.data.Data:
+def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
+                          new_input_node_feature: np.array,
+                          label: str) -> torch_geometric.data.data.Data:
     """
-    Add a feature in all of the nodes. Basically, that means that the features field of all the nodes "x" will have
+    Add a feature in all nodes. Basically, that means that the features field of all the nodes "x" will have
     another column. The number of rows of the input feature should be equal to the number of nodes. If the node's
     features field "x" is empty then a one column array is created. The other fields stay unchanged.
 
     :param input_graph: Input graph
     :param new_input_node_feature: New input feature
+    :param label: Feature label, which will be added
 
     :return: The updated graph
     """
 
-    # [1.] Number of rows of the input feature should be equal to the number of nodes ----------------------------------
+    ####################################################################################################################
+    # [0.] Constraints/Requirements ====================================================================================
+    ####################################################################################################################
+    # [0.1.] Check the types of the input graph's object ---------------------------------------------------------------
+    check_data_format_consistency(input_graph)
+
+    # [0.2] Number of rows of the input feature should be equal to the number of nodes (each node must have a feature) -
     nodes_nr = input_graph.num_nodes
     assert nodes_nr == new_input_node_feature.shape[0], f"The number of nodes: {nodes_nr} in the graph is not equal " \
                                                         f"to the number of rows in the input feature: " \
                                                         f"{new_input_node_feature.shape[0]}. All nodes should have " \
                                                         f"the feature, since heterogeneous graphs are not allowed."
 
+    # [0.3.] Check the type of node features ---------------------------------------------------------------------------
+    assert new_input_node_feature.dtype == np.float32, f"The type of the node features must be: \"np.float32\".\n" \
+                                                       f"Instead it is: {new_input_node_feature.dtype}"
+
+    ####################################################################################################################
+    # [1.] Add the feature to each node ================================================================================
+    ####################################################################################################################
     input_graph_x = input_graph.x.cpu().detach().numpy()
-    output_graph_x = np.column_stack((input_graph_x, new_input_node_feature))
+    if input_graph_x is None:
+        output_graph_x = np.array(new_input_node_feature)
+    else:
+        output_graph_x = np.column_stack((input_graph_x, new_input_node_feature))
 
-    # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
-    output_pos = input_graph.pos
+    ####################################################################################################################
+    # [2.] Output graph ================================================================================================
+    ####################################################################################################################
+    output_graph_node_feature_labels = copy.deepcopy(input_graph.node_feature_labels)
+    output_graph_node_feature_labels.append(label)
 
-    # [3.] Output graph ------------------------------------------------------------------------------------------------
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
                         y=input_graph.y,
                         node_labels=input_graph.node_labels,
                         node_ids=input_graph.node_ids,
-                        node_feature_labels=input_graph.node_feature_labels,
+                        node_feature_labels=output_graph_node_feature_labels,
                         edge_ids=input_graph.edge_ids,
                         edge_attr_labels=input_graph.edge_attr_labels,
-                        pos=output_pos,
+                        pos=input_graph.pos,
                         graph_id=input_graph.graph_id
                         )
+
+    check_data_format_consistency(output_graph)
 
     return output_graph
 
@@ -477,7 +502,7 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data, new_input
 def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, removed_node_feature_idx: int) -> \
         torch_geometric.data.data.Data:
     """
-    Remove a feature in all of the nodes. The features field of all the nodes "x" will have one column less.
+    Remove a feature in all the nodes. The features' field of all the nodes "x" will have one column less.
     It is presupposed that the node index is valid. If the node's features field "x" is empty then nothing is done.
     The other fields stay unchanged.
 
@@ -487,20 +512,37 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, remove
     :return: The updated graph
     """
 
-    # [0.] Check that the index of the deleted feature is valid --------------------------------------------------------
+    ####################################################################################################################
+    # [0.] Constraints/Requirements ====================================================================================
+    ####################################################################################################################
+
+    # [0.1.] Check the types of the input graph's object ---------------------------------------------------------------
+    check_data_format_consistency(input_graph)
+
+    # [0.2] Check that the index of the deleted feature is valid -------------------------------------------------------
+
     assert input_graph.x is not None, "No nodes saved in the graphs, the \"x\" field is None"
     input_graph_x = input_graph.x.cpu().detach().numpy()
     node_features_nr = input_graph_x.shape[1]
-    assert 0 <= removed_node_feature_idx < node_features_nr, \
-           f"The index of the feature index: {removed_node_feature_idx} is not in accordance with the " \
+    assert (0 <= removed_node_feature_idx) and (removed_node_feature_idx < node_features_nr), \
+           f"The feature index to remove {removed_node_feature_idx} is not in accordance with the " \
            f"number of features {node_features_nr}"
 
+    # [0.3.] Constraint: all features must have a label  ---------------------------------------------------------------
+    assert len(input_graph.node_feature_labels) == node_features_nr, \
+        f"The feature labels {len(input_graph.node_feature_labels)} must be equal " \
+        f"to the number of features in the input graph"
+
+    ####################################################################################################################
+    # [1.] Remove the feature for each node  ---------------------------------------------------------------------------
+    ####################################################################################################################
+
     output_graph_x = np.delete(input_graph_x, removed_node_feature_idx, 1)
+    del input_graph.node_feature_labels[removed_node_feature_idx] # remove the label by index
 
-    # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
-    output_pos = input_graph.pos
-
-    # [3.] Output graph ------------------------------------------------------------------------------------------------
+    ####################################################################################################################
+    # [2.] Output graph ------------------------------------------------------------------------------------------------
+    ####################################################################################################################
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
                         edge_attr=input_graph.edge_attr,
@@ -510,7 +552,7 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, remove
                         node_feature_labels=input_graph.node_feature_labels,
                         edge_ids=input_graph.edge_ids,
                         edge_attr_labels=input_graph.edge_attr_labels,
-                        pos=output_pos,
+                        pos=input_graph.pos,
                         graph_id=input_graph.graph_id
                         )
     return output_graph
