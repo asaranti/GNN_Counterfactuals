@@ -110,14 +110,14 @@ def patient_name(token):
         with open(os.path.join(dataset_pytorch_folder, 'kirc_subnet_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
         # load model
-        model = load_gnn_model("kirc_subnet")["model"]
+        model = load_gnn_model("kirc_subnet", True)["model"]
 
     elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
         # load model
-        model = load_gnn_model("kirc_random_nodes_ui")["model"]
+        model = load_gnn_model("kirc_random_nodes_ui", True)["model"]
 
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
@@ -125,7 +125,7 @@ def patient_name(token):
         with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
         # load model
-        model = load_gnn_model("synthetic")["model"]
+        model = load_gnn_model("synthetic", True)["model"]
 
     # turn list into dictionary format
     for graph in graphs_list:
@@ -567,13 +567,13 @@ def init_gnn(token):
 
     # get patient ids corresponding to dataset
     if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
-        test_set_metrics_dict = load_gnn_model("kirc_subnet")["test_set_metrics_dict"]
+        test_set_metrics_dict = load_gnn_model("kirc_subnet", True)["test_set_metrics_dict"]
 
     elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
-        test_set_metrics_dict = load_gnn_model("kirc_random_nodes_ui")["test_set_metrics_dict"]
+        test_set_metrics_dict = load_gnn_model("kirc_random_nodes_ui", True)["test_set_metrics_dict"]
 
     elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
-        test_set_metrics_dict = load_gnn_model("synthetic")["test_set_metrics_dict"]
+        test_set_metrics_dict = load_gnn_model("synthetic", True)["test_set_metrics_dict"]
 
     # [3.] -------------------------------------------------------------------------------------------------------------
     # save performance values in global variable
@@ -715,13 +715,13 @@ def init_patient_information(token):
     # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
     # get patient ids corresponding to dataset
     if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
-        models_dicts = load_gnn_model("kirc_subnet")
+        models_dicts = load_gnn_model("kirc_subnet", True)
 
     elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
-        models_dicts = load_gnn_model("kirc_random_nodes_ui")
+        models_dicts = load_gnn_model("kirc_random_nodes_ui", True)
 
     elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
-        models_dicts = load_gnn_model("synthetic")
+        models_dicts = load_gnn_model("synthetic", True)
 
     # check if patient is in train or test
     if int(patient_id) in list(models_dicts['test_dataset_shuffled_indexes']):
@@ -751,7 +751,7 @@ def patient_information(token):
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
     dataset_name = request.args.get("dataset_name")
-    
+
     if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
         gnn_architecture_params_dict = define_gnn("kirc_subnet")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
