@@ -20,8 +20,7 @@ from torch_geometric.loader import DataLoader
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
-from gnns.gnn_utils import load_gnn_model, save_gnn_model
-from preprocessing_data.graph_features_normalization import graph_features_normalization
+from utils.gnn_load_save import load_gnn_model, save_gnn_model
 
 
 class GNN_Actions(torch.nn.Module):

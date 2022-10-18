@@ -9,18 +9,12 @@
 import os
 import pickle
 import random
-import re
-import time
-import uuid
-
-import numpy as np
-import torch
 
 from actionable.gnn_actions import GNN_Actions
 from actionable.gnn_explanations import explain_sample
-from actionable.graph_actions import add_node, remove_node
+from actionable.graph_actions import remove_node
 from gnns.gnn_selectors.gnn_definitions import define_gnn
-from gnns.gnn_utils import load_gnn_model
+from utils.gnn_load_save import load_gnn_model
 
 # [0.] -----------------------------------------------------------------------------------------------------------------
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -77,7 +71,7 @@ nodes_orig_nr = input_graph.x.shape[0]
 print(f"Nr. of nodes original: {nodes_orig_nr}")
 
 node_idx = 0
-output_graph = remove_node(input_graph, node_idx)
+output_graph = remove_node(input_graph, node_idx, dataset_name, user_token)
 nodes_output_nr = output_graph.x.shape[0]
 print(f"Nr. of nodes after node delete: {nodes_output_nr}")
 

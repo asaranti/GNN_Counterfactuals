@@ -32,10 +32,9 @@ from tests.utils_tests.utils_tests_gnns.jsonification import graph_to_json
 from preprocessing_files.format_transformations.format_transformation_pytorch_to_ui import transform_from_pytorch_to_ui
 from gnns.gnn_selectors.gnn_definitions import define_gnn
 
-from examples.synthetic_graph_examples.ba_graphs_examples.ba_graphs_generator import ba_graphs_gen
-from utils.dataset_utilities import keep_only_first_graph_dataset, keep_only_last_graph_dataset
+from utils.dataset_utilities import keep_only_last_graph_dataset
 from utils.results_utilities import transform_to_results
-from gnns.gnn_utils import load_gnn_model
+from utils.gnn_load_save import load_gnn_model
 ########################################################################################################################
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################

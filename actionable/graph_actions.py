@@ -7,6 +7,7 @@
 """
 
 import copy
+from datetime import datetime
 from typing import Optional
 
 import numpy as np
@@ -15,6 +16,7 @@ import torch_geometric
 from torch_geometric.data import Data
 
 from constraints.graph_constraints import check_data_format_consistency
+from utils.dataset_load_save import append_action_dataset_history
 
 
 def add_node(input_graph: torch_geometric.data.data.Data,
@@ -102,7 +104,9 @@ def add_node(input_graph: torch_geometric.data.data.Data,
 
 
 def remove_node(input_graph: torch_geometric.data.data.Data,
-                node_index: int) -> torch_geometric.data.data.Data:
+                node_index: int,
+                dataset_name: str,
+                user_token: str) -> torch_geometric.data.data.Data:
     """
     Remove one node from the graph according to its index.
     It is presupposed that the node index is valid.
@@ -123,6 +127,8 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
 
     :param input_graph: Input graph
     :param node_index: Node index for removal
+    :param dataset_name: Dataset name that specifies the name of the model too
+    :param user_token: The user token that defines the sub-folder where the actions will be stored to
 
     :return: The updated graph
     """
@@ -230,8 +236,15 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
                         graph_id=input_graph.graph_id,
                         )
 
+    # [10.] Make the last consistency check before saving the actions and returning the graph --------------------------
     print("End consistency check")
     check_data_format_consistency(output_graph)
+
+    # [11.] Save/append the action in the local file -------------------------------------------------------------------
+    date_time = datetime.now()
+    str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+    action_description = f"remove_node, node_index: {node_index}, {str_date_time}"
+    append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
 

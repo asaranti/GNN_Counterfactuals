@@ -1,5 +1,5 @@
 """
-    GNN utilities - Save and restore the model
+    GNN model save and restore
 
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
@@ -28,7 +28,7 @@ def load_gnn_model(dataset_name: str, b_initial: bool, user_token: str = None) -
 
     :param dataset_name: Dataset name that specifies the name of the model too
     :param b_initial: Load the initial or the latest model
-    :param user_token: The user token that defines the subfolder where the model will be loaded from
+    :param user_token: The user token that defines the sub-folder where the model will be loaded from
                        If b_initial is True, then any "user_token" content will be ignored
 
     :return: Dictionary of all the restored data
@@ -40,7 +40,7 @@ def load_gnn_model(dataset_name: str, b_initial: bool, user_token: str = None) -
     if b_initial and user_token is not None:
         print("\"b_initial\" is True, the content of \"user_token\" will be ignored")
 
-    gnn_storage_folder = os.path.join("models", dataset_name)
+    gnn_storage_folder = os.path.join("history", "models", dataset_name)
 
     # [0.] If init get the initial, else the latest one after the last retrain - if exists one -------------------------
     if b_initial:
@@ -122,7 +122,7 @@ def save_gnn_model(model: GCN,
     :param test_output_class_dict: The predicted classes of the test set graphs
     :param dataset_name: Dataset name that specifies the name of the model too
     :param b_initial: Is it the initial save or another which comes at retrain
-    :param user_token: The user token that defines the subfolder where the model will be stored to
+    :param user_token: The user token that defines the sub-folder where the model will be stored to
                        If b_initial is True, then any "user_token" content will be ignored
     """
 
@@ -130,7 +130,7 @@ def save_gnn_model(model: GCN,
         print("\"b_initial\" is True, the content of \"user_token\" will be ignored")
 
     # [0.1.] Create the folder of storing the GNN-relevant information -------------------------------------------------
-    gnn_storage_folder = os.path.join("models", dataset_name)
+    gnn_storage_folder = os.path.join("history", "models", dataset_name)
     if not os.path.exists(gnn_storage_folder):
         os.makedirs(gnn_storage_folder)
 
