@@ -41,7 +41,7 @@ dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}
 gnn_architecture_params_dict = define_gnn(dataset_name)
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 # model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-model = load_gnn_model(dataset_name, True)["model"]
+model = load_gnn_model(dataset_name, True, user_token)["model"]
 global_gnn_models_dict['0'] = {model}
 
 # [1.b.] KIRC random nodes ui ------------------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}
 gnn_architecture_params_dict = define_gnn(dataset_name)
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-# model = load_gnn_model(dataset_name, True)["model"]
+# model = load_gnn_model(dataset_name, True, user_token)["model"]
 # global_gnn_models_dict['0'] = {model}
 
 """
@@ -61,12 +61,11 @@ dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_
 dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}_pytorch.pkl'), "rb"))
 gnn_architecture_params_dict = define_gnn(dataset_name)
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
-model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-# model = load_gnn_model(dataset_name, True)["model"]
-# global_gnn_models_dict['0'] = {model}
+# model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
+model = load_gnn_model(dataset_name, False, user_token)["model"]
+global_gnn_models_dict['0'] = {model}
 
 
-"""
 # [2.] Delete one node and make a predict with the stored model --------------------------------------------------------
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len - 1)
@@ -121,4 +120,4 @@ model_numbering_keys_int_list = [int(model_nr) for model_nr in model_numbering_k
 max_model_nr = max(model_numbering_keys_int_list)
 global_gnn_models_dict[str(max_model_nr + 1)] = model
 print(global_gnn_models_dict)
-"""
+
