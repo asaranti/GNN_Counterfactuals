@@ -99,8 +99,6 @@ def patient_name(token):
 
     # init the structure
     global user_graph_data
-    global user_model_data
-    user_model_data = {}
     user_graph_data = {}
     graph_data = {}
 
@@ -154,9 +152,6 @@ def patient_name(token):
 
     # save graph and session id
     user_graph_data[str(token)] = graph_data
-
-    # save model
-    user_model_data[str(token)] = {'0': model}
 
     # save user id (token) and last updated time in ms
     user_last_updated[str(token)] = round(time.time() * 1000)
