@@ -110,14 +110,14 @@ def patient_name(token):
         with open(os.path.join(dataset_pytorch_folder, 'kirc_subnet_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
         # load model
-        model = load_gnn_model("kirc_subnet", True)["model"]
+        model = load_gnn_model("kirc_subnet", True, str(token))["model"]
 
     elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
         # load model
-        model = load_gnn_model("kirc_random_nodes_ui", True)["model"]
+        model = load_gnn_model("kirc_random_nodes_ui", True, str(token))["model"]
 
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
@@ -125,7 +125,7 @@ def patient_name(token):
         with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
         # load model
-        model = load_gnn_model("synthetic", True)["model"]
+        model = load_gnn_model("synthetic", True, str(token))["model"]
 
     # turn list into dictionary format
     for graph in graphs_list:
@@ -362,18 +362,18 @@ def nn_predict(token):
     graph_id = req_data["graph_id"]
     dataset_name = req_data["dataset_name"]
 
-    # current model
-    model = user_model_data[str(token)][str(len(user_model_data[str(token)]) - 1)]
-
     if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+        model = load_gnn_model("kirc_subnet", True, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("kirc_subnet")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
 
     elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
+        model = load_gnn_model("kirc_random_nodes_ui", True, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
+        model = load_gnn_model("synthetic", True, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("synthetic")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
 
@@ -410,29 +410,23 @@ def nn_retrain(token):
     # [2.] Keep only the last graph in the dataset ---------------------------------------------------------------------
     dataset = keep_only_last_graph_dataset(dataset)
 
-    # current model
-    model = user_model_data[str(token)][str(len(user_model_data[str(token)]) - 1)]
-
     if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+        model = load_gnn_model("kirc_subnet", True, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("kirc_subnet")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
 
     elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
+        model = load_gnn_model("kirc_random_nodes_ui", True, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
+        model = load_gnn_model("synthetic", True, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("synthetic")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
 
     # [3.] Retrain the GNN ---------------------------------------------------------------------------------------------
     model, test_set_metrics_dict = gnn_actions_obj.gnn_retrain(model, dataset, str(token))
-
-    model_numbering_keys_str_list = list(user_model_data[str(token)].keys())
-    model_numbering_keys_int_list = [int(model_nr) for model_nr in model_numbering_keys_str_list]
-    max_model_nr = max(model_numbering_keys_int_list)
-    user_model_data[str(token)][str(max_model_nr + 1)] = model
-    print(user_model_data[str(token)])
 
     # [4.] Save performance values in global variable ------------------------------------------------------------------
     global perf_values
@@ -567,13 +561,13 @@ def init_gnn(token):
 
     # get patient ids corresponding to dataset
     if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
-        test_set_metrics_dict = load_gnn_model("kirc_subnet", True)["test_set_metrics_dict"]
+        test_set_metrics_dict = load_gnn_model("kirc_subnet", True, str(token))["test_set_metrics_dict"]
 
     elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
-        test_set_metrics_dict = load_gnn_model("kirc_random_nodes_ui", True)["test_set_metrics_dict"]
+        test_set_metrics_dict = load_gnn_model("kirc_random_nodes_ui", True, str(token))["test_set_metrics_dict"]
 
     elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
-        test_set_metrics_dict = load_gnn_model("synthetic", True)["test_set_metrics_dict"]
+        test_set_metrics_dict = load_gnn_model("synthetic", True, str(token))["test_set_metrics_dict"]
 
     # [3.] -------------------------------------------------------------------------------------------------------------
     # save performance values in global variable
@@ -605,9 +599,18 @@ def node_importance(token):
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
     method = request.args.get("method")
+    dataset_name = request.args.get("dataset_name")
 
     # current model
-    model = user_model_data[str(token)][str(len(user_model_data[str(token)])-1)]
+    # get patient ids corresponding to dataset
+    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+        model = load_gnn_model("kirc_subnet", False, str(token))["model"]
+
+    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+        model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
+
+    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+        model = load_gnn_model("synthetic", False, str(token))["model"]
 
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
@@ -656,9 +659,17 @@ def edge_importance(token):
     patient_id = request.args.get("patient_id")
     graph_id = request.args.get("graph_id")
     method = request.args.get("method")
+    dataset_name = request.args.get("dataset_name")
 
     # current model
-    model = user_model_data[str(token)][str(len(user_model_data[str(token)]) - 1)]
+    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+        model = load_gnn_model("kirc_subnet", False, str(token))["model"]
+
+    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+        model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
+
+    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+        model = load_gnn_model("synthetic", False, str(token))["model"]
 
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
@@ -717,13 +728,13 @@ def init_patient_information(token):
     # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
     # get patient ids corresponding to dataset
     if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
-        models_dicts = load_gnn_model("kirc_subnet", True)
+        models_dicts = load_gnn_model("kirc_subnet", True, str(token))
 
     elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
-        models_dicts = load_gnn_model("kirc_random_nodes_ui", True)
+        models_dicts = load_gnn_model("kirc_random_nodes_ui", True, str(token))
 
     elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
-        models_dicts = load_gnn_model("synthetic", True)
+        models_dicts = load_gnn_model("synthetic", True, str(token))
 
     # check if patient is in train or test
     if int(patient_id) in list(models_dicts['test_dataset_shuffled_indexes']):
@@ -755,22 +766,23 @@ def patient_information(token):
     dataset_name = request.args.get("dataset_name")
 
     if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+        current_model = load_gnn_model("kirc_subnet", False, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("kirc_subnet")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
 
     elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
+        current_model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
 
     elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
+        current_model = load_gnn_model("synthetic", False, str(token))["model"]
         gnn_architecture_params_dict = define_gnn("synthetic")
         gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
 
     # Ground truth label is already stored -----------------------------------------------------------------------------
     current_graph = user_graph_data[str(token)][patient_id][graph_id]
     ground_truth_label = str(current_graph.y.cpu().detach().numpy()[0])
-
-    current_model = user_model_data[str(token)][str(len(user_model_data[str(token)])-1)]
 
     # check if patient is in train or test
     b_is_in_train = gnn_actions_obj.is_in_training_set(current_graph.graph_id)
@@ -815,6 +827,7 @@ def results(token):
     # graph and patient id ---------------------------------------------------------------------------------------------
     from_pat = request.args.get("from_pat")
     to_pat = request.args.get("to_pat")
+    dataset_name = request.arg.get("dataset_name")
 
     # [1.] Turn dictionary into a list of graphs =======================================================================
     graph_data_list = []
@@ -830,7 +843,15 @@ def results(token):
         # get latest modified graph
         graph_data_list.append(latest_graph)
 
-    current_model = user_model_data[str(token)][str(len(user_model_data[str(token)])-1)]
+    # current model
+    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+        current_model = load_gnn_model("kirc_subnet", False, str(token))["model"]
+
+    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+        current_model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
+
+    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+        current_model = load_gnn_model("synthetic", False, str(token))["model"]
 
     # [2.] Run parallel ================================================================================================
     # simplify the method -> user_token stays the same for every execution of a specific user
