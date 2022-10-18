@@ -830,9 +830,11 @@ def results(token):
         # get latest modified graph
         graph_data_list.append(latest_graph)
 
+    current_model = user_model_data[str(token)][str(len(user_model_data[str(token)])-1)]
+
     # [2.] Run parallel ================================================================================================
     # simplify the method -> user_token stays the same for every execution of a specific user
-    transform = partial(transform_to_results, user_token=str(token))
+    transform = partial(transform_to_results, model=current_model, user_token=str(token))
 
     with Pool(processes_nr) as p:
         pat_results = p.map(transform, graph_data_list)
