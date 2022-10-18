@@ -96,11 +96,7 @@ def aggregate_edge_directions(edge_mask, data):
     return edge_mask_dict
 
 
-<<<<<<< HEAD
-def explain_sample(method: str, input_graph: Data, target_label: int, user_token) -> list:
-=======
-def explain_sample(method: str, model: GCN, input_graph: Data, target_label: int) -> list:
->>>>>>> feature/format_transformation
+def explain_sample(method: str, model: GCN, input_graph: Data, target_label: int, user_token: str) -> list:
     """
     Explain input sample
 
@@ -117,15 +113,6 @@ def explain_sample(method: str, model: GCN, input_graph: Data, target_label: int
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = 'cuda:0'
 
-<<<<<<< HEAD
-    gcn_model_file_name = "gcn_model_" + str(user_token) + ".pth"
-    gnn_storage_folder = os.path.join("data", "output", "gnns")
-    gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
-    model = torch.load(gnn_model_file_path)
-    model.eval()
-
-=======
->>>>>>> feature/format_transformation
     # [1.] Edge mask ---------------------------------------------------------------------------------------------------
     edge_mask = explain(method, model, input_graph, device, target_label)
 
