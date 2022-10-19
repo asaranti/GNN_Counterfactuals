@@ -91,7 +91,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 criterion = torch.nn.CrossEntropyLoss().to(device)
 
 # Training for some epochs ---------------------------------------------------------------------------------------------
-date_time_obj = datetime.now()
+date_time_obj = datetime.utcnow()
 time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
 print(f'Training time start: {time_stamp_srt}')
 
@@ -178,6 +178,6 @@ def accuracy(pred_y, y):
 
 gin = train(model, train_loader)
 
-date_time_obj = datetime.now()
+date_time_obj = datetime.utcnow()
 time_stamp_srt = date_time_obj.strftime("%d-%b-%Y %H:%M:%S")
 print(f'Training time end: {time_stamp_srt}')

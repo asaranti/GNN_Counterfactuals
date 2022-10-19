@@ -187,7 +187,7 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
     ####################################################################################################################
     # [0.] Import the whole (disconnected) graph and compute the connected components ==================================
     ####################################################################################################################
-    datetime_1 = datetime.now()
+    datetime_1 = datetime.utcnow()
 
     protein_graph_all = import_whole_ppi_data(input_dataset_folder,
                                               pytorch_to_ppi_attributes_file,
@@ -285,7 +285,7 @@ def transform_from_ppi_to_pytorch(input_dataset_folder: str,
     ####################################################################################################################
     # [3.] Code time duration ==========================================================================================
     ####################################################################################################################
-    datetime_2 = datetime.now()
+    datetime_2 = datetime.utcnow()
     code_time_duration = datetime_2 - datetime_1
 
     print(f"Code time duration: {code_time_duration}")

@@ -149,7 +149,7 @@ def save_gnn_model(model: GCN,
         os.makedirs(init_gnn_storage_folder)
         gnn_storage_subfolder = init_gnn_storage_folder
     else:
-        date_time = datetime.now()
+        date_time = datetime.utcnow()
         str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
         current_gnn_storage_folder = os.path.join(gnn_storage_folder, f"{str_date_time}_" + dataset_name)
         os.makedirs(current_gnn_storage_folder)

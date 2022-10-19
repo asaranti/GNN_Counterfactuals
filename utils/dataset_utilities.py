@@ -62,3 +62,15 @@ def keep_only_last_graph_dataset(input_dataset: dict) -> list:
 
     return output_dataset
 
+
+def check_allowable_datasets(dataset_name: str):
+    """
+    Asserts if the dataset name is one of the admissible datasets
+
+    :param dataset_name: Name of dataset
+    """
+
+    dataset_names_list = ["kirc_random_nodes_ui", "kirc_subnet", "synthetic"]
+    assert dataset_name in dataset_names_list, f"The dataset name is not admissible, " \
+                                               f"it must be one of: {dataset_names_list}"
+

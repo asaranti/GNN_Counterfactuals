@@ -46,12 +46,12 @@ node_features = np.random.randn(1, node_features_size).astype(np.float32)
 node_id = str(uuid.uuid4())
 label = "label_" + str(uuid.uuid4())
 
-time_start_add_node = datetime.now().strftime("%H:%M:%S.%f")
+time_start_add_node = datetime.utcnow().strftime("%H:%M:%S.%f")
 input_graph_update = add_node(input_graph,
                               node_features,
                               label,
                               node_id)
-time_end_add_node = datetime.now().strftime("%H:%M:%S.%f")
+time_end_add_node = datetime.utcnow().strftime("%H:%M:%S.%f")
 
 print(f"Start: {time_start_add_node}")
 print(f"End: {time_end_add_node}")

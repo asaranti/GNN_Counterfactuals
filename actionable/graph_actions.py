@@ -241,7 +241,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     check_data_format_consistency(output_graph)
 
     # [11.] Save/append the action in the local file -------------------------------------------------------------------
-    date_time = datetime.now()
+    date_time = datetime.utcnow()
     str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
     action_description = f"remove_node, node_index: {node_index}, {str_date_time}"
     append_action_dataset_history(dataset_name, user_token, action_description)

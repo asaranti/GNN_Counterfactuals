@@ -8,6 +8,8 @@
     :date: 2022-10-12
 """
 
+from utils.dataset_utilities import check_allowable_datasets
+
 
 def define_gnn(dataset_name: str) -> dict:
     """
@@ -17,11 +19,10 @@ def define_gnn(dataset_name: str) -> dict:
     :return: Dictionary of relevant parameters of the GNN
     """
 
-    dataset_names_list = ["kirc_random_nodes_ui", "kirc_subnet", "synthetic"]
+    # [1.] Dataset must exist ------------------------------------------------------------------------------------------
+    check_allowable_datasets(dataset_name)
 
-    assert dataset_name in dataset_names_list, f"The dataset name is not admissible, " \
-                                               f"it must be one of: {dataset_names_list}"
-
+    # [2.] Define architecture -----------------------------------------------------------------------------------------
     if dataset_name == "kirc_random_nodes_ui":
         hidden_channels = 100
         layers_nr = 6
