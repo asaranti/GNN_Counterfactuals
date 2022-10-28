@@ -9,6 +9,7 @@ import random
 
 import copy
 import json
+import shutil
 import uuid
 import time
 import atexit
@@ -103,22 +104,20 @@ def patient_name(token):
     graph_data = {}
 
     # get patient ids corresponding to dataset
-    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
+    if dataset_name == dataset_names[2]:       # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_subnet_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
         # load model
         model = load_gnn_model("kirc_subnet", True, str(token))["model"]
 
-    elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
+    elif dataset_name == dataset_names[1]:                # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "KIRC_RANDOM", "kirc_random_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'kirc_random_nodes_ui_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
         # load model
         model = load_gnn_model("kirc_random_nodes_ui", True, str(token))["model"]
-
-
-    elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
+    elif dataset_name == dataset_names[0]:           # get list of all graphs in pytorch format
         dataset_pytorch_folder = os.path.join(data_folder, "output", "Synthetic", "synthetic_pytorch")
         with open(os.path.join(dataset_pytorch_folder, 'synthetic_pytorch.pkl'), 'rb') as f:
             graphs_list = pickle.load(f)
@@ -154,7 +153,7 @@ def patient_name(token):
     user_graph_data[str(token)] = graph_data
 
     # save user id (token) and last updated time in ms
-    user_last_updated[str(token)] = round(time.time() * 1000)
+    user_last_updated[str(token)] = time.time_ns() // 1_000_000
 
     return json.dumps(patients_names)
 
@@ -214,7 +213,7 @@ def adding_node(token):
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
     user_graph_data[str(token)] = graph_data
-    user_last_updated[str(token)] = round(time.time() * 1000)
+    user_last_updated[str(token)] = time.time_ns() // 1_000_000
 
     return "done"
 
@@ -246,7 +245,7 @@ def delete_node(token):
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
     user_graph_data[str(token)] = graph_data
-    user_last_updated[str(token)] = round(time.time() * 1000)
+    user_last_updated[str(token)] = time.time_ns() // 1_000_000
 
     return "done"
 
@@ -286,7 +285,7 @@ def adding_edge(token):
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
     user_graph_data[str(token)] = graph_data
-    user_last_updated[str(token)] = round(time.time() * 1000)
+    user_last_updated[str(token)] = time.time_ns() // 1_000_000
 
     return "done"
 
@@ -322,7 +321,7 @@ def delete_edge(token):
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
     user_graph_data[str(token)] = graph_data
-    user_last_updated[str(token)] = round(time.time() * 1000)
+    user_last_updated[str(token)] = time.time_ns() // 1_000_000
 
     return "done"
 
@@ -357,21 +356,7 @@ def nn_predict(token):
     graph_id = req_data["graph_id"]
     dataset_name = req_data["dataset_name"]
 
-    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
-        model = load_gnn_model("kirc_subnet", True, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("kirc_subnet")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
-
-    elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
-        model = load_gnn_model("kirc_random_nodes_ui", True, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
-
-    elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
-        model = load_gnn_model("synthetic", True, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("synthetic")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
-
+    model, gnn_architecture_params_dict, gnn_actions_obj = get_model_and_architecture(dataset_name, token, True)
 
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
@@ -405,20 +390,7 @@ def nn_retrain(token):
     # [2.] Keep only the last graph in the dataset ---------------------------------------------------------------------
     dataset = keep_only_last_graph_dataset(dataset)
 
-    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
-        model = load_gnn_model("kirc_subnet", True, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("kirc_subnet")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
-
-    elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
-        model = load_gnn_model("kirc_random_nodes_ui", True, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
-
-    elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
-        model = load_gnn_model("synthetic", True, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("synthetic")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
+    model, gnn_architecture_params_dict, gnn_actions_obj = get_model_and_architecture(dataset_name, token, True)
 
     # [3.] Retrain the GNN ---------------------------------------------------------------------------------------------
     model, test_set_metrics_dict = gnn_actions_obj.gnn_retrain(model, dataset, str(token))
@@ -519,7 +491,7 @@ def remove_session_graphs():
     Remove graphs from outdated user sessions (last update > 5 hour)
     """
     # get time in ms
-    current_time = round(time.time() * 1000)
+    current_time = time.time_ns() // 1_000_000
     keys_to_remove = []
 
     if len(user_last_updated) == 0:
@@ -527,7 +499,8 @@ def remove_session_graphs():
 
     # find outdated session: last modification > 5 hour (INTERVAL)
     for key, value in user_last_updated.items():
-        if value + INTERVAL <= current_time:
+        if (int(value) + (INTERVAL * 4)) <= current_time:
+            print("remove user token: ", key)
             keys_to_remove.append(key)
 
     # remove all graphs and session of the outdated session
@@ -555,13 +528,13 @@ def init_gnn(token):
     dataset_name = req_data["dataset_name"]
 
     # get patient ids corresponding to dataset
-    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+    if dataset_name == dataset_names[2]:  # get list of all graphs in pytorch format
         test_set_metrics_dict = load_gnn_model("kirc_subnet", True, str(token))["test_set_metrics_dict"]
 
-    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+    elif dataset_name == dataset_names[1]:  # get list of all graphs in pytorch format
         test_set_metrics_dict = load_gnn_model("kirc_random_nodes_ui", True, str(token))["test_set_metrics_dict"]
 
-    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+    elif dataset_name == dataset_names[0]:  # get list of all graphs in pytorch format
         test_set_metrics_dict = load_gnn_model("synthetic", True, str(token))["test_set_metrics_dict"]
 
     # [3.] -------------------------------------------------------------------------------------------------------------
@@ -598,14 +571,7 @@ def node_importance(token):
 
     # current model
     # get patient ids corresponding to dataset
-    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
-        model = load_gnn_model("kirc_subnet", False, str(token))["model"]
-
-    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
-        model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
-
-    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
-        model = load_gnn_model("synthetic", False, str(token))["model"]
+    model = get_model_and_architecture(dataset_name, token, False)
 
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
@@ -657,14 +623,7 @@ def edge_importance(token):
     dataset_name = request.args.get("dataset_name")
 
     # current model
-    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
-        model = load_gnn_model("kirc_subnet", False, str(token))["model"]
-
-    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
-        model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
-
-    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
-        model = load_gnn_model("synthetic", False, str(token))["model"]
+    model = get_model_and_architecture(dataset_name, token, False)
 
     # input graph ------------------------------------------------------------------------------------------------------
     graph_data = user_graph_data[str(token)]
@@ -722,13 +681,13 @@ def init_patient_information(token):
 
     # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
     # get patient ids corresponding to dataset
-    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
+    if dataset_name == dataset_names[2]:  # get list of all graphs in pytorch format
         models_dicts = load_gnn_model("kirc_subnet", True, str(token))
 
-    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
+    elif dataset_name == dataset_names[1]:  # get list of all graphs in pytorch format
         models_dicts = load_gnn_model("kirc_random_nodes_ui", True, str(token))
 
-    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
+    elif dataset_name == dataset_names[0]:  # get list of all graphs in pytorch format
         models_dicts = load_gnn_model("synthetic", True, str(token))
 
     # check if patient is in train or test
@@ -760,20 +719,8 @@ def patient_information(token):
     graph_id = request.args.get("graph_id")
     dataset_name = request.args.get("dataset_name")
 
-    if dataset_name == "KIRC SubNet":       # get list of all graphs in pytorch format
-        current_model = load_gnn_model("kirc_subnet", False, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("kirc_subnet")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
-
-    elif dataset_name == "KIRC Dataset":                # get list of all graphs in pytorch format
-        current_model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
-
-    elif dataset_name == "Synthetic Dataset":           # get list of all graphs in pytorch format
-        current_model = load_gnn_model("synthetic", False, str(token))["model"]
-        gnn_architecture_params_dict = define_gnn("synthetic")
-        gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
+    current_model, gnn_architecture_params_dict, gnn_actions_obj = \
+        get_model_and_architecture(dataset_name, token, True)
 
     # Ground truth label is already stored -----------------------------------------------------------------------------
     current_graph = user_graph_data[str(token)][patient_id][graph_id]
@@ -789,27 +736,6 @@ def patient_information(token):
 
     return json.dumps([which_dataset, ground_truth_label, predicted_label, prediction_conf])
 
-
-########################################################################################################################
-# [20.] Callback Interval to remove 'outdated' gcn_model files =========================================================
-########################################################################################################################
-def remove_gcn_model_files():
-    """
-    Remove gcn_model files from outdated user sessions (modification time > 5 hours)
-    """
-    # get time in ms
-    current_time = round(time.time() * 1000)
-    gnn_storage_folder = os.path.join(data_folder, "output", "gnns")
-
-    # find outdated files: last modification > 5 hours (INTERVAL)
-    for token in connected_users:
-        gcn_model_file_name = "gcn_model_" + str(token) + ".pth"
-        gnn_model_file_path = os.path.join(gnn_storage_folder, gcn_model_file_name)
-        if os.path.exists(gnn_model_file_path):
-            modification_time = os.path.getmtime(gnn_model_file_path)
-            if modification_time + INTERVAL <= current_time:
-                os.remove(gnn_model_file_path)
-                connected_users.remove(token)
 
 ########################################################################################################################
 # [19.] Save Final Results  ============================================================================================
@@ -839,14 +765,7 @@ def results(token):
         graph_data_list.append(latest_graph)
 
     # current model
-    if dataset_name == "KIRC SubNet":  # get list of all graphs in pytorch format
-        current_model = load_gnn_model("kirc_subnet", False, str(token))["model"]
-
-    elif dataset_name == "KIRC Dataset":  # get list of all graphs in pytorch format
-        current_model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
-
-    elif dataset_name == "Synthetic Dataset":  # get list of all graphs in pytorch format
-        current_model = load_gnn_model("synthetic", False, str(token))["model"]
+    current_model = get_model_and_architecture(dataset_name, token, False)
 
     # [2.] Run parallel ================================================================================================
     # simplify the method -> user_token stays the same for every execution of a specific user
@@ -856,6 +775,80 @@ def results(token):
         pat_results = p.map(transform, graph_data_list)
 
     return json.dumps(pat_results)
+
+
+########################################################################################################################
+# [20.] Callback Interval to remove 'outdated' gcn_model files =========================================================
+########################################################################################################################
+def remove_gcn_model_files():
+    """
+    Remove gcn_model files from outdated user sessions (modification time > 5 hours)
+
+    Use constants for folders and final models!
+    """
+    storage_folder_constants = ["synthetic", "kirc_random_nodes_ui", "kirc_subnet"]
+    model_names_constants = ["synthetic_model.pth", "kirc_random_nodes_ui_model.pth", "kirc_subnet_model.pth"]
+    user_active = [True, True, True]
+
+    # get time in ms
+    current_time = time.time_ns() // 1_000_000
+
+    # find outdated files: last modification > 5 hours (INTERVAL)
+    # Search "real" files -> do not rely on modification date of folders!
+    for token in connected_users:
+        # Users can switch between datasets!!!
+        if os.path.exists(os.path.join("models", str(storage_folder_constants[0]), str(token))):
+            user_active[0] = delete_outdated_files_for_path(current_time,
+                                                            os.path.join("models", str(storage_folder_constants[0]), str(token)),
+                                                            str(model_names_constants[0]))
+
+        if os.path.exists(os.path.join("models", str(storage_folder_constants[1]), str(token))):
+            user_active[1] = delete_outdated_files_for_path(current_time,
+                                                            os.path.join("models", str(storage_folder_constants[1]), str(token)),
+                                                            str(model_names_constants[1]))
+        if os.path.exists(os.path.join("models", str(storage_folder_constants[2]), str(token))):
+            user_active[2] = delete_outdated_files_for_path(current_time,
+                                                            os.path.join("models", str(storage_folder_constants[2]), str(token)),
+                                                            str(model_names_constants[2]))
+        # remove user from connected ones
+        if not user_active[0] and not user_active[1] and not user_active[2]:
+            connected_users.remove(token)
+
+
+########################################################################################################################
+# [21.] Helper method for remove_gcn_model_files - delete files per path ===============================================
+########################################################################################################################
+def delete_outdated_files_for_path(current_time, storage_path, constant_model_name):
+    """
+    Delete outdated files for a specific folder (chosen dataset), if there are some.
+
+    Return whether user folder should be deleted or not. Depending on the active/inactive status of the user
+        - True: folder is not empty, user is still active
+        - False: folder is empty, user most likely does not use this instance anymore
+    """
+
+    dir_list = os.listdir(storage_path)
+    user_active = True
+
+    for directory in dir_list:
+        model_file_path = os.path.join(storage_path, directory, constant_model_name)
+        if os.path.exists(model_file_path):
+            modification_time = os.path.getmtime(model_file_path) * 1000 # round to ms
+
+            if "latest" in directory:
+                modification_time += INTERVAL
+
+            if modification_time + INTERVAL <= current_time:
+                # if model is outdated -> remove whole folder!
+                shutil.rmtree(os.path.join(storage_path, directory))
+
+    # check if user is still active
+    if len(os.listdir(storage_path)) < 1:
+        shutil.rmtree(storage_path)
+        user_active = False
+
+    return user_active
+
 
 ### Don't know if needed
 
@@ -975,6 +968,37 @@ def remove_feature_from_all_edges(token):
     output_graph_json = graph_to_json(output_graph)
 
     return output_graph_json
+
+
+########################################################################################################################
+# Util: Get model data and architecture ================================================================================
+########################################################################################################################
+def get_model_and_architecture(dataset, token, architecture_gnn_actions: bool):
+    """
+    Reduce redundancy - get model and if wanted the architecture from datasetname
+    """
+    if dataset == dataset_names[2]:  # get list of all graphs in pytorch format
+        current_model = load_gnn_model("kirc_subnet", False, str(token))["model"]
+        if architecture_gnn_actions:
+            gnn_architecture_params_dict = define_gnn("kirc_subnet")
+            gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_subnet")
+
+    elif dataset == dataset_names[1]:  # get list of all graphs in pytorch format
+        current_model = load_gnn_model("kirc_random_nodes_ui", False, str(token))["model"]
+        if architecture_gnn_actions:
+            gnn_architecture_params_dict = define_gnn("kirc_random_nodes_ui")
+            gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "kirc_random_nodes_ui")
+
+    elif dataset == dataset_names[0]:  # get list of all graphs in pytorch format
+        current_model = load_gnn_model("synthetic", False, str(token))["model"]
+        if architecture_gnn_actions:
+            gnn_architecture_params_dict = define_gnn("synthetic")
+            gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, "synthetic")
+
+    if architecture_gnn_actions:
+        return current_model, gnn_architecture_params_dict, gnn_actions_obj
+    else:
+        return current_model
 
 
 ########################################################################################################################
