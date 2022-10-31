@@ -1,0 +1,1 @@
+remove_node, node_index: 0, 20221031_134447

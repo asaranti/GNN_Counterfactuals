@@ -9,6 +9,8 @@
 import os
 import pickle
 
+# from actionable.graph_actions import add_node, remove_node, add_edge, remove_edge, \
+#    add_feature_all_nodes, remove_feature_all_nodes, add_feature_all_edges, remove_feature_all_edges
 from utils.dataset_utilities import check_allowable_datasets
 
 
@@ -68,3 +70,25 @@ def load_action_dataset_history(dataset_name: str,
             action_str = line.rstrip()
             action_array = action_str.split(",")
             print(action_array)
+
+            # [2.1.] First arg is the function name and the last one is the datetime (not used) ------------------------
+            func_name = action_array[0]
+            date_time = action_array[-1]
+
+            """
+            if func_name == "add_node":
+                
+            elif func_name == "remove_node":
+
+            elif func_name == "add_edge":
+
+            elif func_name == "remove_edge":
+
+            elif func_name == "add_feature_all_nodes":
+
+            elif func_name == "remove_feature_all_nodes":
+
+            elif func_name == "add_feature_all_edges":
+
+            elif func_name == "remove_feature_all_edges":
+            """

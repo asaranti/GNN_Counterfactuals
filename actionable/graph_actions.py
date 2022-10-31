@@ -22,16 +22,23 @@ from utils.dataset_load_save import append_action_dataset_history
 def add_node(input_graph: torch_geometric.data.data.Data,
              node_features: np.array,
              label: str,
-             node_id: str) -> torch_geometric.data.data.Data:
+             node_id: str,
+             dataset_name: str = None,
+             user_token: str = None,
+             b_save_actions_history: bool = False) -> torch_geometric.data.data.Data:
     """
     Add node with its features. No edges are added at this point.
     If there are already nodes with specified features, then the size of the new node's feature array
     must conform to that, since heterogeneous graphs are not allowed.
+    If not in dataset reconstruction phase, save the actions history.
 
     :param input_graph: Input graph
     :param node_features: A numpy row containing the node features
     :param label: Node label, which will be added
     :param node_id: Node id, which will be added
+    :param dataset_name: Dataset name that specifies the name of the model too
+    :param user_token: The user token that defines the sub-folder where the actions will be stored to
+    :param b_save_actions_history: For b_save_actions_history==False is used for the graph reconstruction from the file.
 
     :return: The updated graph
     """
@@ -78,7 +85,7 @@ def add_node(input_graph: torch_geometric.data.data.Data,
         output_graph_edge_attr_labels = None
 
     ####################################################################################################################
-    # [3.] Output graph ================================================================================================
+    # [4.] Output graph ================================================================================================
     ####################################################################################################################
     output_graph_node_ids = copy.deepcopy(input_graph.node_ids)
     output_graph_node_labels = copy.deepcopy(input_graph.node_labels)
@@ -100,13 +107,26 @@ def add_node(input_graph: torch_geometric.data.data.Data,
 
     check_data_format_consistency(output_graph)
 
+    # [5.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    #      If in graph reconstruction phase b_save_actions_history == False, then there is no need to save -------------
+    if b_save_actions_history:
+        date_time = datetime.utcnow()
+        str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+        action_description = f"add_node, " \
+                             f"node_id: {node_id}, " \
+                             f"label: {label}, " \
+                             f"node_features: {np.array2string(node_features, separator=' ')}, " \
+                             f" {str_date_time}"
+        append_action_dataset_history(dataset_name, user_token, action_description)
+
     return output_graph
 
 
 def remove_node(input_graph: torch_geometric.data.data.Data,
                 node_index: int,
-                dataset_name: str,
-                user_token: str) -> torch_geometric.data.data.Data:
+                dataset_name: str = None,
+                user_token: str = None,
+                b_save_actions_history: bool = False) -> torch_geometric.data.data.Data:
     """
     Remove one node from the graph according to its index.
     It is presupposed that the node index is valid.
@@ -122,6 +142,7 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
          must also be deleted.
     [4.] The field "y" must not be deleted.
     [5.] In the field position "pos" the position of the deleted node needs to be removed.
+    [6.] If not in dataset reconstruction phase, save the actions history.
 
     Beware that all those fields are Optional and by default None according to the specification.
 
@@ -129,6 +150,8 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     :param node_index: Node index for removal
     :param dataset_name: Dataset name that specifies the name of the model too
     :param user_token: The user token that defines the sub-folder where the actions will be stored to
+    :param b_save_actions_history: If True save the actions history in the dedicated file, else don't save the action.
+    For b_save_actions_history==False is used for the graph reconstruction from the file.
 
     :return: The updated graph
     """
@@ -240,11 +263,15 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     print("End consistency check")
     check_data_format_consistency(output_graph)
 
-    # [11.] Save/append the action in the local file -------------------------------------------------------------------
-    date_time = datetime.utcnow()
-    str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
-    action_description = f"remove_node, node_index: {node_index}, {str_date_time}"
-    append_action_dataset_history(dataset_name, user_token, action_description)
+    # [11.] Save/append the action in the local file if "b_save_actions_history" ---------------------------------------
+    #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    if b_save_actions_history:
+        date_time = datetime.utcnow()
+        str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+        action_description = f"remove_node, " \
+                             f"node_index: {node_index}, " \
+                             f"{str_date_time}"
+        append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
 
@@ -252,7 +279,11 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
 def add_edge(input_graph: torch_geometric.data.data.Data,
              new_edge_index_left: int,
              new_edge_index_right: int,
-             new_edge_attr: Optional[np.array]) -> \
+             new_edge_attr: Optional[np.array],
+             dataset_name: str = None,
+             user_token: str = None,
+             b_save_actions_history: bool = False
+             ) -> \
         torch_geometric.data.data.Data:
     """
     Add edge to the graph. The "left" and "right" nodes (imaginary in undirected graphs) must exist.
@@ -264,6 +295,10 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
     :param new_edge_index_left: Index of left node of new edge
     :param new_edge_index_right: Index of right node of new edge
     :param new_edge_attr: Attribute(s) of new edge
+    :param dataset_name: Dataset name that specifies the name of the model too
+    :param user_token: The user token that defines the sub-folder where the actions will be stored to
+    :param b_save_actions_history: If True save the actions history in the dedicated file, else don't save the action.
+    For b_save_actions_history==False is used for the graph reconstruction from the file.
 
     :return: The updated graph
     """
@@ -315,7 +350,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
         output_graph_edge_index = torch.from_numpy(np.array([[new_edge_index_left],
                                                              [new_edge_index_right]]))
 
-    # [1.] Add the edge's features -------------------------------------------------------------------------------------
+    # [2.] Add the edge's features -------------------------------------------------------------------------------------
     if input_graph.edge_attr is not None and new_edge_attr is not None:
         input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
 
@@ -353,12 +388,33 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
                         )
     check_data_format_consistency(output_graph)
 
+    # [6.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    if b_save_actions_history:
+        date_time = datetime.utcnow()
+        str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+
+        new_edge_attr_str = ""
+        if new_edge_attr is not None:
+            new_edge_attr_str = f"new_edge_attr: {np.array2string(new_edge_attr, separator=' ')}, "
+
+        action_description = f"add_edge, " \
+                             f"new_edge_index_left: {new_edge_index_left}, " \
+                             f"new_edge_index_right: {new_edge_index_right}, " \
+                             + new_edge_attr_str + \
+                             f"{str_date_time}"
+        append_action_dataset_history(dataset_name, user_token, action_description)
+
     return output_graph
 
 
 def remove_edge(input_graph: torch_geometric.data.data.Data,
                 edge_index_left: int,
-                edge_index_right: int) -> \
+                edge_index_right: int,
+                dataset_name: str = None,
+                user_token: str = None,
+                b_save_actions_history: bool = False
+                ) -> \
         torch_geometric.data.data.Data:
     """
     Remove an edge between two nodes. Check if the edge exists, remove the corresponding pair from "edge_index" and the
@@ -367,6 +423,10 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
     :param input_graph: Input graph
     :param edge_index_left: Index of left node of the edge
     :param edge_index_right: Index of right node of the edge
+    :param dataset_name: Dataset name that specifies the name of the model too
+    :param user_token: The user token that defines the sub-folder where the actions will be stored to
+    :param b_save_actions_history: If True save the actions history in the dedicated file, else don't save the action.
+    For b_save_actions_history==False is used for the graph reconstruction from the file.
 
     :return: The updated graph
     """
@@ -442,22 +502,47 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
                         pos=output_pos,
                         graph_id=input_graph.graph_id
                         )
+
     check_data_format_consistency(output_graph)
+
+    # [6.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    if b_save_actions_history:
+        date_time = datetime.utcnow()
+        str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+        action_description = f"remove_edge, " \
+                             f"edge_index_left: {edge_index_left}, " \
+                             f"edge_index_right: {edge_index_right}, " \
+                             f"{str_date_time}"
+        append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
 
 
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
 def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
                           new_input_node_feature: np.array,
-                          label: str) -> torch_geometric.data.data.Data:
+                          label: str,
+                          dataset_name: str = None,
+                          user_token: str = None,
+                          b_save_actions_history: bool = False
+                          ) -> torch_geometric.data.data.Data:
     """
     Add a feature in all nodes. Basically, that means that the features field of all the nodes "x" will have
     another column. The number of rows of the input feature should be equal to the number of nodes. If the node's
     features field "x" is empty then a one column array is created. The other fields stay unchanged.
 
     :param input_graph: Input graph
-    :param new_input_node_feature: New input feature
+    :param new_input_node_feature: New input feature for nodes
     :param label: Feature label, which will be added
+    :param dataset_name: Dataset name that specifies the name of the model too
+    :param user_token: The user token that defines the sub-folder where the actions will be stored to
+    :param b_save_actions_history: If True save the actions history in the dedicated file, else don't save the action.
+    For b_save_actions_history==False is used for the graph reconstruction from the file.
 
     :return: The updated graph
     """
@@ -509,10 +594,26 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
 
     check_data_format_consistency(output_graph)
 
+    # [3.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    if b_save_actions_history:
+        date_time = datetime.utcnow()
+        str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+        action_description = f"add_feature_all_nodes, " \
+                             f"new_input_node_feature: {np.array2string(new_input_node_feature, separator=' ')}, " \
+                             f"label: {label}, " \
+                             f"{str_date_time}"
+        append_action_dataset_history(dataset_name, user_token, action_description)
+
     return output_graph
 
 
-def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, removed_node_feature_idx: int) -> \
+def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
+                             removed_node_feature_idx: int,
+                             dataset_name: str = None,
+                             user_token: str = None,
+                             b_save_actions_history: bool = False
+                             ) -> \
         torch_geometric.data.data.Data:
     """
     Remove a feature in all the nodes. The features' field of all the nodes "x" will have one column less.
@@ -521,6 +622,10 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, remove
 
     :param input_graph: Input graph
     :param removed_node_feature_idx: Index of the column of the removed feature
+    :param dataset_name: Dataset name that specifies the name of the model too
+    :param user_token: The user token that defines the sub-folder where the actions will be stored to
+    :param b_save_actions_history: If True save the actions history in the dedicated file, else don't save the action.
+    For b_save_actions_history==False is used for the graph reconstruction from the file.
 
     :return: The updated graph
     """
@@ -568,16 +673,40 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data, remove
                         pos=input_graph.pos,
                         graph_id=input_graph.graph_id
                         )
+    check_data_format_consistency(output_graph)
+
+    # [3.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    if b_save_actions_history:
+        date_time = datetime.utcnow()
+        str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+        action_description = f"remove_feature_all_nodes, " \
+                             f"removed_node_feature_idx: {removed_node_feature_idx}, " \
+                             f"{str_date_time}"
+        append_action_dataset_history(dataset_name, user_token, action_description)
+
     return output_graph
 
 
-def add_feature_all_edges(input_graph: torch_geometric.data.data.Data, new_input_edge_feature: np.array) -> \
+def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
+                          new_input_edge_feature: np.array,
+                          dataset_name: str = None,
+                          user_token: str = None,
+                          b_save_actions_history: bool = False
+                          ) -> \
         torch_geometric.data.data.Data:
     """
     Add a feature in all of the edges. Basically, that means that the features field of all the edges "edge_attr"
     will have another column. The number of rows of the input attribute should be equal to the number of edges.
     If the edges's attributes field "edge_attr" is empty or None then a one column array is created.
     The other fields stay unchanged.
+
+    :param input_graph: Input graph
+    :param new_input_edge_feature: New input feature for the edges
+    :param dataset_name: Dataset name that specifies the name of the model too
+    :param user_token: The user token that defines the sub-folder where the actions will be stored to
+    :param b_save_actions_history: If True save the actions history in the dedicated file, else don't save the action.
+    For b_save_actions_history==False is used for the graph reconstruction from the file.
     """
 
     # [1.] Number of rows of the input feature should be equal to the number of nodes ----------------------------------
@@ -609,11 +738,27 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data, new_input
                         pos=output_pos,
                         graph_id=input_graph.graph_id
                         )
+    check_data_format_consistency(output_graph)
+
+    # [4.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    if b_save_actions_history:
+        date_time = datetime.utcnow()
+        str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+        action_description = f"add_feature_all_edges, " \
+                             f"new_input_edge_feature: {np.array2string(new_input_edge_feature, separator=' ')}, " \
+                             f"{str_date_time}"
+        append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
 
 
-def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data, removed_edge_attribute_idx: int) -> \
+def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data,
+                             removed_edge_attribute_idx: int,
+                             dataset_name: str = None,
+                             user_token: str = None,
+                             b_save_actions_history: bool = False
+                             ) -> \
         torch_geometric.data.data.Data:
     """
     Remove a feature in all of the edges. The attributes field of all the edges "edge_attr" will have one column less.
@@ -622,6 +767,10 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data, remove
 
     :param input_graph: Input graph
     :param removed_edge_attribute_idx: Index of the column of the removed attribute
+    :param dataset_name: Dataset name that specifies the name of the model too
+    :param user_token: The user token that defines the sub-folder where the actions will be stored to
+    :param b_save_actions_history: If True save the actions history in the dedicated file, else don't save the action.
+    For b_save_actions_history==False is used for the graph reconstruction from the file.
 
     :return: The updated graph
     """
@@ -656,5 +805,16 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data, remove
                         pos=output_pos,
                         graph_id=input_graph.graph_id
                         )
+    check_data_format_consistency(output_graph)
+
+    # [4.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    if b_save_actions_history:
+        date_time = datetime.utcnow()
+        str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
+        action_description = f"remove_feature_all_edges, " \
+                             f"removed_edge_attribute_idx: {removed_edge_attribute_idx}, " \
+                             f"{str_date_time}"
+        append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph

@@ -93,7 +93,7 @@ nodes_orig_nr = input_graph.x.shape[0]
 print(f"Nr. of nodes original: {nodes_orig_nr}")
 
 node_idx = 0
-output_graph = remove_node(input_graph, node_idx, dataset_name, user_token)
+output_graph = remove_node(input_graph, node_idx, dataset_name, user_token, True)
 nodes_output_nr = output_graph.x.shape[0]
 print(f"Nr. of nodes after node delete: {nodes_output_nr}")
 
