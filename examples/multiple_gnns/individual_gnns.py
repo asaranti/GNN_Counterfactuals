@@ -16,7 +16,7 @@ from actionable.gnn_explanations import explain_sample
 from actionable.graph_actions import remove_node
 from gnns.gnn_selectors.gnn_definitions import define_gnn
 from utils.gnn_load_save import load_gnn_model
-from utils.dataset_load_save import load_action_dataset_history
+from utils.dataset_load import load_action_dataset_history
 
 ########################################################################################################################
 # [0.] Preparatory actions =============================================================================================
@@ -85,6 +85,7 @@ if not os.path.exists(dataset_user_storage_folder):
 ########################################################################################################################
 dataset_len = len(dataset)
 graph_idx = random.randint(0, dataset_len - 1)
+print(f"Graph_idx: {graph_idx}")
 input_graph = dataset[graph_idx]
 input_graph.to(device)
 print(input_graph)
