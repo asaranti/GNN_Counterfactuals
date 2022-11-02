@@ -600,10 +600,7 @@ def node_importance(token):
 
     rel_pos = [str(round(node_relevance, 2)) for node_relevance in rel_pos]
 
-    # get random positive and negative relevance values
-    rel_pos_neg = [random.randint(-100, 100) for p in range(0, len(node_ids))]
-
-    return json.dumps([node_ids, rel_pos, rel_pos_neg])
+    return json.dumps([node_ids, rel_pos])
 
 
 ########################################################################################################################
@@ -748,7 +745,7 @@ def results(token):
     # graph and patient id ---------------------------------------------------------------------------------------------
     from_pat = request.args.get("from_pat")
     to_pat = request.args.get("to_pat")
-    dataset_name = request.arg.get("dataset_name")
+    dataset_name = request.args.get("dataset_name")
 
     # [1.] Turn dictionary into a list of graphs =======================================================================
     graph_data_list = []
