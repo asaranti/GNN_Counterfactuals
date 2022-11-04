@@ -79,7 +79,6 @@ dataset_user_storage_folder = os.path.join(dataset_storage_folder, user_token)
 if not os.path.exists(dataset_user_storage_folder):
     os.mkdir(dataset_user_storage_folder)
 
-
 ########################################################################################################################
 # [3.] Make some action and make a predict with the stored model =======================================================
 ########################################################################################################################

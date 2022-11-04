@@ -17,6 +17,8 @@ import numpy as np
 import torch
 from torch_geometric.data.data import Data
 from torch_geometric.loader import DataLoader
+import torch.nn as nn
+from torch_geometric.nn.dense.linear import Linear
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
@@ -187,7 +189,7 @@ class GNN_Actions(torch.nn.Module):
                     break
 
             else:
-                print('Trigger times reset to 0.')
+                # print('Trigger times reset to 0.')
                 trigger_times = 0
 
             last_accuracy = current_test_set_accuracy
@@ -298,8 +300,12 @@ class GNN_Actions(torch.nn.Module):
                                            for idx in self.train_dataset_shuffled_indexes]
         test_normalized_graphs_dataset = [input_graphs[idx] for idx in self.test_dataset_shuffled_indexes]
 
-        re_train_loader = DataLoader(train_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=True)
-        re_test_loader = DataLoader(test_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=False)
+        re_train_loader = DataLoader(train_normalized_graphs_dataset,
+                                     batch_size=self.batch_size,
+                                     shuffle=False)     # Training set typically has to be shuffled --------------------
+        re_test_loader = DataLoader(test_normalized_graphs_dataset,
+                                    batch_size=self.batch_size,
+                                    shuffle=False)      # Test set typically has to be the same (not shuffled) ---------
 
         ################################################################################################################
         # [1.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN ====
@@ -311,9 +317,24 @@ class GNN_Actions(torch.nn.Module):
 
         # [1.1.] If the number of features did not change, then just reset the weights ---------------------------------
         if input_features_model_nr == input_features_graph_nr:
-            for layer in model.children():
+
+            for layer in model.conv_layers_list:
                 if hasattr(layer, 'reset_parameters'):
                     layer.reset_parameters()
+                    layer.lin.weight.data.zero_()
+                    # layer.lin = Linear(layer.in_channels, layer.out_channels,
+                    #                   bias=False,
+                    #                   weight_initializer="zero")
+                    layer.to(device)
+                    # torch.nn.init.uniform_(layer.weight)                         # layer.weight, layer.bias ----------
+                    torch.nn.init.zeros_(layer.bias)
+
+            for layer in model.children():
+                if hasattr(layer, 'reset_parameters'):
+                    layer.reset_parameters()                                       # layer.weight, layer.bias ----------
+                    torch.nn.init.zeros_(layer.weight)
+                    torch.nn.init.zeros_(layer.bias)
+
         # [1.2.] If the number of features did change, you need a new architecture -------------------------------------
         else:
             print(f"The number of features of the nodes that the model expects {input_features_model_nr},\n"
@@ -321,7 +342,7 @@ class GNN_Actions(torch.nn.Module):
                   f"{input_features_graph_nr}.")
 
             num_classes = model_state_dict["lin.weight"].size(dim=0)
-            hidden_channels = model_state_dict["conv1.lin.weight"].size(dim=0)
+            hidden_channels = model_state_dict["gcns_modules.0.lin.weight"].size(dim=0)
             model = GCN(num_node_features=input_features_graph_nr,
                         hidden_channels=hidden_channels,
                         num_classes=num_classes).to(device)
@@ -339,7 +360,7 @@ class GNN_Actions(torch.nn.Module):
         # [3.] Iterate over several epochs -----------------------------------------------------------------------------
         for epoch in range(1, self.epochs_nr + 1):
 
-            print(f"Epoch: {epoch}")
+            # print(f"Epoch: {epoch}")
 
             # [4.] Retrain the model and gather the performance metrics of the training and test set -------------------
             train_model(model, re_train_loader, optimizer, criterion)
@@ -358,7 +379,7 @@ class GNN_Actions(torch.nn.Module):
                     break
 
             else:
-                print('Trigger times reset to 0.')
+                # print('Trigger times reset to 0.')
                 trigger_times = 0
 
             last_accuracy = current_test_set_accuracy
@@ -366,6 +387,9 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [6.] GNN store ===============================================================================================
         ################################################################################################################
+        print(f"Train set performance: {self.train_set_metrics_dict}")
+        print(f"Test set performance: {self.test_set_metrics_dict}")
+
         save_gnn_model(model,
                        self.train_set_metrics_dict, self.test_set_metrics_dict,
                        self.train_dataset_shuffled_indexes, self.test_dataset_shuffled_indexes,
