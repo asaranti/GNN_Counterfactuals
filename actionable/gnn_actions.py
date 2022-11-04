@@ -14,6 +14,7 @@ import re
 import sys
 
 import numpy as np
+from numpy.random import RandomState
 import torch
 from torch_geometric.data.data import Data
 from torch_geometric.loader import DataLoader
@@ -58,6 +59,73 @@ class GNN_Actions(torch.nn.Module):
         self.train_outputs_predictions_dict = None
         self.test_set_metrics_dict = None
         self.test_outputs_predictions_dict = None
+
+        ################################################################################################################
+        ################################################################################################################
+        ################################################################################################################
+        # [5.] Init the parameters of the layers -----------------------------------------------------------------------
+        ################################################################################################################
+        ################################################################################################################
+        ################################################################################################################
+        num_features = 2
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        device = 'cuda:0'
+        num_classes = 2
+        model = GCN(
+            num_node_features=num_features,
+            hidden_channels=self.gnn_architecture_params_dict["hidden_channels"],
+            layers_nr=self.gnn_architecture_params_dict["layers_nr"],
+            num_classes=num_classes). \
+            to(device)
+
+        prng = RandomState(1234567890)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # GCNConv layers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        self.predefined_weights_dict = {}
+
+        for layer in model.conv_layers_list:
+            if hasattr(layer, 'reset_parameters'):
+
+                # Weight and bias of the GCNConv layers ------------------------------------------------------------
+                lin_weight_data_size = layer.lin.weight.data.size()
+                lin_weight_data_random_weights = prng.uniform(-1.0,
+                                                              1.0,
+                                                              (lin_weight_data_size[0], lin_weight_data_size[1]))
+                self.predefined_weights_dict[str(layer) + "_lin_weight"] = \
+                    torch.from_numpy(lin_weight_data_random_weights).to(dtype=torch.float32)
+
+                # Bias of the GCNConv layers -----------------------------------------------------------------------
+                layer_bias_data_size = layer.bias.size()
+                layer_bias_data_random_weights = prng.uniform(-1.0,
+                                                              1.0,
+                                                              (layer_bias_data_size[0],))
+                self.predefined_weights_dict[str(layer) + "_bias"] = \
+                    torch.from_numpy(layer_bias_data_random_weights).to(dtype=torch.float32)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Linear layer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        for layer in model.children():
+            if hasattr(layer, 'reset_parameters'):
+
+                # Weight and bias of the Linear layer --------------------------------------------------------------
+                layer_weight_data_size = layer.weight.data.size()
+                layer_weight_data_random_weights = prng.uniform(-1.0,
+                                                                1.0,
+                                                                (layer_weight_data_size[0],
+                                                                 layer_weight_data_size[1]))
+                self.predefined_weights_dict[str(layer) + "_weight"] = \
+                    torch.from_numpy(layer_weight_data_random_weights).to(dtype=torch.float32)
+
+                # Bias of the Linear layers ------------------------------------------------------------------------
+                layer_bias_data_size = layer.bias.data.size()
+                layer_bias_data_random_weights = prng.uniform(-1.0,
+                                                              1.0,
+                                                              (layer_bias_data_size[0],))
+                self.predefined_weights_dict[str(layer) + "_bias"] = \
+                    torch.from_numpy(layer_bias_data_random_weights).to(dtype=torch.float32)
 
     def is_in_training_set(self, graph_id) -> bool:
         """
@@ -302,7 +370,7 @@ class GNN_Actions(torch.nn.Module):
 
         re_train_loader = DataLoader(train_normalized_graphs_dataset,
                                      batch_size=self.batch_size,
-                                     shuffle=False)     # Training set typically has to be shuffled --------------------
+                                     shuffle=False)      # Training set typically has to be shuffled -------------------
         re_test_loader = DataLoader(test_normalized_graphs_dataset,
                                     batch_size=self.batch_size,
                                     shuffle=False)      # Test set typically has to be the same (not shuffled) ---------
@@ -318,22 +386,60 @@ class GNN_Actions(torch.nn.Module):
         # [1.1.] If the number of features did not change, then just reset the weights ---------------------------------
         if input_features_model_nr == input_features_graph_nr:
 
-            for layer in model.conv_layers_list:
-                if hasattr(layer, 'reset_parameters'):
-                    layer.reset_parameters()
-                    layer.lin.weight.data.zero_()
-                    # layer.lin = Linear(layer.in_channels, layer.out_channels,
-                    #                   bias=False,
-                    #                   weight_initializer="zero")
-                    layer.to(device)
-                    # torch.nn.init.uniform_(layer.weight)                         # layer.weight, layer.bias ----------
-                    torch.nn.init.zeros_(layer.bias)
+            prng = RandomState(1234567890)
 
-            for layer in model.children():
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # GCNConv layers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            for layer in model.conv_layers_list:
+
                 if hasattr(layer, 'reset_parameters'):
-                    layer.reset_parameters()                                       # layer.weight, layer.bias ----------
-                    torch.nn.init.zeros_(layer.weight)
-                    torch.nn.init.zeros_(layer.bias)
+                    # layer.reset_parameters()          # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+                    # Weight and bias of the GCNConv layers ------------------------------------------------------------
+                    # lin_weight_data_size = layer.lin.weight.data.size()
+                    # lin_weight_data_random_weights = prng.uniform(-1.0,
+                    #                                              1.0,
+                    #                                              (lin_weight_data_size[0], lin_weight_data_size[1]))
+                    # layer.lin.weight.data = torch.from_numpy(lin_weight_data_random_weights).to(dtype=torch.float32)
+                    layer.lin.weight.data = self.predefined_weights_dict[str(layer) + "_lin_weight"]
+
+                    # Bias of the GCNConv layers -----------------------------------------------------------------------
+                    # layer_bias_data_size = layer.bias.size()
+                    # layer_bias_data_random_weights = prng.uniform(-1.0,
+                    #                                              1.0,
+                    #                                              (layer_bias_data_size[0], ))
+                    # layer.bias.data = torch.from_numpy(layer_bias_data_random_weights).to(dtype=torch.float32)
+                    layer.bias.data = self.predefined_weights_dict[str(layer) + "_bias"]
+
+                    layer.to(device)
+
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # Linear layer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            for layer in model.children():
+
+                if hasattr(layer, 'reset_parameters'):
+                    # layer.reset_parameters()          # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+                    # Weight and bias of the Linear layer --------------------------------------------------------------
+                    # layer_weight_data_size = layer.weight.data.size()
+                    # layer_weight_data_random_weights = prng.uniform(-1.0,
+                    #                                                1.0,
+                    #                                                (layer_weight_data_size[0],
+                    #                                                 layer_weight_data_size[1]))
+                    # layer.weight.data = torch.from_numpy(layer_weight_data_random_weights).to(dtype=torch.float32)
+                    layer.weight.data = self.predefined_weights_dict[str(layer) + "_weight"]
+
+                    # Bias of the Linear layers ------------------------------------------------------------------------
+                    # layer_bias_data_size = layer.bias.data.size()
+                    # layer_bias_data_random_weights = prng.uniform(-1.0,
+                    #                                              1.0,
+                    #                                              (layer_bias_data_size[0], ))
+                    # layer.bias.data = torch.from_numpy(layer_bias_data_random_weights).to(dtype=torch.float32)
+                    layer.bias.data = self.predefined_weights_dict[str(layer) + "_bias"]
+
+                    layer.to(device)
 
         # [1.2.] If the number of features did change, you need a new architecture -------------------------------------
         else:

@@ -10,6 +10,8 @@ from datetime import datetime
 import os
 import pickle
 
+import torch
+
 from actionable.gnn_actions import GNN_Actions
 from gnns.gnn_selectors.gnn_definitions import define_gnn
 from utils.gnn_load_save import load_gnn_model
@@ -20,6 +22,9 @@ from utils.gnn_load_save import load_gnn_model
 # Set the use of GPU ---------------------------------------------------------------------------------------------------
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = 'cuda:0'
+
+torch.manual_seed(0)
+torch.use_deterministic_algorithms(True, warn_only=True)
 
 # Global variable containing the dictionaries --------------------------------------------------------------------------
 global_gnn_models_dict = {}
@@ -33,7 +38,7 @@ start_session_date_time_str = start_session_date_time.strftime("%Y%m%d_%H%M%S")
 ########################################################################################################################
 # [1.] Select dataset ==================================================================================================
 ########################################################################################################################
-
+"""
 # [1.a.] KIRC Subnet ---------------------------------------------------------------------------------------------------
 dataset_name = "kirc_subnet"
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
@@ -41,11 +46,11 @@ dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}
 gnn_architecture_params_dict = define_gnn(dataset_name)
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 # model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-already_trained_model_dict = load_gnn_model(dataset_name, False, user_token)
+already_trained_model_dict = load_gnn_model(dataset_name, True, user_token)
 model = already_trained_model_dict["model"]
 global_gnn_models_dict['0'] = {model}
-
 """
+
 # [1.b.] KIRC random nodes ui ------------------------------------------------------------------------------------------
 dataset_name = "kirc_random_nodes_ui"
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
@@ -55,8 +60,7 @@ gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 # model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 already_trained_model_dict = load_gnn_model(dataset_name, False, user_token)
 model = already_trained_model_dict["model"]
-global_gnn_models_dict['0'] = {model}
-"""
+# global_gnn_models_dict['0'] = {model}
 
 """
 # [1.c.] Synthetic -----------------------------------------------------------------------------------------------------
@@ -66,7 +70,7 @@ dataset = pickle.load(open(os.path.join(dataset_pytorch_folder, f'{dataset_name}
 gnn_architecture_params_dict = define_gnn(dataset_name)
 gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 # model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
-already_trained_model_dict = load_gnn_model(dataset_name, False, user_token)
+already_trained_model_dict = load_gnn_model(dataset_name, True, user_token)
 model = already_trained_model_dict["model"]
 """
 
