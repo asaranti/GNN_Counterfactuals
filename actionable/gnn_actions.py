@@ -1,7 +1,6 @@
 """
     GNN actions - Predict & Retrain
     Dataset contains only homogeneous actions
-
     :author: Anna Saranti
     :copyright: © 2021 HCI-KDD (ex-AI) group
     :date: 2022-02-18
@@ -14,12 +13,9 @@ import re
 import sys
 
 import numpy as np
-from numpy.random import RandomState
 import torch
 from torch_geometric.data.data import Data
 from torch_geometric.loader import DataLoader
-import torch.nn as nn
-from torch_geometric.nn.dense.linear import Linear
 
 from gnns.gnns_graph_classification.GCN_Graph_Classification import GCN
 from gnns.gnns_graph_classification.gnn_train_test_methods import train_model, use_trained_model
@@ -34,7 +30,6 @@ class GNN_Actions(torch.nn.Module):
     def __init__(self, gnn_architecture_params_dict: dict, dataset_name: str):
         """
         Init the GNN actions
-
         :param gnn_architecture_params_dict: Dictionary of architecture parameters
         :param dataset_name: Dataset name
         """
@@ -60,79 +55,10 @@ class GNN_Actions(torch.nn.Module):
         self.test_set_metrics_dict = None
         self.test_outputs_predictions_dict = None
 
-        ################################################################################################################
-        ################################################################################################################
-        ################################################################################################################
-        # [5.] Init the parameters of the layers -----------------------------------------------------------------------
-        ################################################################################################################
-        ################################################################################################################
-        ################################################################################################################
-        num_features = 2
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-        device = 'cuda:0'
-        num_classes = 2
-        model = GCN(
-            num_node_features=num_features,
-            hidden_channels=self.gnn_architecture_params_dict["hidden_channels"],
-            layers_nr=self.gnn_architecture_params_dict["layers_nr"],
-            num_classes=num_classes). \
-            to(device)
-
-        prng = RandomState(1234567890)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # GCNConv layers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.predefined_weights_dict = {}
-
-        for layer in model.conv_layers_list:
-            if hasattr(layer, 'reset_parameters'):
-
-                # Weight and bias of the GCNConv layers ------------------------------------------------------------
-                lin_weight_data_size = layer.lin.weight.data.size()
-                lin_weight_data_random_weights = prng.uniform(-1.0,
-                                                              1.0,
-                                                              (lin_weight_data_size[0], lin_weight_data_size[1]))
-                self.predefined_weights_dict[str(layer) + "_lin_weight"] = \
-                    torch.from_numpy(lin_weight_data_random_weights).to(dtype=torch.float32)
-
-                # Bias of the GCNConv layers -----------------------------------------------------------------------
-                layer_bias_data_size = layer.bias.size()
-                layer_bias_data_random_weights = prng.uniform(-1.0,
-                                                              1.0,
-                                                              (layer_bias_data_size[0],))
-                self.predefined_weights_dict[str(layer) + "_bias"] = \
-                    torch.from_numpy(layer_bias_data_random_weights).to(dtype=torch.float32)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Linear layer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        for layer in model.children():
-            if hasattr(layer, 'reset_parameters'):
-
-                # Weight and bias of the Linear layer --------------------------------------------------------------
-                layer_weight_data_size = layer.weight.data.size()
-                layer_weight_data_random_weights = prng.uniform(-1.0,
-                                                                1.0,
-                                                                (layer_weight_data_size[0],
-                                                                 layer_weight_data_size[1]))
-                self.predefined_weights_dict[str(layer) + "_weight"] = \
-                    torch.from_numpy(layer_weight_data_random_weights).to(dtype=torch.float32)
-
-                # Bias of the Linear layers ------------------------------------------------------------------------
-                layer_bias_data_size = layer.bias.data.size()
-                layer_bias_data_random_weights = prng.uniform(-1.0,
-                                                              1.0,
-                                                              (layer_bias_data_size[0],))
-                self.predefined_weights_dict[str(layer) + "_bias"] = \
-                    torch.from_numpy(layer_bias_data_random_weights).to(dtype=torch.float32)
-
     def is_in_training_set(self, graph_id) -> bool:
         """
         Check if the graph is in the training or test set
-
         :param graph_id: Id of graph
-
         :return: Boolean value indicating if this graph is in the training set
         """
 
@@ -153,7 +79,6 @@ class GNN_Actions(torch.nn.Module):
     def gnn_init_preprocessing(self, original_dataset: list):
         """
         Method GNN preprocessing_files: Make the initial split of the dataset and store the indexes of the split
-
         :param original_dataset: Original dataset - List of graphs
         """
 
@@ -180,9 +105,7 @@ class GNN_Actions(torch.nn.Module):
     def gnn_init_train(self, input_graphs: list) -> dict:
         """
         Method that implements the first training of the GNN
-
         :param input_graphs: Original dataset - List of graphs
-
         :return: Tuple of model and dictionary of performance metrics
         """
 
@@ -257,7 +180,7 @@ class GNN_Actions(torch.nn.Module):
                     break
 
             else:
-                # print('Trigger times reset to 0.')
+                print('Trigger times reset to 0.')
                 trigger_times = 0
 
             last_accuracy = current_test_set_accuracy
@@ -283,16 +206,13 @@ class GNN_Actions(torch.nn.Module):
     def gnn_predict(self, model: GCN, input_graph: Data, user_token: str) -> tuple:
         """
         GNN predict function.
-
         :param model: The GNN model
         :param input_graph: The input graph that we need its prediction
         :param user_token: Identifies a user
-
         [1.] Load the GNN from the file system.
         [2.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN.
              If the requirements are not fulfilled, then the predict function cannot be applied.
         [3.] Apply the predict function on the GNN
-
         :return:
         """
 
@@ -333,16 +253,13 @@ class GNN_Actions(torch.nn.Module):
     def gnn_retrain(self, model: GCN, input_graphs: list, user_token: str) -> tuple:
         """
         GNN retrain function
-
         :param model: The GNN model
         :param input_graphs: The input graphs that we need its prediction
         :param user_token: Identifies a user
-
         [1.] Get the architectural characteristics of the GNN in the file system - you don't have to load it.
         [2.] Make the check if the (generally) changed input graphs conform to the architecture of the stored GNN.
              If the requirements are not fulfilled, then the predict function cannot be applied.
         [3.] Apply the predict function on the GNN
-
         :return: Tuple of model and dictionary of performance metrics
         """
 
@@ -368,12 +285,8 @@ class GNN_Actions(torch.nn.Module):
                                            for idx in self.train_dataset_shuffled_indexes]
         test_normalized_graphs_dataset = [input_graphs[idx] for idx in self.test_dataset_shuffled_indexes]
 
-        re_train_loader = DataLoader(train_normalized_graphs_dataset,
-                                     batch_size=self.batch_size,
-                                     shuffle=False)      # Training set typically has to be shuffled -------------------
-        re_test_loader = DataLoader(test_normalized_graphs_dataset,
-                                    batch_size=self.batch_size,
-                                    shuffle=False)      # Test set typically has to be the same (not shuffled) ---------
+        re_train_loader = DataLoader(train_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=True)
+        re_test_loader = DataLoader(test_normalized_graphs_dataset, batch_size=self.batch_size, shuffle=False)
 
         ################################################################################################################
         # [1.] Make the check if the (generally) changed input graphs conform to the architecture of the loaded GNN ====
@@ -386,60 +299,14 @@ class GNN_Actions(torch.nn.Module):
         # [1.1.] If the number of features did not change, then just reset the weights ---------------------------------
         if input_features_model_nr == input_features_graph_nr:
 
-            prng = RandomState(1234567890)
-
-            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            # GCNConv layers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # Weights and bias of the GCNConv layers -------------------------------------------------------------------
             for layer in model.conv_layers_list:
-
                 if hasattr(layer, 'reset_parameters'):
-                    # layer.reset_parameters()          # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-                    # Weight and bias of the GCNConv layers ------------------------------------------------------------
-                    # lin_weight_data_size = layer.lin.weight.data.size()
-                    # lin_weight_data_random_weights = prng.uniform(-1.0,
-                    #                                              1.0,
-                    #                                              (lin_weight_data_size[0], lin_weight_data_size[1]))
-                    # layer.lin.weight.data = torch.from_numpy(lin_weight_data_random_weights).to(dtype=torch.float32)
-                    layer.lin.weight.data = self.predefined_weights_dict[str(layer) + "_lin_weight"]
-
-                    # Bias of the GCNConv layers -----------------------------------------------------------------------
-                    # layer_bias_data_size = layer.bias.size()
-                    # layer_bias_data_random_weights = prng.uniform(-1.0,
-                    #                                              1.0,
-                    #                                              (layer_bias_data_size[0], ))
-                    # layer.bias.data = torch.from_numpy(layer_bias_data_random_weights).to(dtype=torch.float32)
-                    layer.bias.data = self.predefined_weights_dict[str(layer) + "_bias"]
-
-                    layer.to(device)
-
-            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            # Linear layer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                    layer.reset_parameters()
+            # Weight and bias of the Linear layer ----------------------------------------------------------------------
             for layer in model.children():
-
                 if hasattr(layer, 'reset_parameters'):
-                    # layer.reset_parameters()          # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-                    # Weight and bias of the Linear layer --------------------------------------------------------------
-                    # layer_weight_data_size = layer.weight.data.size()
-                    # layer_weight_data_random_weights = prng.uniform(-1.0,
-                    #                                                1.0,
-                    #                                                (layer_weight_data_size[0],
-                    #                                                 layer_weight_data_size[1]))
-                    # layer.weight.data = torch.from_numpy(layer_weight_data_random_weights).to(dtype=torch.float32)
-                    layer.weight.data = self.predefined_weights_dict[str(layer) + "_weight"]
-
-                    # Bias of the Linear layers ------------------------------------------------------------------------
-                    # layer_bias_data_size = layer.bias.data.size()
-                    # layer_bias_data_random_weights = prng.uniform(-1.0,
-                    #                                              1.0,
-                    #                                              (layer_bias_data_size[0], ))
-                    # layer.bias.data = torch.from_numpy(layer_bias_data_random_weights).to(dtype=torch.float32)
-                    layer.bias.data = self.predefined_weights_dict[str(layer) + "_bias"]
-
-                    layer.to(device)
+                    layer.reset_parameters()
 
         # [1.2.] If the number of features did change, you need a new architecture -------------------------------------
         else:
@@ -466,7 +333,7 @@ class GNN_Actions(torch.nn.Module):
         # [3.] Iterate over several epochs -----------------------------------------------------------------------------
         for epoch in range(1, self.epochs_nr + 1):
 
-            # print(f"Epoch: {epoch}")
+            print(f"Epoch: {epoch}")
 
             # [4.] Retrain the model and gather the performance metrics of the training and test set -------------------
             train_model(model, re_train_loader, optimizer, criterion)
@@ -485,7 +352,7 @@ class GNN_Actions(torch.nn.Module):
                     break
 
             else:
-                # print('Trigger times reset to 0.')
+                print('Trigger times reset to 0.')
                 trigger_times = 0
 
             last_accuracy = current_test_set_accuracy
@@ -493,9 +360,6 @@ class GNN_Actions(torch.nn.Module):
         ################################################################################################################
         # [6.] GNN store ===============================================================================================
         ################################################################################################################
-        print(f"Train set performance: {self.train_set_metrics_dict}")
-        print(f"Test set performance: {self.test_set_metrics_dict}")
-
         save_gnn_model(model,
                        self.train_set_metrics_dict, self.test_set_metrics_dict,
                        self.train_dataset_shuffled_indexes, self.test_dataset_shuffled_indexes,
