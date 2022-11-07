@@ -5,7 +5,7 @@
 
 ### Conda
 
-To install the server, you need one of:
+To install the server, you need one of :
 - [Miniconda](https://docs.conda.io/en/latest/miniconda.html) (Recommended)
 - [Conda](https://docs.continuum.io/anaconda/install/)
 
