@@ -117,7 +117,8 @@ def add_node(input_graph: torch_geometric.data.data.Data,
                              f"node_id:{node_id}," \
                              f"label:{label}," \
                              f"node_features:{np.array2string(node_features, separator=' ')}," \
-                             f"{str_date_time}"
+                             f"{str_date_time}" \
+                             f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
@@ -272,7 +273,8 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
         action_description = f"graph_id:{input_graph.graph_id}," \
                              f"remove_node," \
                              f"node_index:{node_index}," \
-                             f"{str_date_time}"
+                             f"{str_date_time}" \
+                             f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
@@ -405,7 +407,8 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
                              f"new_edge_index_left:{new_edge_index_left}," \
                              f"new_edge_index_right:{new_edge_index_right}," \
                              + new_edge_attr_str + \
-                             f"{str_date_time}"
+                             f"{str_date_time}" \
+                             f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
@@ -517,7 +520,8 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
                              f"remove_edge," \
                              f"edge_index_left:{edge_index_left}," \
                              f"edge_index_right:{edge_index_right}," \
-                             f"{str_date_time}"
+                             f"{str_date_time}" \
+                             f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
@@ -607,7 +611,8 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
                              f"add_feature_all_nodes," \
                              f"new_input_node_feature:{np.array2string(new_input_node_feature, separator=' ')}," \
                              f"label: {label}," \
-                             f"{str_date_time}"
+                             f"{str_date_time}" \
+                             f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
@@ -688,7 +693,8 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
         action_description = f"graph_id:{input_graph.graph_id}," \
                              f"remove_feature_all_nodes," \
                              f"removed_node_feature_idx:{removed_node_feature_idx}," \
-                             f"{str_date_time}"
+                             f"{str_date_time}" \
+                             f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
@@ -754,7 +760,8 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
         action_description = f"graph_id:{input_graph.graph_id}," \
                              f"add_feature_all_edges," \
                              f"new_input_edge_feature:{np.array2string(new_input_edge_feature, separator=' ')}," \
-                             f"{str_date_time}"
+                             f"{str_date_time}" \
+                             f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
@@ -822,7 +829,8 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data,
         action_description = f"graph_id: {input_graph.graph_id}," \
                              f"remove_feature_all_edges," \
                              f"removed_edge_attribute_idx:{removed_edge_attribute_idx}," \
-                             f"{str_date_time}"
+                             f"{str_date_time}" \
+                             f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
 
     return output_graph
