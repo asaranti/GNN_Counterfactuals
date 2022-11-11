@@ -52,7 +52,6 @@ def load_action_dataset_history(dataset_name: str,
         for line in file:
             action_str = line.rstrip()
             action_array = action_str.split(",")
-            print(f"Action array: {action_array}")
 
             # [2.1.] First arg is the graph_id, the second one is the function name ------------------------------------
             #        and the last one is the datetime (not used) -------------------------------------------------------
