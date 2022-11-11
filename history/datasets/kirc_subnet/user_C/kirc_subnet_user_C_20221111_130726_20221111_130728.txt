@@ -1,0 +1,9 @@
+graph_id:graph_id_468_0,remove_node,node_index:3,20221111_130728
+graph_id: graph_id_468_0,remove_edge,edge_index_left:0,edge_index_right:2,20221111_130728
+graph_id: graph_id_468_0,remove_edge,edge_index_left:1,edge_index_right:2,20221111_130728
+graph_id: graph_id_468_0,remove_edge,edge_index_left:0,edge_index_right:1,20221111_130728
+graph_id:graph_id_468_0,remove_node,node_index:1,20221111_130728
+graph_id:graph_id_468_0,add_node,node_id:node_id_f69fd8cf-0a1d-49db-8a18-26c8faabdd0f,label:node_label_aa7e70c6-6465-45f5-a403-178725185c47,node_features:[[0.4419823  0.12201069]],20221111_130728
+graph_id:graph_id_468_0,remove_node,node_index:2,20221111_130728
+graph_id:graph_id_468_0,remove_node,node_index:0,20221111_130728
+graph_id:graph_id_468_0,remove_node,node_index:0,20221111_130728

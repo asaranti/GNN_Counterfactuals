@@ -26,6 +26,7 @@ from actionable.gnn_actions import GNN_Actions
 from gnns.gnn_selectors.gnn_definitions import define_gnn
 from utils.dataset_load import load_action_dataset_history
 from utils.gnn_load_save import load_gnn_model
+from utils.graph_utilities import graphs_equal
 
 
 ########################################################################################################################
@@ -276,4 +277,6 @@ print("Changed graph:")
 print(changed_graph)
 print("Loaded graph:")
 print(loaded_graph)
+graph_equality = graphs_equal(changed_graph, loaded_graph)
+print(f"Graph equality: {graph_equality}")
 print("===============================================================================================================")

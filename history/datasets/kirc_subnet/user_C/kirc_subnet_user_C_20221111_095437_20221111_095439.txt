@@ -1,0 +1,9 @@
+graph_id:graph_id_161_0,remove_node,node_index:1,20221111_095439
+graph_id:graph_id_161_0,remove_node,node_index:0,20221111_095439
+graph_id: graph_id_161_0,remove_edge,edge_index_left:0,edge_index_right:1,20221111_095439
+graph_id:graph_id_161_0,remove_node,node_index:0,20221111_095439
+graph_id:graph_id_161_0,remove_node,node_index:0,20221111_095439
+graph_id:graph_id_161_0,add_node,node_id:node_id_f36b9c08-7a8e-4137-a28a-61cb04fbd089,label:node_label_8a92d058-27e8-455c-a983-55763c2e2476,node_features:[[0.67634857 0.7385082 ]],20221111_095439
+graph_id:graph_id_161_0,remove_node,node_index:0,20221111_095439
+graph_id:graph_id_161_0,add_node,node_id:node_id_9d51e845-fa7c-432d-96b4-a8ca42d01967,label:node_label_bb27b748-229e-47c7-acbd-3da0adb342e8,node_features:[[0.47990063 0.2700543 ]],20221111_095439
+graph_id:graph_id_161_0,add_node,node_id:node_id_10beca63-0684-4bcb-a42a-7ffd8b0c04b9,label:node_label_9e363a67-e46c-4009-9d0c-35f7ff3b3c8b,node_features:[[0.79596674 0.38974473]],20221111_095439

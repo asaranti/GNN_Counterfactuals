@@ -10,6 +10,79 @@ import copy
 
 import numpy as np
 import torch
+from torch_geometric.data.data import Data
+
+
+def graphs_equal(graph_1: Data, graph_2: Data) -> bool:
+    """
+    Check the equality of graphs, meaning that you check each corresponding field for equality.
+
+    :param graph_1: First graph to compare
+    :param graph_2: Second graph to compare
+
+    Returns true if all fields are equal, else returns false
+    """
+
+    graphs_equality = True
+
+    # [1.] Check if the data fields of the two graphs are equal by checking the keys -----------------------------------
+    graph_1_keys_list = graph_1.keys
+    graph_2_keys_list = graph_2.keys
+
+    if len(graph_1_keys_list) != len(graph_2_keys_list):
+        print("The two graphs have different number of field elements.\n")
+        print(f"Graph 1 has {len(graph_1_keys_list)} number of elements.\n")
+        print(f"Graph 2 has {len(graph_2_keys_list)} number of elements.\n")
+        print("The two graphs are not equal.\n")
+        return False
+
+    # [2.] Check key by key the equality -------------------------------------------------------------------------------
+    if sorted(graph_1_keys_list) == sorted(graph_2_keys_list):
+
+        for graph_key in graph_1_keys_list:
+
+            # [2.1.] Check all fields that are obligatory in the graph -------------------------------------------------
+            if graph_key == 'x':
+                graphs_equality = graphs_equality and torch.equal(graph_1.x, graph_2.x)
+            elif graph_key == 'edge_index':
+                graphs_equality = graphs_equality and torch.equal(graph_1.edge_index, graph_2.edge_index)
+            elif graph_key == 'edge_attr':
+                if graph_1.edge_attr is None and graph_2.edge_attr is not None or \
+                        graph_1.edge_attr is not None and graph_2.edge_attr is None:
+                    print("In one graph the \"edge_attr\" is None and in the other it is not.\n")
+                    print(f"Graph 1's edge_attr:{graph_1.edge_attr} number of elements.\n")
+                    print(f"Graph 2's edge_attr:{graph_2.edge_attr} number of elements.\n")
+                    print("The two graphs are not equal.\n")
+                    return False
+                if graph_1.edge_attr is not None and graph_2.edge_attr is not None:
+                    graphs_equality = graphs_equality and torch.equal(graph_1.edge_attr, graph_2.edge_attr)
+            elif graph_key == 'y':
+                graphs_equality = graphs_equality and torch.equal(graph_1.y, graph_2.y)
+
+            # [2.2.] Check all fields that are obligatory in the graph -------------------------------------------------
+            else:
+                # [2.2.1.] Check that the type of the two elements in the two graphs is the same -----------------------
+                if str(type(graph_1[graph_key])) != str(type(graph_2[graph_key])):
+                    print(f"The type of the fields {graph_key} differ in the two graphs.\n")
+                    print(f"Graph 1's: {graph_key} has the type: {type(graph_1[graph_key])}.\n")
+                    print(f"Graph 2's {graph_key} has the type: {type(graph_2[graph_key])}.\n")
+                    print("The two graphs are not equal.\n")
+                    return False
+                # [2.2.2.] Handle each type of the two elements in the two graphs differently --------------------------
+                #          Lists and arrays have to be exactly the same (not just the elements), -----------------------
+                #          same goes for strings -----------------------------------------------------------------------
+                else:
+                    graph_key_type = str(type(graph_1[graph_key]))
+                    if graph_key_type == "<class 'list'>" or graph_key_type == "<class 'str'>":
+                        graphs_equality = graphs_equality and graph_1[graph_key] == graph_2[graph_key]
+                    elif graph_key_type == "<class 'np.ndarray'>":
+                        graphs_equality = graphs_equality and np.array_equal(graph_1[graph_key] == graph_2[graph_key])
+                    else:
+                        graphs_equality = False
+                        print(f"The type {graph_key_type} is not allowed for further fields of the graph data "
+                              f"structure.\nIt has to be either \"list\", \"np.ndarray\" or \"str\"")
+
+    return graphs_equality
 
 
 def compare_graphs_topology(graph_dataset: list):

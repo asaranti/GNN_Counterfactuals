@@ -1,0 +1,9 @@
+graph_id:graph_id_480_0,remove_node,node_index:3,20221111_130654
+graph_id:graph_id_480_0,add_node,node_id:node_id_3c6c7c26-707a-4502-bf69-732a0f570dfc,label:node_label_d5e4f58d-8b5b-4105-aaa6-7726aa26aaec,node_features:[[0.6899306  0.97007656]],20221111_130654
+graph_id:graph_id_480_0,add_node,node_id:node_id_2909bf5b-faf3-4e6c-8dbd-442768734aa6,label:node_label_1ade4f86-c09f-46fe-90e6-0381e7f8cac5,node_features:[[0.7915237  0.20346262]],20221111_130654
+graph_id:graph_id_480_0,add_node,node_id:node_id_13530a5c-b0e5-4dba-bf1f-03183d302154,label:node_label_8e157fb0-7990-4068-9307-2e68267db9e0,node_features:[[0.2262966  0.07570043]],20221111_130654
+graph_id:graph_id_480_0,remove_node,node_index:1,20221111_130654
+graph_id: graph_id_480_0,remove_edge,edge_index_left:0,edge_index_right:1,20221111_130654
+graph_id:graph_id_480_0,remove_node,node_index:1,20221111_130654
+graph_id:graph_id_480_0,add_node,node_id:node_id_bb9c8666-b968-4659-8a25-b92cea6b05a8,label:node_label_df4ffaac-d2e0-457c-a490-22ec11ba6a20,node_features:[[0.70299965 0.91237164]],20221111_130654
+graph_id:graph_id_480_0,add_node,node_id:node_id_0ec845fd-4a2c-47bb-82b2-493a8fe822f3,label:node_label_78ba2d5b-1829-4de8-869c-cafd6333da8f,node_features:[[0.19100605 0.24851647]],20221111_130654
