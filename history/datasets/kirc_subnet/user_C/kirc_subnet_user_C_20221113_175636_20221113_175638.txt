@@ -1,0 +1,19 @@
+graph_id: graph_id_337_0,remove_edge,edge_index_left:1,edge_index_right:3,20221113_175638
+graph_id:graph_id_337_0,add_feature_all_edges,new_input_edge_feature:[[0.09466352 0.18453602 0.7710358  0.36334908]],20221113_175638
+graph_id:graph_id_337_0,remove_node,node_index:3,20221113_175638
+graph_id:graph_id_337_0,remove_feature_all_nodes,removed_node_feature_idx:0,20221113_175638
+graph_id: graph_id_337_0,remove_feature_all_edges,removed_edge_attribute_idx:0,20221113_175638
+graph_id:graph_id_337_0,remove_node,node_index:0,20221113_175638
+graph_id:graph_id_337_0,remove_node,node_index:1,20221113_175638
+graph_id:graph_id_337_0,remove_node,node_index:0,20221113_175638
+graph_id:graph_id_337_0,add_node,node_id:node_id_997dcf0a-dc55-490e-bc8d-2727d31abde6,label:node_label_fbe62467-21d4-4966-b626-89ff4bc65af6,node_features:[[0.78774464]],20221113_175638
+graph_id:graph_id_337_0,add_feature_all_edges,new_input_edge_feature:[],20221113_175638
+graph_id:graph_id_337_0,add_feature_all_edges,new_input_edge_feature:[],20221113_175638
+graph_id:graph_id_337_0,remove_feature_all_nodes,removed_node_feature_idx:0,20221113_175638
+graph_id:graph_id_337_0,add_feature_all_edges,new_input_edge_feature:[],20221113_175638
+graph_id:graph_id_337_0,add_feature_all_nodes,new_input_node_feature:[[0.7351374]],label: feature_label_692d9728-b3b8-4977-bbbd-2ded7081aa2f,20221113_175638
+graph_id:graph_id_337_0,remove_node,node_index:0,20221113_175638
+graph_id:graph_id_337_0,add_feature_all_edges,new_input_edge_feature:[],20221113_175638
+graph_id: graph_id_337_0,remove_feature_all_edges,removed_edge_attribute_idx:1,20221113_175638
+graph_id:graph_id_337_0,add_feature_all_edges,new_input_edge_feature:[],20221113_175638
+graph_id:graph_id_337_0,add_feature_all_edges,new_input_edge_feature:[],20221113_175638

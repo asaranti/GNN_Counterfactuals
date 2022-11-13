@@ -123,7 +123,7 @@ for action_of_change_idx in range(actions_of_change_nr):
     ####################################################################################################################
     if actions_of_change_nr == 1:       # [1.] add_node >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-        input_features_graph_nr = input_graph.x.size(dim=1)
+        input_features_graph_nr = input_graph.x.cpu().detach().numpy().shape[1]
         node_features = np.random.rand(1, input_features_graph_nr).astype(np.float32)
         node_label = "node_label_" + str(uuid.uuid4())
         node_id = "node_id_" + str(uuid.uuid4())
@@ -141,7 +141,7 @@ for action_of_change_idx in range(actions_of_change_nr):
     ####################################################################################################################
     elif actions_of_change_nr == 2:     # [2.] remove_node >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-        graph_nodes_nr = input_graph.x.size(dim=0)
+        graph_nodes_nr = input_graph.num_nodes
         if graph_nodes_nr == 0:
 
             output_graph = input_graph
@@ -170,6 +170,8 @@ for action_of_change_idx in range(actions_of_change_nr):
             input_graph_edge_index_left = []
             input_graph_edge_index_right = []
 
+        input_graph_edge_index_list = [tuple(row) for row in input_graph_edge_index.T]
+
         # [3.2.] Add a new edge where there is no one yet --------------------------------------------------------------
         #        The only possibility that adding an edge is not possible is the graph being complete ------------------
         graph_nodes_nr = input_graph.x.size(dim=0)
@@ -177,15 +179,28 @@ for action_of_change_idx in range(actions_of_change_nr):
 
         # [3.3.] Compute the diff between all node pairs (all possible edges) ------------------------------------------
         #        and pick one of those randomly - i.e. create the edge -------------------------------------------------
+        edges_remaining_list = [item for item in all_edge_combinations if item not in input_graph_edge_index_list]
+        edges_remaining_list_len = len(edges_remaining_list)
 
-        output_graph = input_graph
+        if edges_remaining_list_len == 0:
+            print("The graph is fully connected, a new edge cannot be generated.")
+        else:
+            new_edge_remaining_idx = random.randint(0, edges_remaining_list_len - 1)
+            new_edge = edges_remaining_list[new_edge_remaining_idx]
+            new_edge_index_left = new_edge[0]
+            new_edge_index_right = new_edge[1]
 
-        # output_graph = add_edge(input_graph,
+            new_edge_attr = None
 
-        #         dataset_name,
-        #         user_token,
-        #         True
-        #        )
+            output_graph = add_edge(
+                input_graph,
+                new_edge_index_left,
+                new_edge_index_right,
+                new_edge_attr,
+                dataset_name,
+                user_token,
+                True
+                )
 
     ####################################################################################################################
     elif actions_of_change_nr == 4:     # [4.] remove_edge >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -222,27 +237,78 @@ for action_of_change_idx in range(actions_of_change_nr):
 
     ####################################################################################################################
     elif actions_of_change_nr == 5:     # [5.] add_feature_all_nodes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        print("add_feature_all_nodes")
 
-        output_graph = input_graph
+        # Adding one column to all nodes -------------------------------------------------------------------------------
+        feature_label = "feature_label_" + str(uuid.uuid4())
+
+        input_nodes = input_graph.num_nodes
+        new_input_node_feature = np.random.rand(1, input_nodes).astype(np.float32)
+
+        output_graph = add_feature_all_nodes(
+            input_graph,
+            new_input_node_feature,
+            feature_label,
+            dataset_name,
+            user_token,
+            True
+        )
 
     ####################################################################################################################
     elif actions_of_change_nr == 6:     # [6.] remove_feature_all_nodes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        print("remove_feature_all_nodes")
 
-        output_graph = input_graph
+        input_features_graph_nr = input_graph.x.size(dim=1)
+        if input_features_graph_nr <= 0:
+            output_graph = input_graph
+            print("The number of input features of the nodes is less than 0, a removal is not acceptable.")
+        else:
+
+            removed_node_feature_idx = random.randint(0, input_features_graph_nr-1)
+
+            output_graph = remove_feature_all_nodes(
+                input_graph,
+                removed_node_feature_idx,
+                dataset_name,
+                user_token,
+                True
+            )
 
     ####################################################################################################################
     elif actions_of_change_nr == 7:     # [7.] add_feature_all_edges >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        print("add_feature_all_edges")
 
-        output_graph = input_graph
+        edges_nr = input_graph.num_edges
+        new_input_edge_feature = np.random.rand(1, edges_nr).astype(np.float32)
+
+        output_graph = add_feature_all_edges(
+            input_graph,
+            new_input_edge_feature,
+            dataset_name,
+            user_token,
+            True
+        )
 
     ####################################################################################################################
     elif actions_of_change_nr == 8:     # [8.] remove_feature_all_edges >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        print("remove_feature_all_edges")
 
-        output_graph = input_graph
+        if input_graph.edge_attr is None:
+
+            output_graph = input_graph
+            print("The \"edge_attr\" of the graph is None, no edge feature removal is possible.")
+        else:
+            input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
+            edge_attributes_nr = input_graph_edge_attr.shape[1]
+
+            if edge_attributes_nr <= 0:
+                print("The number of input features of the edges is less than 0, a removal is not acceptable.")
+            else:
+                removed_edge_attribute_idx = random.randint(0, edge_attributes_nr-1)
+
+                output_graph = remove_feature_all_edges(
+                    input_graph,
+                    removed_edge_attribute_idx,
+                    dataset_name,
+                    user_token,
+                    True
+                )
 
     else:
         assert False, "The number of admissible actions on graphs is 8."
@@ -269,6 +335,8 @@ os.rename(os.path.join(dataset_user_storage_folder, dataset_history_name),
 ########################################################################################################################
 # [E.] Restore the graph from the stored history files =================================================================
 ########################################################################################################################
+print("===============================================================================================================")
+print("=========== Restore the graph =================================================================================")
 print("===============================================================================================================")
 updated_dataset = load_action_dataset_history(dataset_name, user_token, dataset_history_start_end_date_time)
 loaded_graph = updated_dataset[graph_idx]

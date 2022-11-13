@@ -64,14 +64,14 @@ def load_action_dataset_history(dataset_name: str,
             date_time = action_array[-1]
 
             # [2.2.] Call each of the functions separately -------------------------------------------------------------
-            if func_name == "add_node":
+            ############################################################################################################
+            if func_name == "add_node":         # [1.] add_node >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 node_id = action_array[2].split(":")[1]
                 label = action_array[3].split(":")[1]
 
                 node_features_str = ' '.join(action_array[4].split(":")[1].split()).replace(" ", ",")
                 node_features = np.array(ast.literal_eval(node_features_str)).astype(np.float32)
-                print(node_features)
 
                 output_graph = add_node(
                     input_graph=input_graph,
@@ -80,7 +80,8 @@ def load_action_dataset_history(dataset_name: str,
                     node_id=node_id
                 )
 
-            elif func_name == "remove_node":
+            ############################################################################################################
+            elif func_name == "remove_node":    # [2.] remove_node >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 node_index = int(action_array[2].split(":")[1])
 
@@ -89,7 +90,8 @@ def load_action_dataset_history(dataset_name: str,
                     node_index=node_index
                 )
 
-            elif func_name == "add_edge":
+            ############################################################################################################
+            elif func_name == "add_edge":       # [3.] add_edge >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 new_edge_index_left = int(action_array[2].split(":")[1])
                 new_edge_index_right = int(action_array[3].split(":")[1])
@@ -102,7 +104,8 @@ def load_action_dataset_history(dataset_name: str,
                     new_edge_attr=None,
                 )
 
-            elif func_name == "remove_edge":
+            ############################################################################################################
+            elif func_name == "remove_edge":    # [4.] remove_edge >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 edge_index_left = int(action_array[2].split(":")[1])
                 edge_index_right = int(action_array[3].split(":")[1])
@@ -113,17 +116,21 @@ def load_action_dataset_history(dataset_name: str,
                     edge_index_right=edge_index_right
                 )
 
-            elif func_name == "add_feature_all_nodes":
+            ############################################################################################################
+            elif func_name == "add_feature_all_nodes":      # [5.] add_feature_all_nodes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-                new_input_node_feature = np.fromstring(action_array[2].split(":")[1], sep=' ').astype(np.float32)
+                new_input_node_feature_str = ' '.join(action_array[2].split(":")[1].split()).replace(" ", ",")
+                new_input_node_feature = np.array(ast.literal_eval(new_input_node_feature_str)).astype(np.float32)
+                label = action_array[3].split(":")[1]
 
                 output_graph = add_feature_all_nodes(
                     input_graph=input_graph,
-                    new_input_node_feature=new_input_node_feature,
+                    new_input_node_feature_orig=new_input_node_feature,
                     label=label
                 )
 
-            elif func_name == "remove_feature_all_nodes":
+            ############################################################################################################
+            elif func_name == "remove_feature_all_nodes":   # [6.] remove_feature_all_nodes >>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 removed_node_feature_idx = int(action_array[2].split(":")[1])
 
@@ -132,16 +139,19 @@ def load_action_dataset_history(dataset_name: str,
                     removed_node_feature_idx=removed_node_feature_idx
                 )
 
-            elif func_name == "add_feature_all_edges":
+            ############################################################################################################
+            elif func_name == "add_feature_all_edges":      # [7.] add_feature_all_edges >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-                new_input_edge_feature = np.fromstring(action_array[2].split(":")[1], sep=' ').astype(np.float32)
+                new_input_edge_feature_str = ' '.join(action_array[2].split(":")[1].split()).replace(" ", ",")
+                new_input_edge_feature = np.array(ast.literal_eval(new_input_edge_feature_str)).astype(np.float32)
 
                 output_graph = add_feature_all_edges(
                     input_graph=input_graph,
-                    new_input_edge_feature=new_input_edge_feature
+                    new_input_edge_feature_orig=new_input_edge_feature
                 )
 
-            elif func_name == "remove_feature_all_edges":
+            ############################################################################################################
+            elif func_name == "remove_feature_all_edges":   # [8.] remove_feature_all_edges >>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 removed_edge_attribute_idx = int(action_array[2].split(":")[1])
 
@@ -150,6 +160,7 @@ def load_action_dataset_history(dataset_name: str,
                     removed_edge_attribute_idx=removed_edge_attribute_idx
                 )
 
+            ############################################################################################################
             else:
                 assert False, f"The graph action method: {func_name} is not in graph_actions.py"
 

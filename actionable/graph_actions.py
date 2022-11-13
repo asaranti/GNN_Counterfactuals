@@ -58,8 +58,8 @@ def add_node(input_graph: torch_geometric.data.data.Data,
     if input_graph_x is not None:
         print(input_graph_x.shape[1], node_features.shape[1])
         assert input_graph_x.shape[1] == node_features.shape[1], \
-            "The shape of the features of the new node must conform to the shape " \
-            "of the features of the rest of the nodes. The graph must be homogeneous."
+            f"The shape of the features of the new node: {node_features.shape[1]} must conform to the shape " \
+            f"of the features of the rest of the nodes: {input_graph_x.shape[1]}. The graph must be homogeneous."
 
     ####################################################################################################################
     # [1.] Add the node's features =====================================================================================
@@ -533,7 +533,7 @@ def remove_edge(input_graph: torch_geometric.data.data.Data,
 ########################################################################################################################
 ########################################################################################################################
 def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
-                          new_input_node_feature: np.array,
+                          new_input_node_feature_orig: np.array,
                           label: str,
                           dataset_name: str = None,
                           user_token: str = None,
@@ -545,7 +545,7 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
     features field "x" is empty then a one column array is created. The other fields stay unchanged.
 
     :param input_graph: Input graph
-    :param new_input_node_feature: New input feature for nodes
+    :param new_input_node_feature_orig: New input feature for nodes
     :param label: Feature label, which will be added
     :param dataset_name: Dataset name that specifies the name of the model too
     :param user_token: The user token that defines the sub-folder where the actions will be stored to
@@ -554,6 +554,8 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
 
     :return: The updated graph
     """
+
+    new_input_node_feature = np.transpose(new_input_node_feature_orig)
 
     ####################################################################################################################
     # [0.] Constraints/Requirements ====================================================================================
@@ -609,7 +611,7 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
         str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
         action_description = f"graph_id:{input_graph.graph_id}," \
                              f"add_feature_all_nodes," \
-                             f"new_input_node_feature:{np.array2string(new_input_node_feature, separator=' ')}," \
+                             f"new_input_node_feature:{np.array2string(new_input_node_feature_orig, separator=' ')}," \
                              f"label: {label}," \
                              f"{str_date_time}" \
                              f"\n"
@@ -658,8 +660,8 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
 
     # [0.3.] Constraint: all features must have a label  ---------------------------------------------------------------
     assert len(input_graph.node_feature_labels) == node_features_nr, \
-        f"The feature labels {len(input_graph.node_feature_labels)} must be equal " \
-        f"to the number of features in the input graph"
+        f"The feature labels: {len(input_graph.node_feature_labels)} must be equal " \
+        f"to the number of features in the input graph: {node_features_nr}"
 
     ####################################################################################################################
     # [1.] Remove the feature for each node  ---------------------------------------------------------------------------
@@ -701,7 +703,7 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
 
 
 def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
-                          new_input_edge_feature: np.array,
+                          new_input_edge_feature_orig: np.array,
                           dataset_name: str = None,
                           user_token: str = None,
                           b_save_actions_history: bool = False
@@ -714,12 +716,16 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
     The other fields stay unchanged.
 
     :param input_graph: Input graph
-    :param new_input_edge_feature: New input feature for the edges
+    :param new_input_edge_feature_orig: New input feature for the edges
     :param dataset_name: Dataset name that specifies the name of the model too
     :param user_token: The user token that defines the sub-folder where the actions will be stored to
     :param b_save_actions_history: If True save the actions history in the dedicated file, else don't save the action.
     For b_save_actions_history==False is used for the graph reconstruction from the file.
     """
+
+    new_input_edge_feature = np.transpose(new_input_edge_feature_orig)
+
+    print(new_input_edge_feature)
 
     # [1.] Number of rows of the input feature should be equal to the number of nodes ----------------------------------
     edges_nr = input_graph.num_edges
@@ -732,7 +738,7 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
         input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
         output_graph_edge_attr = torch.from_numpy(np.column_stack((input_graph_edge_attr, new_input_edge_feature)))
     else:
-        output_graph_edge_attr = torch.from_numpy([new_input_edge_feature])
+        output_graph_edge_attr = torch.from_numpy(new_input_edge_feature)
 
     # [2.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
     output_pos = input_graph.pos
@@ -759,7 +765,7 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
         str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
         action_description = f"graph_id:{input_graph.graph_id}," \
                              f"add_feature_all_edges," \
-                             f"new_input_edge_feature:{np.array2string(new_input_edge_feature, separator=' ')}," \
+                             f"new_input_edge_feature:{np.array2string(new_input_edge_feature_orig, separator=' ')}," \
                              f"{str_date_time}" \
                              f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)

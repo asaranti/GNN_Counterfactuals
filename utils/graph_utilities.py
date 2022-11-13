@@ -82,6 +82,8 @@ def graphs_equal(graph_1: Data, graph_2: Data) -> bool:
                 else:
                     graph_key_type = str(type(graph_1[graph_key]))
                     if graph_key_type == "<class 'list'>" or graph_key_type == "<class 'str'>":
+                        print(graph_1[graph_key])
+                        print(graph_2[graph_key])
                         if graph_1[graph_key] != graph_2[graph_key]:
                             print(f"The two graphs' {graph_key} fields are different.\n")
                             print("The two graphs are not equal.\n")
