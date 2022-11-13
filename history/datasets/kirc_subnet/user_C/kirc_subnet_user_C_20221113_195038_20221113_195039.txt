@@ -1,0 +1,37 @@
+graph_id:graph_id_432_0,add_feature_all_edges,new_input_edge_feature:[[0.21548681 0.8605975  0.8661937  0.48228884 0.757816  ]],20221113_195039
+graph_id:graph_id_432_0,remove_node,node_index:1,20221113_195039
+graph_id: graph_id_432_0,add_edge,new_edge_index_left:0,new_edge_index_right:2,,20221113_195039
+graph_id:graph_id_432_0,add_node,node_id:node_id_565660d2-48ff-4b05-af6c-3cb7ea083d40,label:node_label_a450be6a-1803-4c72-b7fe-ac501a5da44c,node_features:[[0.29838675 0.6411353 ]],20221113_195039
+graph_id: graph_id_432_0,add_edge,new_edge_index_left:0,new_edge_index_right:3,,20221113_195039
+graph_id:graph_id_432_0,add_feature_all_edges,new_input_edge_feature:[[0.3302506  0.2219626  0.5719637  0.22152129]],20221113_195039
+graph_id:graph_id_432_0,remove_node,node_index:2,20221113_195039
+graph_id: graph_id_432_0,remove_edge,edge_index_left:0,edge_index_right:2,20221113_195039
+graph_id: graph_id_432_0,remove_edge,edge_index_left:0,edge_index_right:1,20221113_195039
+graph_id: graph_id_432_0,add_edge,new_edge_index_left:0,new_edge_index_right:1,,20221113_195039
+graph_id:graph_id_432_0,remove_feature_all_nodes,removed_node_feature_idx:0,20221113_195039
+graph_id: graph_id_432_0,remove_edge,edge_index_left:0,edge_index_right:1,20221113_195039
+graph_id:graph_id_432_0,add_node,node_id:node_id_803c5d3c-7442-4a7c-a46f-c366461b1b43,label:node_label_ebf4b721-29ca-4f5c-bf06-fdff47b74763,node_features:[[0.14973928]],20221113_195039
+graph_id:graph_id_432_0,add_feature_all_edges,new_input_edge_feature:[],20221113_195039
+graph_id:graph_id_432_0,remove_node,node_index:0,20221113_195039
+graph_id:graph_id_432_0,add_feature_all_nodes,new_input_node_feature:[[0.91980743 0.14551267 0.78143585]],label: feature_label_1501329c-27b6-40cf-a6e6-dd45ae83abc3,20221113_195039
+graph_id: graph_id_432_0,remove_feature_all_edges,removed_edge_attribute_idx:0,20221113_195039
+graph_id:graph_id_432_0,remove_node,node_index:2,20221113_195039
+graph_id:graph_id_432_0,add_feature_all_edges,new_input_edge_feature:[],20221113_195039
+graph_id: graph_id_432_0,remove_feature_all_edges,removed_edge_attribute_idx:0,20221113_195039
+graph_id:graph_id_432_0,add_feature_all_nodes,new_input_node_feature:[[0.8839543  0.72041357]],label: feature_label_7cad922d-2816-420f-b973-e8ccc1891037,20221113_195039
+graph_id:graph_id_432_0,add_feature_all_edges,new_input_edge_feature:[],20221113_195039
+graph_id:graph_id_432_0,remove_node,node_index:0,20221113_195039
+graph_id:graph_id_432_0,add_node,node_id:node_id_6f120af9-169c-478f-b394-5e7174fe571f,label:node_label_e9788159-ef62-458a-960c-670b25872a33,node_features:[[0.09280863 0.06581818 0.05396404]],20221113_195039
+graph_id:graph_id_432_0,add_feature_all_nodes,new_input_node_feature:[[0.78659743 0.00859655]],label: feature_label_f1df1328-8d18-4b56-a47d-5010194cae70,20221113_195039
+graph_id:graph_id_432_0,add_node,node_id:node_id_701cac18-fa4a-4595-9beb-54924a585edf,label:node_label_50c7a538-0400-4979-8f5c-0c481db57774,node_features:[[0.78146005 0.40438974 0.18965992 0.46302232]],20221113_195039
+graph_id:graph_id_432_0,remove_node,node_index:1,20221113_195039
+graph_id:graph_id_432_0,remove_feature_all_nodes,removed_node_feature_idx:2,20221113_195039
+graph_id:graph_id_432_0,add_feature_all_edges,new_input_edge_feature:[],20221113_195039
+graph_id:graph_id_432_0,add_feature_all_edges,new_input_edge_feature:[],20221113_195039
+graph_id:graph_id_432_0,remove_node,node_index:0,20221113_195039
+graph_id:graph_id_432_0,remove_feature_all_nodes,removed_node_feature_idx:2,20221113_195039
+graph_id:graph_id_432_0,add_node,node_id:node_id_24b06924-9e7f-4232-b421-74a62265a086,label:node_label_0fd4833c-46f1-426b-b844-32c3601de94b,node_features:[[0.07371132 0.7558329 ]],20221113_195039
+graph_id:graph_id_432_0,add_feature_all_nodes,new_input_node_feature:[[0.9424226  0.24500535]],label: feature_label_b0dc101c-d4c1-494f-997b-4ea5c4c352c0,20221113_195039
+graph_id:graph_id_432_0,remove_node,node_index:1,20221113_195039
+graph_id: graph_id_432_0,remove_feature_all_edges,removed_edge_attribute_idx:2,20221113_195039
+graph_id:graph_id_432_0,add_feature_all_edges,new_input_edge_feature:[],20221113_195039

@@ -50,7 +50,9 @@ def load_action_dataset_history(dataset_name: str,
     with open(os.path.join(dataset_user_storage_folder, dataset_history_name)) as file:
 
         for line in file:
+
             action_str = line.rstrip()
+            print(action_str)
             action_array = action_str.split(",")
 
             # [2.1.] First arg is the graph_id, the second one is the function name ------------------------------------
@@ -68,7 +70,7 @@ def load_action_dataset_history(dataset_name: str,
             if func_name == "add_node":         # [1.] add_node >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 node_id = action_array[2].split(":")[1]
-                label = action_array[3].split(":")[1]
+                label = action_array[3].split(":")[1].lstrip().rstrip()
 
                 node_features_str = ' '.join(action_array[4].split(":")[1].split()).replace(" ", ",")
                 node_features = np.array(ast.literal_eval(node_features_str)).astype(np.float32)
@@ -120,8 +122,9 @@ def load_action_dataset_history(dataset_name: str,
             elif func_name == "add_feature_all_nodes":      # [5.] add_feature_all_nodes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 new_input_node_feature_str = ' '.join(action_array[2].split(":")[1].split()).replace(" ", ",")
+                print(new_input_node_feature_str)
                 new_input_node_feature = np.array(ast.literal_eval(new_input_node_feature_str)).astype(np.float32)
-                label = action_array[3].split(":")[1]
+                label = action_array[3].split(":")[1].lstrip().rstrip()
 
                 output_graph = add_feature_all_nodes(
                     input_graph=input_graph,
@@ -145,9 +148,12 @@ def load_action_dataset_history(dataset_name: str,
                 new_input_edge_feature_str = ' '.join(action_array[2].split(":")[1].split()).replace(" ", ",")
                 new_input_edge_feature = np.array(ast.literal_eval(new_input_edge_feature_str)).astype(np.float32)
 
+                label = action_array[3].split(":")[1].lstrip().rstrip()
+
                 output_graph = add_feature_all_edges(
                     input_graph=input_graph,
-                    new_input_edge_feature_orig=new_input_edge_feature
+                    new_input_edge_feature_orig=new_input_edge_feature,
+                    label=label
                 )
 
             ############################################################################################################

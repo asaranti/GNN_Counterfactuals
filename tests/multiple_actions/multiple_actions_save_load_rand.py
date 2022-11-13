@@ -142,7 +142,7 @@ for action_of_change_idx in range(actions_of_change_nr):
     elif actions_of_change_nr == 2:     # [2.] remove_node >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
         graph_nodes_nr = input_graph.num_nodes
-        if graph_nodes_nr == 0:
+        if graph_nodes_nr <= 1:
 
             output_graph = input_graph
             print("There are no nodes left to remove.")
@@ -257,9 +257,9 @@ for action_of_change_idx in range(actions_of_change_nr):
     elif actions_of_change_nr == 6:     # [6.] remove_feature_all_nodes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
         input_features_graph_nr = input_graph.x.size(dim=1)
-        if input_features_graph_nr <= 0:
+        if input_features_graph_nr <= 1:
             output_graph = input_graph
-            print("The number of input features of the nodes is less than 0, a removal is not acceptable.")
+            print("The number of input features of the nodes is less than 1, a removal is not acceptable.")
         else:
 
             removed_node_feature_idx = random.randint(0, input_features_graph_nr-1)
@@ -278,9 +278,12 @@ for action_of_change_idx in range(actions_of_change_nr):
         edges_nr = input_graph.num_edges
         new_input_edge_feature = np.random.rand(1, edges_nr).astype(np.float32)
 
+        feature_label = "feature_label_" + str(uuid.uuid4())
+
         output_graph = add_feature_all_edges(
             input_graph,
             new_input_edge_feature,
+            feature_label,
             dataset_name,
             user_token,
             True
@@ -298,8 +301,10 @@ for action_of_change_idx in range(actions_of_change_nr):
             edge_attributes_nr = input_graph_edge_attr.shape[1]
 
             if edge_attributes_nr <= 0:
+                output_graph = input_graph
                 print("The number of input features of the edges is less than 0, a removal is not acceptable.")
             else:
+                print(f"edge_attributes_nr: {edge_attributes_nr}")
                 removed_edge_attribute_idx = random.randint(0, edge_attributes_nr-1)
 
                 output_graph = remove_feature_all_edges(

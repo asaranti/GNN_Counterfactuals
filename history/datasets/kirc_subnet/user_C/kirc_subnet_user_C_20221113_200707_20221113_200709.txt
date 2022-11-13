@@ -1,0 +1,20 @@
+graph_id:graph_id_483_0,remove_node,node_index:3,20221113_200709
+graph_id:graph_id_483_0,remove_node,node_index:2,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_edges,new_input_edge_feature:[[0.3286644]],20221113_200709
+graph_id:graph_id_483_0,remove_feature_all_nodes,removed_node_feature_idx:1,20221113_200709
+graph_id: graph_id_483_0,remove_feature_all_edges,removed_edge_attribute_idx:0,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_nodes,new_input_node_feature:[[0.53743595 0.26486966]],label: feature_label_84ca7092-bcb4-4c50-a18e-b49baa872589,20221113_200709
+graph_id:graph_id_483_0,remove_feature_all_nodes,removed_node_feature_idx:1,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_edges,new_input_edge_feature:[[0.51736057]],20221113_200709
+graph_id:graph_id_483_0,add_feature_all_edges,new_input_edge_feature:[[0.52871]],20221113_200709
+graph_id: graph_id_483_0,remove_edge,edge_index_left:0,edge_index_right:1,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_edges,new_input_edge_feature:[],20221113_200709
+graph_id:graph_id_483_0,remove_node,node_index:0,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_nodes,new_input_node_feature:[[0.8263393]],label: feature_label_cc79591a-19f8-43ec-85c3-f6ba60299daf,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_nodes,new_input_node_feature:[[0.3727982]],label: feature_label_5bb01cf6-5a0b-467b-b221-e22bdeaa9f14,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_nodes,new_input_node_feature:[[0.62247884]],label: feature_label_d1c9973f-0f67-474f-ae5d-f96375692478,20221113_200709
+graph_id:graph_id_483_0,add_node,node_id:node_id_4151f333-9d87-463a-a6af-a9ac88c8d0e3,label:node_label_db8dc87d-8faf-4a09-97e9-099a8815ab37,node_features:[[0.24816497 0.345059   0.60026217 0.07846048]],20221113_200709
+graph_id:graph_id_483_0,add_feature_all_edges,new_input_edge_feature:[],20221113_200709
+graph_id:graph_id_483_0,add_feature_all_nodes,new_input_node_feature:[[0.83613807 0.34671223]],label: feature_label_e6ecfb5e-3354-4ff6-96e8-d249e1e930c1,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_nodes,new_input_node_feature:[[0.9186444 0.9352897]],label: feature_label_7e3c9dab-293e-4cc8-b8a0-3dc7466d5f12,20221113_200709
+graph_id:graph_id_483_0,add_feature_all_nodes,new_input_node_feature:[[0.23348683 0.82196575]],label: feature_label_53a3ed68-d7fa-403c-886a-f93715069fc4,20221113_200709

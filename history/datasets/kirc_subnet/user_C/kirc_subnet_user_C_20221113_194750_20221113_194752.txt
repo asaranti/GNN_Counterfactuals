@@ -1,0 +1,28 @@
+graph_id:graph_id_221_0,remove_node,node_index:0,20221113_194752
+graph_id:graph_id_221_0,add_feature_all_edges,new_input_edge_feature:[[0.5326586  0.20492803 0.53250235]],20221113_194752
+graph_id:graph_id_221_0,add_feature_all_nodes,new_input_node_feature:[[0.08620289 0.41078773 0.8327475 ]],label: feature_label_93571d12-367d-4797-b554-8f4d015fefc6,20221113_194752
+graph_id:graph_id_221_0,add_feature_all_nodes,new_input_node_feature:[[0.21048948 0.21458949 0.1895283 ]],label: feature_label_08a13568-620f-4cd8-a959-67487a68937a,20221113_194752
+graph_id:graph_id_221_0,add_feature_all_edges,new_input_edge_feature:[[0.8487663  0.54523116 0.70672697]],20221113_194752
+graph_id:graph_id_221_0,add_feature_all_edges,new_input_edge_feature:[[0.744385  0.4167692 0.7302449]],20221113_194752
+graph_id:graph_id_221_0,remove_node,node_index:0,20221113_194752
+graph_id:graph_id_221_0,add_node,node_id:node_id_bbc3f5bf-03ba-47c9-98ea-e781908a48e1,label:node_label_f7f34046-c880-4fef-8ce5-a720585e9e66,node_features:[[0.60150033 0.2522143  0.32644477 0.09061619]],20221113_194752
+graph_id:graph_id_221_0,add_feature_all_nodes,new_input_node_feature:[[0.04947355 0.7910679  0.9776462 ]],label: feature_label_42e8dc73-993d-4379-9107-8a2184205b46,20221113_194752
+graph_id: graph_id_221_0,add_edge,new_edge_index_left:1,new_edge_index_right:2,,20221113_194752
+graph_id:graph_id_221_0,add_node,node_id:node_id_11353d57-cd70-4d7d-8435-2fa82b0776f6,label:node_label_a127a87a-01cc-4f17-ac66-93425164a45b,node_features:[[0.16610113 0.02257308 0.18481237 0.73201925 0.49706143]],20221113_194752
+graph_id:graph_id_221_0,add_node,node_id:node_id_71eb2f78-61e6-48ad-b211-330485b70061,label:node_label_8b072b48-7c33-4994-a8f3-e0434d42336d,node_features:[[0.8668176  0.4055536  0.93059355 0.6902466  0.6788806 ]],20221113_194752
+graph_id:graph_id_221_0,remove_feature_all_nodes,removed_node_feature_idx:1,20221113_194752
+graph_id:graph_id_221_0,add_feature_all_edges,new_input_edge_feature:[[0.9249702  0.40328255]],20221113_194752
+graph_id: graph_id_221_0,remove_feature_all_edges,removed_edge_attribute_idx:0,20221113_194752
+graph_id:graph_id_221_0,add_node,node_id:node_id_e8e5c168-2806-4271-84f8-f29ce13efc9a,label:node_label_293f4a09-1814-4d3d-bb43-f20111c99c8f,node_features:[[0.56041765 0.7653296  0.03010772 0.32114956]],20221113_194752
+graph_id:graph_id_221_0,add_node,node_id:node_id_77aaba62-0bc5-470f-8afd-b02f5db87083,label:node_label_4f4acc93-1461-4a5a-906e-0278142fe0bc,node_features:[[0.2202062  0.16506757 0.4216769  0.26427278]],20221113_194752
+graph_id:graph_id_221_0,add_feature_all_edges,new_input_edge_feature:[[0.87386227 0.38612488]],20221113_194752
+graph_id:graph_id_221_0,remove_node,node_index:3,20221113_194752
+graph_id:graph_id_221_0,add_feature_all_edges,new_input_edge_feature:[[0.16061401 0.8667087 ]],20221113_194752
+graph_id:graph_id_221_0,add_node,node_id:node_id_c7910be0-044e-4715-94ec-ce0a2e0cddcf,label:node_label_6864a845-07cd-4285-b74b-729d248c0258,node_features:[[0.31514445 0.36976174 0.5974473  0.672136  ]],20221113_194752
+graph_id:graph_id_221_0,add_feature_all_nodes,new_input_node_feature:[[0.37069017 0.85343665 0.52140856 0.64407754 0.40096113 0.24726117 0.86359453]],label: feature_label_288b1189-6c08-4a79-ab94-907c3b00a0ba,20221113_194752
+graph_id: graph_id_221_0,remove_feature_all_edges,removed_edge_attribute_idx:0,20221113_194752
+graph_id: graph_id_221_0,add_edge,new_edge_index_left:1,new_edge_index_right:5,,20221113_194752
+graph_id: graph_id_221_0,remove_edge,edge_index_left:0,edge_index_right:1,20221113_194752
+graph_id:graph_id_221_0,add_node,node_id:node_id_12851c56-5cbc-41b7-853a-93e92df509fa,label:node_label_cf1f1ec7-8804-4b80-b522-da4b8077d404,node_features:[[0.8320303  0.05155263 0.12130434 0.0121489  0.1157995 ]],20221113_194752
+graph_id:graph_id_221_0,remove_node,node_index:5,20221113_194752
+graph_id:graph_id_221_0,add_node,node_id:node_id_5b6454e2-66e3-471d-a71f-59ec49167c87,label:node_label_13903be9-6beb-4457-b9e6-844221b74032,node_features:[[0.90226287 0.6841647  0.4695263  0.8228378  0.52519953]],20221113_194752

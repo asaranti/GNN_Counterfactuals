@@ -57,9 +57,13 @@ def graphs_equal(graph_1: Data, graph_2: Data) -> bool:
                     print("The two graphs are not equal.\n")
                     return False
                 if graph_1.edge_attr is not None and graph_2.edge_attr is not None:
-                    if not torch.equal(graph_1.edge_attr, graph_2.edge_attr):
+                    if not torch.allclose(graph_1.edge_attr, graph_2.edge_attr):
                         print("The two graphs' \"edge_attr\" fields are different.\n")
                         print("The two graphs are not equal.\n")
+
+                        print(graph_1.edge_attr.cpu().detach().numpy())
+                        print(graph_2.edge_attr.cpu().detach().numpy())
+
                         return False
             elif graph_key == 'y':
                 if not torch.equal(graph_1.y, graph_2.y):
@@ -82,8 +86,6 @@ def graphs_equal(graph_1: Data, graph_2: Data) -> bool:
                 else:
                     graph_key_type = str(type(graph_1[graph_key]))
                     if graph_key_type == "<class 'list'>" or graph_key_type == "<class 'str'>":
-                        print(graph_1[graph_key])
-                        print(graph_2[graph_key])
                         if graph_1[graph_key] != graph_2[graph_key]:
                             print(f"The two graphs' {graph_key} fields are different.\n")
                             print("The two graphs are not equal.\n")
