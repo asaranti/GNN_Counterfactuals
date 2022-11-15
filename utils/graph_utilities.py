@@ -30,7 +30,9 @@ def graphs_equal(graph_1: Data, graph_2: Data) -> bool:
     if len(graph_1_keys_list) != len(graph_2_keys_list):
         print("The two graphs have different number of field elements.\n")
         print(f"Graph 1 has {len(graph_1_keys_list)} number of elements.\n")
+        print(f"{graph_1_keys_list}.\n")
         print(f"Graph 2 has {len(graph_2_keys_list)} number of elements.\n")
+        print(f"{graph_2_keys_list}.\n")
         print("The two graphs are not equal.\n")
         return False
 
@@ -41,7 +43,7 @@ def graphs_equal(graph_1: Data, graph_2: Data) -> bool:
 
             # [2.1.] Check all fields that are obligatory in the graph -------------------------------------------------
             if graph_key == 'x':
-                if not torch.allclose(graph_1.x, graph_2.x):
+                if not torch.allclose(graph_1.x, graph_2.x, atol=1e-3):
                     print("The two graphs' \"x\" fields are different.\n")
                     print("The two graphs are not equal.\n")
                     return False
@@ -57,7 +59,7 @@ def graphs_equal(graph_1: Data, graph_2: Data) -> bool:
                     print("The two graphs are not equal.\n")
                     return False
                 if graph_1.edge_attr is not None and graph_2.edge_attr is not None:
-                    if not torch.allclose(graph_1.edge_attr, graph_2.edge_attr):
+                    if not torch.allclose(graph_1.edge_attr, graph_2.edge_attr, atol=1e-3):
                         print("The two graphs' \"edge_attr\" fields are different.\n")
                         print("The two graphs are not equal.\n")
 

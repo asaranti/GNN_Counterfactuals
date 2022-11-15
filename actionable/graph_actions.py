@@ -8,6 +8,7 @@
 
 import copy
 from datetime import datetime
+import sys
 from typing import Optional
 
 import numpy as np
@@ -17,6 +18,11 @@ from torch_geometric.data import Data
 
 from constraints.graph_constraints import check_data_format_consistency
 from utils.dataset_save import append_action_dataset_history
+
+np.set_printoptions(threshold=sys.maxsize)
+
+FLOAT_PRECISION = 3
+MAX_LINE_WIDTH = 1000000
 
 
 def add_node(input_graph: torch_geometric.data.data.Data,
@@ -116,7 +122,7 @@ def add_node(input_graph: torch_geometric.data.data.Data,
                              f"node_id:{node_id}," \
                              f"label:{label}," \
                              f"node_features:" \
-                             f"{np.array2string(node_features, max_line_width=1000000, separator=' ')}," \
+                             f"{np.array2string(node_features, max_line_width=MAX_LINE_WIDTH, precision=FLOAT_PRECISION, separator=' ')}," \
                              f"{str_date_time}" \
                              f"\n"
         append_action_dataset_history(dataset_name, user_token, action_description)
@@ -336,6 +342,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
             if (new_edge_index_left, new_edge_index_right) in graph_edge_pairs or \
                (new_edge_index_right, new_edge_index_left) in graph_edge_pairs:
 
+                print(f"The existing edges are: {graph_edge_pairs}")
                 raise ValueError(f"There is already an edge connecting node {new_edge_index_left} and "
                                  f"{new_edge_index_right}.\nMulti-graphs are not allowed.")
 
@@ -399,7 +406,7 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
         new_edge_attr_str = ","
         if new_edge_attr is not None:
             new_edge_attr_str = f"new_edge_attr: " \
-                                f"{np.array2string(new_edge_attr, max_line_width=1000000, separator=' ')},"
+                                f"{np.array2string(new_edge_attr, max_line_width=MAX_LINE_WIDTH, precision=FLOAT_PRECISION, separator=' ')},"
 
         action_description = f"graph_id: {input_graph.graph_id}," \
                              f"add_edge," \
@@ -583,7 +590,15 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
         output_graph_x = np.column_stack((input_graph_x, new_input_node_feature))
 
     ####################################################################################################################
-    # [2.] Output graph ================================================================================================
+    # [2.] Take over the attribute labels of the edges, if they exist --------------------------------------------------
+    ####################################################################################################################
+    if hasattr(input_graph, 'edge_attr_labels'):
+        output_graph_edge_attr_labels = input_graph.edge_attr_labels
+    else:
+        output_graph_edge_attr_labels = None
+
+    ####################################################################################################################
+    # [3.] Output graph ================================================================================================
     ####################################################################################################################
     output_graph_node_feature_labels = copy.deepcopy(input_graph.node_feature_labels)
     output_graph_node_feature_labels.append(label)
@@ -596,15 +611,17 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
                         node_ids=input_graph.node_ids,
                         node_feature_labels=output_graph_node_feature_labels,
                         edge_ids=input_graph.edge_ids,
-                        edge_attr_labels=input_graph.edge_attr_labels,
+                        edge_attr_labels=output_graph_edge_attr_labels,
                         pos=input_graph.pos,
                         graph_id=input_graph.graph_id
                         )
 
     check_data_format_consistency(output_graph)
 
-    # [3.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    ####################################################################################################################
+    # [4.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
     #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    ####################################################################################################################
     if b_save_actions_history:
         date_time = datetime.utcnow()
         str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
@@ -612,7 +629,7 @@ def add_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
         action_description = f"graph_id:{input_graph.graph_id}," \
                              f"add_feature_all_nodes," \
                              f"new_input_node_feature:" \
-                             f"{np.array2string(new_input_node_feature_orig, max_line_width=1000000, separator=' ')}," \
+                             f"{np.array2string(new_input_node_feature_orig, max_line_width=MAX_LINE_WIDTH, precision=FLOAT_PRECISION, separator=' ')}," \
                              f"label: {label}," \
                              f"{str_date_time}" \
                              f"\n"
@@ -672,7 +689,15 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
     del output_graph_node_feature_labels[removed_node_feature_idx]   # remove the label by index
 
     ####################################################################################################################
-    # [2.] Output graph ------------------------------------------------------------------------------------------------
+    # [2.] Take over the attribute labels of the edges, if they exist --------------------------------------------------
+    ####################################################################################################################
+    if hasattr(input_graph, 'edge_attr_labels'):
+        output_graph_edge_attr_labels = input_graph.edge_attr_labels
+    else:
+        output_graph_edge_attr_labels = None
+
+    ####################################################################################################################
+    # [3.] Output graph ------------------------------------------------------------------------------------------------
     ####################################################################################################################
     output_graph = Data(x=torch.from_numpy(output_graph_x),
                         edge_index=input_graph.edge_index,
@@ -682,14 +707,16 @@ def remove_feature_all_nodes(input_graph: torch_geometric.data.data.Data,
                         node_ids=input_graph.node_ids,
                         node_feature_labels=output_graph_node_feature_labels,
                         edge_ids=input_graph.edge_ids,
-                        edge_attr_labels=input_graph.edge_attr_labels,
+                        edge_attr_labels=output_graph_edge_attr_labels,
                         pos=input_graph.pos,
                         graph_id=input_graph.graph_id
                         )
     check_data_format_consistency(output_graph)
 
-    # [3.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
+    ####################################################################################################################
+    # [4.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
     #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    ####################################################################################################################
     if b_save_actions_history:
         date_time = datetime.utcnow()
         str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
@@ -727,7 +754,9 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
     """
 
     new_input_edge_feature = np.transpose(new_input_edge_feature_orig)
-    output_graph_edge_feature_labels = copy.deepcopy(input_graph.edge_attr_labels)
+    output_graph_edge_feature_labels = []
+    if "edge_attr_labels" in input_graph.keys:
+        output_graph_edge_feature_labels = copy.deepcopy(input_graph.edge_attr_labels)
 
     # [1.] Number of rows of the input feature should be equal to the number of nodes ----------------------------------
     edges_nr = input_graph.num_edges
@@ -771,7 +800,7 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
         action_description = f"graph_id:{input_graph.graph_id}," \
                              f"add_feature_all_edges," \
                              f"new_input_edge_feature:" \
-                             f"{np.array2string(new_input_edge_feature_orig, max_line_width=1000000, separator=' ')}," \
+                             f"{np.array2string(new_input_edge_feature_orig, max_line_width=MAX_LINE_WIDTH, precision=FLOAT_PRECISION, separator=' ')}," \
                              f"label: {label}," \
                              f"{str_date_time}" \
                              f"\n"
@@ -802,7 +831,9 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data,
     :return: The updated graph
     """
 
-    output_graph_edge_feature_labels = copy.deepcopy(input_graph.edge_attr_labels)
+    output_graph_edge_feature_labels = []
+    if "edge_attr_labels" in input_graph.keys:
+        output_graph_edge_feature_labels = copy.deepcopy(input_graph.edge_attr_labels)
 
     # [1.] Check that the index of the deleted feature is valid --------------------------------------------------------
     if input_graph.edge_attr is not None:

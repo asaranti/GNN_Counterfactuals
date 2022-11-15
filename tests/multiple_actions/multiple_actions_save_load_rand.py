@@ -15,6 +15,7 @@ import os
 import pickle
 import random
 import string
+import sys
 import uuid
 
 import numpy as np
@@ -28,6 +29,7 @@ from utils.dataset_load import load_action_dataset_history
 from utils.gnn_load_save import load_gnn_model
 from utils.graph_utilities import graphs_equal
 
+np.set_printoptions(threshold=sys.maxsize)
 
 ########################################################################################################################
 # [0.] Preparatory actions =============================================================================================
@@ -51,6 +53,8 @@ start_session_date_time_str = start_session_date_time.strftime("%Y%m%d_%H%M%S")
 ########################################################################################################################
 # [A.] Select dataset ==================================================================================================
 ########################################################################################################################
+
+"""
 # [A.a.] KIRC Subnet ---------------------------------------------------------------------------------------------------
 dataset_name = "kirc_subnet"
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
@@ -61,8 +65,8 @@ gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 already_trained_model_dict = load_gnn_model(dataset_name, True, user_token)
 model = already_trained_model_dict["model"]
 global_gnn_models_dict['0'] = {model}
-
 """
+
 # [A.b.] KIRC random nodes ui ------------------------------------------------------------------------------------------
 dataset_name = "kirc_random_nodes_ui"
 dataset_pytorch_folder = os.path.join("data", "output", "KIRC_RANDOM", "kirc_random_pytorch")
@@ -74,6 +78,7 @@ already_trained_model_dict = load_gnn_model(dataset_name, False, user_token)
 model = already_trained_model_dict["model"]
 # global_gnn_models_dict['0'] = {model}
 
+"""
 # [A.c.] Synthetic -----------------------------------------------------------------------------------------------------
 dataset_name = "synthetic"
 dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_pytorch")
@@ -178,16 +183,31 @@ for graph_to_change_idx in range(graphs_to_change_nr):
                 input_graph_edge_index_left = []
                 input_graph_edge_index_right = []
 
-            input_graph_edge_index_list = [tuple(row) for row in input_graph_edge_index.T]
+            input_graph_edge_index_list = [tuple(sorted(tuple(row))) for row in input_graph_edge_index.T]
+            input_graph_edge_index_set = set(input_graph_edge_index_list)
 
             # [3.2.] Add a new edge where there is no one yet ----------------------------------------------------------
             #        The only possibility that adding an edge is not possible is the graph being complete --------------
-            graph_nodes_nr = input_graph.x.size(dim=0)
-            all_edge_combinations = list(combinations(list(range(graph_nodes_nr)), 2))
+            graph_nodes_nr = input_graph.num_nodes
+            all_edge_combinations_list = list(combinations(list(range(graph_nodes_nr)), 2))
+            all_edge_combinations_set = set(all_edge_combinations_list)
 
             # [3.3.] Compute the diff between all node pairs (all possible edges) --------------------------------------
             #        and pick one of those randomly - i.e. create the edge ---------------------------------------------
-            edges_remaining_list = [item for item in all_edge_combinations if item not in input_graph_edge_index_list]
+            edges_remaining_set = all_edge_combinations_set - input_graph_edge_index_set
+            edges_remaining_list = list(edges_remaining_set)
+
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            # print(f"Graph nodes: {graph_nodes_nr}")
+            # print(len(all_edge_combinations_list), len(all_edge_combinations_set))
+            # print(len(input_graph_edge_index_list), len(input_graph_edge_index_set))
+            # print(len(edges_remaining_list), len(edges_remaining_set))
+            # edges_intersection_set = all_edge_combinations_set.intersection(input_graph_edge_index_set)
+            # print(f"Intersection len: {len(edges_intersection_set)}")
+            # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
             edges_remaining_list_len = len(edges_remaining_list)
 
             if edges_remaining_list_len == 0:
@@ -364,6 +384,7 @@ loaded_dataset = load_action_dataset_history(dataset_name, user_token, dataset_h
 
 # [2.] Control each graph in both the datsets --------------------------------------------------------------------------
 #      the changed graphs have to be changed and the rest have to stay unchanged ---------------------------------------
+datasets_equal = True
 for graph_idx in range(len(loaded_dataset)):
 
     changed_graph = dataset[graph_idx]
@@ -371,12 +392,14 @@ for graph_idx in range(len(loaded_dataset)):
 
     # [3.] Graph equality check - if false then stop -------------------------------------------------------------------
     graph_equality = graphs_equal(changed_graph, loaded_graph)
-    # print(f"Graph equality: {graph_equality}")
 
     if graph_equality is False:
+        datasets_equal = False
         print(f"BUG: The changed graph on index {graph_idx} and the corresponding loaded one from the history file "
               f"are unequal.\nThe two datasets differ, no other comparison needed.\nFix your bugs.")
         break
 
 # [4.] If you reached this point, then all graphs are equal ------------------------------------------------------------
-print("CONGRATS! ALL graphs are equal !!!!!!!!!!!!!!!!!!!!")
+if datasets_equal:
+    print("CONGRATS! ALL graphs are equal !!!!!!!!!!!!!!!!!!!!")
+
