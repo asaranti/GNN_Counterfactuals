@@ -276,18 +276,25 @@ for action_of_change_idx in range(actions_of_change_nr):
     elif actions_of_change_nr == 7:     # [7.] add_feature_all_edges >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
         edges_nr = input_graph.num_edges
-        new_input_edge_feature = np.random.rand(1, edges_nr).astype(np.float32)
 
-        feature_label = "feature_label_" + str(uuid.uuid4())
+        if edges_nr == 0:
 
-        output_graph = add_feature_all_edges(
-            input_graph,
-            new_input_edge_feature,
-            feature_label,
-            dataset_name,
-            user_token,
-            True
-        )
+            output_graph = input_graph
+            print("The number of edges is 0. An edge feature cannot be added.")
+        else:
+
+            new_input_edge_feature = np.random.rand(1, edges_nr).astype(np.float32)
+
+            feature_label = "feature_label_" + str(uuid.uuid4())
+
+            output_graph = add_feature_all_edges(
+                input_graph,
+                new_input_edge_feature,
+                feature_label,
+                dataset_name,
+                user_token,
+                True
+            )
 
     ####################################################################################################################
     elif actions_of_change_nr == 8:     # [8.] remove_feature_all_edges >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

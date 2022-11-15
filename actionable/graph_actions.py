@@ -734,6 +734,7 @@ def add_feature_all_edges(input_graph: torch_geometric.data.data.Data,
 
     # [1.] Number of rows of the input feature should be equal to the number of nodes ----------------------------------
     edges_nr = input_graph.num_edges
+
     assert edges_nr == new_input_edge_feature.shape[0], f"The number of edges: {edges_nr} in the graph is not equal " \
                                                         f"to the number of rows in the input attribute: " \
                                                         f"{new_input_edge_feature.shape[0]}. All edges should have " \
