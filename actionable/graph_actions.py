@@ -56,7 +56,6 @@ def add_node(input_graph: torch_geometric.data.data.Data,
     # [0.3.] Constraint: the new node's features needs to be the same length (type) ------------------------------------
     input_graph_x = input_graph.x.cpu().detach().numpy()
     if input_graph_x is not None:
-        print(input_graph_x.shape[1], node_features.shape[1])
         assert input_graph_x.shape[1] == node_features.shape[1], \
             f"The shape of the features of the new node: {node_features.shape[1]} must conform to the shape " \
             f"of the features of the rest of the nodes: {input_graph_x.shape[1]}. The graph must be homogeneous."
@@ -163,7 +162,6 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
     # [0.] Constraints/Requirements ====================================================================================
     ####################################################################################################################
     # [0.1.] Check the types of the input graph's object ---------------------------------------------------------------
-    print("Start consistency check")
     check_data_format_consistency(input_graph)
 
     # [0.2.] Check that the index of the deleted node is valid ---------------------------------------------------------
@@ -263,7 +261,6 @@ def remove_node(input_graph: torch_geometric.data.data.Data,
                         )
 
     # [10.] Make the last consistency check before saving the actions and returning the graph --------------------------
-    print("End consistency check")
     check_data_format_consistency(output_graph)
 
     # [11.] Save/append the action in the local file if "b_save_actions_history" ---------------------------------------
@@ -811,8 +808,6 @@ def remove_feature_all_edges(input_graph: torch_geometric.data.data.Data,
     if input_graph.edge_attr is not None:
 
         input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
-
-        print(f"input_graph_edge_attr: {input_graph_edge_attr}, {input_graph.edge_index.cpu().detach().numpy()}")
 
         edge_attributes_nr = input_graph_edge_attr.shape[1]
         assert 0 <= removed_edge_attribute_idx < edge_attributes_nr, \
