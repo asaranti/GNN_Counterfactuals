@@ -1,15 +1,11 @@
 FROM debian:11
-#FROM rocker/shiny:3.6.0
 
 RUN apt-get update && apt-get install -y \
     supervisor nginx sudo pip wget mc
 
 RUN pip3 install --upgrade pip
 
-
-
-# Frontend: Shiny R installation and app copy
-# update indices
+# Setup Frontend
 RUN sudo apt update -qq
 # install two helper packages we need
 RUN sudo apt install -y --no-install-recommends software-properties-common dirmngr
@@ -37,6 +33,7 @@ COPY ./xAI-Shiny-App /frontend
 RUN R -e "install.packages('remotes', repos = c(CRAN = 'https://cloud.r-project.org'))"
 ENV RENV_VERSION 0.16.0
 RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
+RUN R -e "install.packages('Matrix', repos = c(CRAN = 'https://cloud.r-project.org'))"
 RUN R -e "options(renv.consent = TRUE); renv::restore(lockfile = '/frontend/R_shiny/code/renv.lock', repos = c(CRAN='https://packagemanager.rstudio.com/all/__linux__/focal/latest'))"
 
 # make all app files readable
@@ -48,7 +45,9 @@ COPY ./GNN_Counterfactuals/server_config/supervisord.conf /supervisord.conf
 COPY ./GNN_Counterfactuals/server_config/nginx /etc/nginx/sites-available/default
 COPY ./GNN_Counterfactuals/server_config/docker-entrypoint.sh /entrypoint.sh
 
-# Setup backend dependencies
+# Setup Backend
+COPY ./GNN_Counterfactuals /backend
+RUN chmod -R 755 /backend/models
 RUN apt-get update && apt-get -y upgrade \
   && apt-get install -y --no-install-recommends \
     git \
@@ -79,9 +78,6 @@ RUN conda install pyg -c pyg
 RUN conda install captum -c pytorch
 RUN conda install networkx
 RUN conda install numpy==1.22.3 pandas==1.4.2 Flask apscheduler bokeh pytest==7.1.1
-RUN echo 'conda activate gnn \n\
-alias python-app="python3 app.py"' >> /root/.bashrc
-COPY ./GNN_Counterfactuals /backend
 
 EXPOSE 9000 9001
 
