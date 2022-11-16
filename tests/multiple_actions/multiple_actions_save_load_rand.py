@@ -26,6 +26,7 @@ from actionable.graph_actions import add_node, remove_node, add_edge, remove_edg
 from actionable.gnn_actions import GNN_Actions
 from gnns.gnn_selectors.gnn_definitions import define_gnn
 from utils.dataset_load import load_action_dataset_history
+from utils.dataset_save import check_dataset_history_file
 from utils.gnn_load_save import load_gnn_model
 from utils.graph_utilities import graphs_equal
 
@@ -65,7 +66,6 @@ gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 already_trained_model_dict = load_gnn_model(dataset_name, True, user_token)
 model = already_trained_model_dict["model"]
 global_gnn_models_dict['0'] = {model}
-"""
 
 # [A.b.] KIRC random nodes ui ------------------------------------------------------------------------------------------
 dataset_name = "kirc_random_nodes_ui"
@@ -77,8 +77,8 @@ gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 already_trained_model_dict = load_gnn_model(dataset_name, False, user_token)
 model = already_trained_model_dict["model"]
 # global_gnn_models_dict['0'] = {model}
-
 """
+
 # [A.c.] Synthetic -----------------------------------------------------------------------------------------------------
 dataset_name = "synthetic"
 dataset_pytorch_folder = os.path.join("data", "output", "Synthetic", "synthetic_pytorch")
@@ -88,7 +88,6 @@ gnn_actions_obj = GNN_Actions(gnn_architecture_params_dict, dataset_name)
 # model, performance_values_dict = gnn_actions_obj.gnn_init_train(dataset)
 already_trained_model_dict = load_gnn_model(dataset_name, True, user_token)
 model = already_trained_model_dict["model"]
-"""
 
 train_set_metrics_dict = already_trained_model_dict["train_set_metrics_dict"]
 test_set_metrics_dict = already_trained_model_dict["test_set_metrics_dict"]
@@ -99,6 +98,7 @@ global_gnn_models_dict['0'] = {model}
 
 ########################################################################################################################
 # [B.] Create the folder that is going to keep the history of the interactions of this user with this dataset ----------
+#      Check if there exists any unclosed history file from an abruptly closed session ---------------------------------
 ########################################################################################################################
 dataset_storage_folder = os.path.join("history", "datasets", dataset_name)
 if not os.path.exists(dataset_storage_folder):
@@ -106,6 +106,7 @@ if not os.path.exists(dataset_storage_folder):
 dataset_user_storage_folder = os.path.join(dataset_storage_folder, user_token)
 if not os.path.exists(dataset_user_storage_folder):
     os.mkdir(dataset_user_storage_folder)
+check_dataset_history_file(dataset_name, user_token)
 
 ########################################################################################################################
 # [C.] Select randomly some actions on the same graph ==================================================================
