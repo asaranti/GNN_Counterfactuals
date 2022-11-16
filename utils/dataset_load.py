@@ -97,13 +97,17 @@ def load_action_dataset_history(dataset_name: str,
 
                 new_edge_index_left = int(action_array[2].split(":")[1])
                 new_edge_index_right = int(action_array[3].split(":")[1])
-                # TODO: new_edge_attr >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TODO >>>>>>>>>>>>>>>>>>>>>>>>
+
+                new_edge_attr = None
+                if action_array[4].split(":")[0] == "new_edge_attr":
+                    new_edge_attr_str = ' '.join(action_array[4].split(":")[1].split()).replace(" ", ",")
+                    new_edge_attr = np.array(ast.literal_eval(new_edge_attr_str)).astype(np.float32)
 
                 output_graph = add_edge(
                     input_graph=input_graph,
                     new_edge_index_left=new_edge_index_left,
                     new_edge_index_right=new_edge_index_right,
-                    new_edge_attr=None,
+                    new_edge_attr=new_edge_attr,
                 )
 
             ############################################################################################################

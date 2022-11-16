@@ -197,29 +197,35 @@ for graph_to_change_idx in range(graphs_to_change_nr):
             edges_remaining_set = all_edge_combinations_set - input_graph_edge_index_set
             edges_remaining_list = list(edges_remaining_set)
 
-            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            # print(f"Graph nodes: {graph_nodes_nr}")
-            # print(len(all_edge_combinations_list), len(all_edge_combinations_set))
-            # print(len(input_graph_edge_index_list), len(input_graph_edge_index_set))
-            # print(len(edges_remaining_list), len(edges_remaining_set))
-            # edges_intersection_set = all_edge_combinations_set.intersection(input_graph_edge_index_set)
-            # print(f"Intersection len: {len(edges_intersection_set)}")
-            # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+            # [3.4.] Check that the subtraction of the sets returns the expected results; the one must be the subset ---
+            #        of the other. If the pairs of egdes aren't sorted, then this equality does not hold. --------------
+            all_edge_combinations_list_len = len(all_edge_combinations_list)
+            input_graph_edge_index_list_len = len(input_graph_edge_index_list)
             edges_remaining_list_len = len(edges_remaining_list)
+
+            assert all_edge_combinations_list_len - input_graph_edge_index_list_len == edges_remaining_list_len, \
+                f"The length of all possible edges: {all_edge_combinations_list_len} -minus- the length of the " \
+                f"already existing edges: {input_graph_edge_index_list_len} has to be equal to the length of the " \
+                f"list of the remaining edges: {edges_remaining_list_len}."
 
             if edges_remaining_list_len == 0:
                 print("The graph is fully connected, a new edge cannot be generated.")
             else:
+
+                # [3.5.] Pick one of the edges that you can lay --------------------------------------------------------
                 new_edge_remaining_idx = random.randint(0, edges_remaining_list_len - 1)
                 new_edge = edges_remaining_list[new_edge_remaining_idx]
                 new_edge_index_left = new_edge[0]
                 new_edge_index_right = new_edge[1]
 
+                # [3.6.] If there are already edge attributes, then generate some artifical values for them ------------
                 new_edge_attr = None
+                if hasattr(input_graph, 'edge_attr') and input_graph.edge_attr is not None:
 
+                    input_edge_features_nr = input_graph.edge_attr.shape[1]
+                    new_edge_attr = np.random.rand(1, input_edge_features_nr).astype(np.float32)
+
+                # [3.7.] Add the edge ----------------------------------------------------------------------------------
                 output_graph = add_edge(
                     input_graph,
                     new_edge_index_left,

@@ -326,7 +326,9 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
         f"The index of the node {new_edge_index_right} is not in accordance " \
         f"with the number of nodes {input_graph.num_nodes}"
 
+    ####################################################################################################################
     # [1.] Check that the nodes specified by the input indexes are not already connected -------------------------------
+    ####################################################################################################################
     input_graph_edge_index = input_graph.edge_index.cpu().detach().numpy()
     output_graph_edge_ids = copy.deepcopy(input_graph.edge_ids)
 
@@ -359,7 +361,12 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
         output_graph_edge_index = torch.from_numpy(np.array([[new_edge_index_left],
                                                              [new_edge_index_right]]))
 
+    ####################################################################################################################
     # [2.] Add the edge's features -------------------------------------------------------------------------------------
+    ####################################################################################################################
+
+    # [2.1.] If both the already existing edge features and the new edge's one's are not None, -------------------------
+    #        they have to be checked for consistency -------------------------------------------------------------------
     if input_graph.edge_attr is not None and new_edge_attr is not None:
         input_graph_edge_attr = input_graph.edge_attr.cpu().detach().numpy()
 
@@ -368,21 +375,32 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
             f"of the features of the rest of the edges: {input_graph_edge_attr.shape[1]}. " \
             f"The graph must be homogeneous."
         output_graph_edge_attr = torch.from_numpy(np.row_stack((input_graph_edge_attr, new_edge_attr)))
-    elif new_edge_attr is not None:
-        output_graph_edge_attr = torch.from_numpy(np.array([new_edge_attr]))
+
+    # [2.2.] There were no edge attributes and now this edge has -------------------------------------------------------
+    #        If it is not the first edge, then the consistency checks will throw an assertion error --------------------
+    elif input_graph.edge_attr is None and new_edge_attr is not None:
+        output_graph_edge_attr = torch.from_numpy(np.array(new_edge_attr))
+
+    # [2.3.] Else everything remains the same as it was - None ---------------------------------------------------------
     else:
         output_graph_edge_attr = None
 
+    ####################################################################################################################
     # [3.] In the field position "pos" the position of the deleted node needs to be removed. ---------------------------
+    ####################################################################################################################
     output_pos = input_graph.pos
 
+    ####################################################################################################################
     # [4.] Take over the attribute labels of the edges, if they exist --------------------------------------------------
+    ####################################################################################################################
     if hasattr(input_graph, 'edge_attr_labels'):
         output_graph_edge_attr_labels = input_graph.edge_attr_labels
     else:
         output_graph_edge_attr_labels = None
 
+    ####################################################################################################################
     # [5.] Output graph ------------------------------------------------------------------------------------------------
+    ####################################################################################################################
     output_graph = Data(x=input_graph.x,
                         edge_index=output_graph_edge_index,
                         edge_attr=output_graph_edge_attr,
@@ -397,15 +415,17 @@ def add_edge(input_graph: torch_geometric.data.data.Data,
                         )
     check_data_format_consistency(output_graph)
 
+    ####################################################################################################################
     # [6.] Save/append the action in the local file if "b_save_actions_history" ----------------------------------------
     #       If in graph reconstruction phase b_save_actions_history == False, then there is no need to save ------------
+    ####################################################################################################################
     if b_save_actions_history:
         date_time = datetime.utcnow()
         str_date_time = date_time.strftime("%Y%m%d_%H%M%S")
 
         new_edge_attr_str = ","
         if new_edge_attr is not None:
-            new_edge_attr_str = f"new_edge_attr: " \
+            new_edge_attr_str = f"new_edge_attr:" \
                                 f"{np.array2string(new_edge_attr, max_line_width=MAX_LINE_WIDTH, precision=FLOAT_PRECISION, separator=' ')},"
 
         action_description = f"graph_id: {input_graph.graph_id}," \
