@@ -28,6 +28,7 @@ RUN sudo apt install -y gdebi-core libglpk40
 RUN sudo gdebi shiny-server-1.5.18.987-amd64.deb
 RUN echo "local(options(shiny.port = 3838, shiny.host = '0.0.0.0'))" > /usr/lib/R/etc/Rprofile.site
 RUN sudo ufw allow 3838
+RUN rm -f ubuntu1804/x86_64/shiny-server-1.5.18.987-amd64.deb
 
 COPY ./xAI-Shiny-App /frontend
 RUN R -e "install.packages('remotes', repos = c(CRAN = 'https://cloud.r-project.org'))"
@@ -67,17 +68,18 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     . /root/.bashrc && \
     conda update conda && \
     conda create -n gnn && \
-    conda activate gnn && \
-    conda install python=3.6 pip
+    conda activate gnn
 
 RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-keyring_1.0-1_all.deb
 RUN sudo apt-get update
 
 RUN conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit=11.3 -c pytorch
-RUN conda install pyg -c pyg
+RUN conda install pyg=2.0.4 -c pyg
 RUN conda install captum -c pytorch
 RUN conda install networkx
 RUN conda install numpy==1.22.3 pandas==1.4.2 Flask apscheduler bokeh pytest==7.1.1
+RUN rm -f ubuntu1804/x86_64/cuda-keyring_1.0-1_all.deb
+RUN apt-get clean
 
 EXPOSE 9000 9001
 
