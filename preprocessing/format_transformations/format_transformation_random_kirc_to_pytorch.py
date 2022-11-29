@@ -3,7 +3,7 @@
     From Random_Kirc to Pytorch
 
     :author: Anna Saranti
-    :copyright: © 2021 HCI-KDD (ex-AI) group
+    :copyright: © 2022 HCI-KDD (ex-AI) group
     :date: 2021-01-27
 """
 
