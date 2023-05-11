@@ -22,6 +22,7 @@ from torch.multiprocessing import Pool
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
 from functools import partial
+from threading import Lock
 
 from actionable.gnn_actions import GNN_Actions
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
@@ -52,10 +53,11 @@ def index():
 dataset_names = ["Synthetic Dataset", "KIRC Dataset", "KIRC SubNet"]
 graph_id_composed_regex = "graph_id_[0-9]+_[0-9]+"
 root_folder = os.path.dirname(os.path.abspath(__file__))
-# interval to delete old sessions: 5 hours (hour * min * sec * ms)
-INTERVAL = 5 * 60 * 60 * 1000
-user_last_updated = {}
+# interval to delete old sessions: 2 hours (hour * min * sec * ms)
+INTERVAL = 2 * 60 * 60 * 1000
+DICT_STRING_GRAPHDATA = "graphData_"
 connected_users = []
+user_dict_lock = Lock()
 processes_nr = 2
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = 'cuda:0'
@@ -71,7 +73,7 @@ data_folder = os.path.join(root_folder, "data")
 @app.route('/', methods=['GET'])
 def initialize():
     token = uuid.uuid4()
-    connected_users.append(token)
+    connected_users.append(str(token))
     return json.dumps(str(token))
 
 
@@ -99,8 +101,6 @@ def patient_name(token):
     dataset_name = request.args.get('dataset_name')
 
     # init the structure
-    global user_graph_data
-    user_graph_data = {}
     graph_data = {}
 
     # get patient ids corresponding to dataset
@@ -149,11 +149,13 @@ def patient_name(token):
     # create list of patient names from amount of graphs in dataset
     patients_names = ['Patient ' + i for i in map(str, np.arange(0, len(graph_data)).tolist())]
 
+    dynamic_dict = (DICT_STRING_GRAPHDATA + str(token))
     # save graph and session id
-    user_graph_data[str(token)] = graph_data
+    globals()[dynamic_dict] = {}
+    globals()[dynamic_dict][0] = graph_data
 
     # save user id (token) and last updated time in ms
-    user_last_updated[str(token)] = time.time_ns() // 1_000_000
+    globals()[dynamic_dict][1] = time.time_ns() // 1_000_000
 
     return json.dumps(patients_names)
 
@@ -173,7 +175,9 @@ def pre_defined_dataset(token):
     graph_id = request.args.get('graph_id')
 
     # get graph corresponding to graph id and patient id and transform to UI format
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+
+    graph_data = globals()[dynamic_dict][0]
     selected_graph = graph_data[str(patient_id)][str(graph_id)]
     nodelist, edgelist = transform_from_pytorch_to_ui(selected_graph, "", "", "")
 
@@ -197,7 +201,8 @@ def adding_node(token):
     node_id = req_data['id']
 
     # input graph
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # node features
@@ -212,8 +217,8 @@ def adding_node(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
-    user_graph_data[str(token)] = graph_data
-    user_last_updated[str(token)] = time.time_ns() // 1_000_000
+    globals()[dynamic_dict][0] = graph_data
+    globals()[dynamic_dict][1] = time.time_ns() // 1_000_000
 
     return "done"
 
@@ -234,7 +239,8 @@ def delete_node(token):
     deleted_node_label = request.args.get('deleted_node_label')
 
     # input graph
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # get node id from node ids
@@ -244,8 +250,8 @@ def delete_node(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
-    user_graph_data[str(token)] = graph_data
-    user_last_updated[str(token)] = time.time_ns() // 1_000_000
+    globals()[dynamic_dict][0] = graph_data
+    globals()[dynamic_dict][1] = time.time_ns() // 1_000_000
 
     return "done"
 
@@ -264,7 +270,8 @@ def adding_edge(token):
     graph_id = req_data['graph_id']
 
     # input graph
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # left and right node ids
@@ -284,8 +291,8 @@ def adding_edge(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
-    user_graph_data[str(token)] = graph_data
-    user_last_updated[str(token)] = time.time_ns() // 1_000_000
+    globals()[dynamic_dict][0] = graph_data
+    globals()[dynamic_dict][1] = time.time_ns() // 1_000_000
 
     return "done"
 
@@ -307,7 +314,8 @@ def delete_edge(token):
     edge_id_right = request.args.get('edge_index_right')
 
     # input graph
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # get node ids from node labels
@@ -320,8 +328,8 @@ def delete_edge(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = output_graph
-    user_graph_data[str(token)] = graph_data
-    user_last_updated[str(token)] = time.time_ns() // 1_000_000
+    globals()[dynamic_dict][0] = graph_data
+    globals()[dynamic_dict][1] = time.time_ns() // 1_000_000
 
     return "done"
 
@@ -359,7 +367,8 @@ def nn_predict(token):
     model, gnn_architecture_params_dict, gnn_actions_obj = get_model_and_architecture(dataset_name, token, True)
 
     # input graph ------------------------------------------------------------------------------------------------------
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
     input_graph.to(device)
 
@@ -385,7 +394,8 @@ def nn_retrain(token):
 
 
     # [1.] Get patient id to get the dataset that will be used in retrain ----------------------------------------------
-    dataset = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    dataset = globals()[dynamic_dict][0]
 
     # [2.] Keep only the last graph in the dataset ---------------------------------------------------------------------
     dataset = keep_only_last_graph_dataset(dataset)
@@ -425,7 +435,8 @@ def deep_copy(token):
     graph_id = req_data["graph_id"]
 
     # input graph
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
     # update graph id
     graph_id = int(graph_id) + 1
@@ -438,7 +449,7 @@ def deep_copy(token):
 
     # save graph
     graph_data[str(patient_id)][str(graph_id)] = deep_cpy
-    user_graph_data[str(token)] = graph_data
+    globals()[dynamic_dict][0] = graph_data
 
     return "done"
 
@@ -455,7 +466,8 @@ def highest_graph_id(token):
     # get dataset_name and patient ID for
     patient_id = request.args.get('patient_id')
     # get all graphs of this user session
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     selected_graphs = graph_data[str(patient_id)]
     # count how many graphs (the indexes start with 0 so subtract length by 1)
     amount_graphs = len(selected_graphs.keys())-1
@@ -477,7 +489,8 @@ def graph(token):
     graph_id = request.args.get('graph_id')
 
     # delete graph
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     del graph_data[str(patient_id)][str(graph_id)]
 
     return "done"
@@ -488,28 +501,41 @@ def graph(token):
 ########################################################################################################################
 def remove_session_graphs():
     """
-    Remove graphs from outdated user sessions (last update > 5 hour)
+    Remove graphs from outdated user sessions (last update > 2 hour)
     """
     # get time in ms
     current_time = time.time_ns() // 1_000_000
     keys_to_remove = []
 
-    if len(user_last_updated) == 0:
-        return
+    # find outdated session: last modification > 2 hour (INTERVAL)
+    # check each connected user ...
+    for user_token in connected_users:
+        dynamic_dict = DICT_STRING_GRAPHDATA + str(user_token)
+        try:
+            last_update = globals()[dynamic_dict][1]
+            # interval  * 4
+        except BaseException:
+            # user did not load any dataset
+            last_update = 0
 
-    # find outdated session: last modification > 5 hour (INTERVAL)
-    for key, value in user_last_updated.items():
-        if (int(value) + (INTERVAL * 4)) <= current_time:
-            print("remove user token: ", key)
-            keys_to_remove.append(key)
+        if (int(last_update) + INTERVAL) <= current_time:
+            keys_to_remove.append(user_token)
+
+    # individual files can be deleted -> e.g. unused model
+    # but the user should only be cleared after the specified interval!
+    remove_gcn_model_files(keys_to_remove)
 
     # remove all graphs and session of the outdated session
     if len(keys_to_remove) > 0:
+        # acquire the lock
+        with user_dict_lock:
+            for key in keys_to_remove:
+                connected_users.remove(key)
         for key in keys_to_remove:
-            for graph in user_graph_data[key]:
-                del graph
-            del user_graph_data[key]
-            del user_last_updated[key]
+            dynamic_dict = DICT_STRING_GRAPHDATA + str(key)
+            user_dict = globals()[dynamic_dict]
+            user_dict.clear()
+            del user_dict
 
 ########################################################################################################################
 # [15.] Initial training of GNN ========================================================================================
@@ -574,7 +600,8 @@ def node_importance(token):
     model = get_model_and_architecture(dataset_name, token, False)
 
     # input graph ------------------------------------------------------------------------------------------------------
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[patient_id][graph_id]
     input_graph.to(device)
 
@@ -623,7 +650,8 @@ def edge_importance(token):
     model = get_model_and_architecture(dataset_name, token, False)
 
     # input graph ------------------------------------------------------------------------------------------------------
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[patient_id][graph_id]
     input_graph.to(device)
 
@@ -673,7 +701,9 @@ def init_patient_information(token):
     dataset_name = request.args.get("dataset_name")
 
     # Ground truth label is already stored -----------------------------------------------------------------------------
-    current_graph = user_graph_data[str(token)][patient_id][graph_id]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
+    current_graph = graph_data[patient_id][graph_id]
     ground_truth_label = str(current_graph.y.cpu().detach().numpy()[0])
 
     # Get its prediction label and prediction performance (or confidence for the prediction) ---------------------------
@@ -720,7 +750,9 @@ def patient_information(token):
         get_model_and_architecture(dataset_name, token, True)
 
     # Ground truth label is already stored -----------------------------------------------------------------------------
-    current_graph = user_graph_data[str(token)][patient_id][graph_id]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
+    current_graph = graph_data[patient_id][graph_id]
     ground_truth_label = str(current_graph.y.cpu().detach().numpy()[0])
 
     # check if patient is in train or test
@@ -740,7 +772,8 @@ def patient_information(token):
 @app.route('/<uuid:token>/save/results', methods=['GET'])
 def results(token):
     # get graph data of user by token
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
 
     # graph and patient id ---------------------------------------------------------------------------------------------
     from_pat = request.args.get("from_pat")
@@ -777,45 +810,49 @@ def results(token):
 ########################################################################################################################
 # [20.] Callback Interval to remove 'outdated' gcn_model files =========================================================
 ########################################################################################################################
-def remove_gcn_model_files():
+def remove_gcn_model_files(keys_to_be_removed):
     """
-    Remove gcn_model files from outdated user sessions (modification time > 5 hours)
+    Remove gcn_model files from outdated user sessions (modification time > 2 hours)
 
     Use constants for folders and final models!
     """
     storage_folder_constants = ["synthetic", "kirc_random_nodes_ui", "kirc_subnet"]
     model_names_constants = ["synthetic_model.pth", "kirc_random_nodes_ui_model.pth", "kirc_subnet_model.pth"]
     user_active = [True, True, True]
+    remove_user = False
 
     # get time in ms
     current_time = time.time_ns() // 1_000_000
 
-    # find outdated files: last modification > 5 hours (INTERVAL)
+    # find outdated files: last modification > 2 hours (INTERVAL)
     # Search "real" files -> do not rely on modification date of folders!
     for token in connected_users:
+
+        if token in keys_to_be_removed:
+            remove_user = True
+
         # Users can switch between datasets!!!
         if os.path.exists(os.path.join("models", str(storage_folder_constants[0]), str(token))):
             user_active[0] = delete_outdated_files_for_path(current_time,
-                                                            os.path.join("models", str(storage_folder_constants[0]), str(token)),
-                                                            str(model_names_constants[0]))
-
+                                                            os.path.join("models", str(storage_folder_constants[0]),
+                                                                         str(token)), str(model_names_constants[0]),
+                                                            remove_user)
         if os.path.exists(os.path.join("models", str(storage_folder_constants[1]), str(token))):
             user_active[1] = delete_outdated_files_for_path(current_time,
-                                                            os.path.join("models", str(storage_folder_constants[1]), str(token)),
-                                                            str(model_names_constants[1]))
+                                                            os.path.join("models", str(storage_folder_constants[1]),
+                                                                         str(token)), str(model_names_constants[1]),
+                                                            remove_user)
         if os.path.exists(os.path.join("models", str(storage_folder_constants[2]), str(token))):
             user_active[2] = delete_outdated_files_for_path(current_time,
-                                                            os.path.join("models", str(storage_folder_constants[2]), str(token)),
-                                                            str(model_names_constants[2]))
-        # remove user from connected ones
-        if not user_active[0] and not user_active[1] and not user_active[2]:
-            connected_users.remove(token)
+                                                            os.path.join("models", str(storage_folder_constants[2]),
+                                                                         str(token)), str(model_names_constants[2]),
+                                                            remove_user)
 
 
 ########################################################################################################################
 # [21.] Helper method for remove_gcn_model_files - delete files per path ===============================================
 ########################################################################################################################
-def delete_outdated_files_for_path(current_time, storage_path, constant_model_name):
+def delete_outdated_files_for_path(current_time, storage_path, constant_model_name, remove_user):
     """
     Delete outdated files for a specific folder (chosen dataset), if there are some.
 
@@ -832,7 +869,7 @@ def delete_outdated_files_for_path(current_time, storage_path, constant_model_na
         if os.path.exists(model_file_path):
             modification_time = os.path.getmtime(model_file_path) * 1000 # round to ms
 
-            if "latest" in directory:
+            if "latest" in directory and not remove_user:
                 modification_time += INTERVAL
 
             if modification_time + INTERVAL <= current_time:
@@ -878,7 +915,8 @@ def add_feature_to_all_nodes(token):
     new_nodes_feature = np.array(req_data["new_nodes_feature"]).astype(np.float32).reshape(-1, 1)
 
     # get all graphs of this user session
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # Add the new feature in the graph ---------------------------------------------------------------------------------
@@ -904,7 +942,8 @@ def remove_feature_from_all_nodes(token):
     removed_node_feature_idx = req_data["removed_nodes_feature_idx"]
 
     # get all graphs of this user session
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # Remove the feature from all nodes --------------------------------------------------------------------------------
@@ -931,7 +970,8 @@ def add_feature_to_all_edges(token):
     new_node_feature = np.array(req_data["new_edges_feature"]).astype(np.float32).reshape(-1, 1)
 
     # get all graphs of this user session
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # Add the new feature in the graph ---------------------------------------------------------------------------------
@@ -957,7 +997,8 @@ def remove_feature_from_all_edges(token):
     removed_edge_feature_idx = req_data["removed_edges_feature_idx"]
 
     # get all graphs of this user session
-    graph_data = user_graph_data[str(token)]
+    dynamic_dict = DICT_STRING_GRAPHDATA + str(token)
+    graph_data = globals()[dynamic_dict][0]
     input_graph = graph_data[str(patient_id)][str(graph_id)]
 
     # Remove the feature from all edges --------------------------------------------------------------------------------
@@ -998,19 +1039,22 @@ def get_model_and_architecture(dataset, token, architecture_gnn_actions: bool):
         return current_model
 
 
+def create_app():
+    torch.multiprocessing.set_start_method('spawn')
+    return app
+
+
 ########################################################################################################################
 # MAIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ########################################################################################################################
 if __name__ == "__main__":
-    torch.multiprocessing.set_start_method('spawn')
-    # scheduler to update / remove sessions (every 5 hours)
-    time_in_hours = INTERVAL / 60 / 60 / 1000
+    app = create_app()
     scheduler = BackgroundScheduler(timezone="Europe/Vienna")
-    scheduler.add_job(func=remove_session_graphs, trigger="interval", hours=time_in_hours)
-    scheduler.add_job(func=remove_gcn_model_files, trigger="interval", hours=time_in_hours)
+    # scheduler to update / remove sessions (every 1 hours)
+    scheduler.add_job(func=remove_session_graphs, trigger="interval", hours=1, replace_existing=True)
     scheduler.start()
 
-    app.run(debug=True)
+    app.run()
 
     # Shut down the scheduler when exiting the app
     atexit.register(lambda: scheduler.shutdown())
