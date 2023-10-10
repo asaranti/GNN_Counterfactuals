@@ -22,6 +22,7 @@ from torch.multiprocessing import Pool
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
 from functools import partial
+import server.client.server as federation_server
 
 from actionable.gnn_actions import GNN_Actions
 from actionable.graph_actions import add_node, add_edge, remove_node, remove_edge, \
@@ -968,6 +969,33 @@ def remove_feature_from_all_edges(token):
 
 
 ########################################################################################################################
+# Server Stuff =========================================================================================================
+########################################################################################################################
+
+@app.route('/server/status', methods=['GET'])
+def get_client_status():
+    headers = request.headers
+    authorized = federation_server.get_instance().verify_server_token(headers['Authorization'])
+    if not authorized:
+        return json.dumps({ 'error': 'not authorized' }), 401
+    status = federation_server.get_instance().get_status()
+    return json.dumps({'status': status}), 200
+
+@app.route('/server/message', methods=['POST'])
+def receive_server_message():
+    headers = request.headers
+    authorized = federation_server.get_instance().verify_server_token(headers['Authorization'])
+    if not authorized:
+        return json.dumps({ 'error': 'not authorized' }), 401
+    try:
+        intent = headers['X-Clarus-Intent']
+        if not intent: raise "No intent provided"
+    except:
+        return json.dumps({'error': 'no valid intent provided'}), 400
+    
+
+
+########################################################################################################################
 # Util: Get model data and architecture ================================================================================
 ########################################################################################################################
 def get_model_and_architecture(dataset, token, architecture_gnn_actions: bool):
@@ -1010,7 +1038,9 @@ if __name__ == "__main__":
     scheduler.add_job(func=remove_gcn_model_files, trigger="interval", hours=time_in_hours)
     scheduler.start()
 
-    app.run(debug=True)
+    federation_server.get_instance().connect('http://localhost:5000')
+
+    app.run(debug=True, port=5001)
 
     # Shut down the scheduler when exiting the app
     atexit.register(lambda: scheduler.shutdown())
