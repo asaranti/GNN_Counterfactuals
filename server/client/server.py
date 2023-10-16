@@ -3,6 +3,7 @@ import string
 import random
 import jwt
 import time
+from server.client.utils import send_message
 
 client_host = 'http://localhost:5001'
 server = None
@@ -12,6 +13,19 @@ class Server:
         jwt_secret = ''.join(random.choices(string.ascii_lowercase, k=64))
         self.status = 'disconnected'
         self.jwt_secret = jwt_secret
+    
+    def send_message_to_server(self, intent, payload):
+        host = self.server_url
+        token = self.client_token
+        headers = {'Authorization': token, 'X-Clarus-Intent': intent}
+        response = send_message(f'{host}/message', payload, headers)
+        if not response: 
+            print('[CLIENT     ] transmission to server failed')
+            return None
+        else: 
+            print(f'[CLIENT     ] message with intent {intent} transmitted to server')
+            #print(response)
+            return response
     
     def get_from_server(self, path):
         request_url = self.server_url + path

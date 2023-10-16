@@ -2,6 +2,7 @@ from threading import Thread
 import requests
 from datetime import datetime
 from time import sleep
+import jwt
 
 def get_client_status(client):
     #print(client)
@@ -40,6 +41,7 @@ def client_update_loop(clients, fail_theshold, server_log):
             if client['connection_error'] > fail_theshold:
                 remove_client(client['id'], clients, server_log)
         sleep(5)
+        send_message_to_all_clients(clients, "Are you there?", 'DEBUG', server_log)
 
 def remove_client(id, clients, server_log):
     delete_index = -1
@@ -60,3 +62,46 @@ def start_client_update_loop(clients, fail_theshold, server_log):
     thread = Thread(target = client_update_loop, args = (clients, fail_theshold, server_log))
     thread.start()
     return thread
+
+def send_message(url, payload, headers):
+    try:
+        response = requests.post(url, payload, headers=headers)
+        if response.status_code != 200: raise "Bad Status Code"
+    except:
+        return 1
+    return 0
+
+def send_message_to_client(clients, client_id, payload, intent, server_log):
+    res = 0
+    for client in clients:
+        if client['id'] == client_id:
+            host = client['host']
+            token = client['server_token']
+            headers = {'Authorization': token, 'X-Clarus-Intent': intent}
+            response = send_message(f'{host}/server/message', payload, headers)
+            if response: 
+                write_tol_log(f'message transmission failed', f'client_{client["id"]}', server_log)
+                res = 1
+            else: 
+                write_tol_log(f'message with intent {intent} transmitted', f'client_{client["id"]}', server_log)
+                res = 0
+    return res
+
+def send_message_to_all_clients(clients, payload, intent, server_log):
+    recipients = []
+    for client in clients:
+        id = client['id']
+        response = send_message_to_client(clients, id, payload, intent, server_log)
+        if not response: recipients.append(id)
+    return recipients
+
+def verify_client_token(token, secret, clients):
+    try:
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+        id = decoded['id']
+        for client in clients:
+            if id == client['id']: return id
+        raise 'client not found'
+    except Exception as e:
+        #print(e)
+        return None

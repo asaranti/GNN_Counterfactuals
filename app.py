@@ -986,12 +986,22 @@ def receive_server_message():
     headers = request.headers
     authorized = federation_server.get_instance().verify_server_token(headers['Authorization'])
     if not authorized:
+        print("[CLIENT     ] received unauthorized message")
         return json.dumps({ 'error': 'not authorized' }), 401
+    intent = None
     try:
         intent = headers['X-Clarus-Intent']
         if not intent: raise "No intent provided"
     except:
+        print(f"[CLIENT     ] received message from server without intent")
         return json.dumps({'error': 'no valid intent provided'}), 400
+    print(f"[CLIENT     ] received message from server with intent {intent}")
+    if intent == 'DEBUG':
+        print(f"[CLIENT     ] message: {request.get_data()}")
+        return json.dumps({'status': 'ok'}), 200
+    print(f"[CLIENT     ] received message from server without valid intent")
+    return json.dumps({'error': 'invalid intent'}), 400
+
     
 
 
@@ -1039,6 +1049,7 @@ if __name__ == "__main__":
     scheduler.start()
 
     federation_server.get_instance().connect('http://localhost:5000')
+    federation_server.get_instance().send_message_to_server('DEBUG', 'Hello')
 
     app.run(debug=True, port=5001)
 

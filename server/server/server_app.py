@@ -5,7 +5,7 @@ import random
 import string
 import jwt
 import json
-from server_utils import get_client_status, remove_client, start_client_update_loop
+from server_utils import get_client_status, remove_client, start_client_update_loop, verify_client_token
 from flask_cors import CORS
 from server_utils import write_tol_log
 
@@ -57,6 +57,27 @@ def server_get_clients():
         response['clients'].append(data)
     #print(response)
     return json.dumps(response), 200
+
+@app.route('/message', methods=['POST'])
+def receive_server_message():
+    headers = request.headers
+    client_id = verify_client_token(headers['Authorization'], jwt_secret, clients)
+    if not client_id:
+        write_tol_log('received unauthorized message', 'server', server_log)
+        return json.dumps({ 'error': 'not authorized' }), 401
+    intent = None
+    try:
+        intent = headers['X-Clarus-Intent']
+        if not intent: raise "No intent provided"
+    except:
+        write_tol_log('received message without intent', f'client_{client_id}', server_log)
+        return json.dumps({'error': 'no valid intent provided'}), 400
+    write_tol_log(f'received message with intent {intent}', f'client_{client_id}', server_log)
+    if intent == 'DEBUG':
+        write_tol_log(f'message: {request.get_data()}', f'client_{client_id}', server_log)
+        return json.dumps({'status': 'ok'}), 200
+    write_tol_log('received message without valid intent', f'client_{client_id}', server_log)
+    return json.dumps({'error': 'invalid intent'}), 400
 
 # Utils
 def get_client_by_id(id):
