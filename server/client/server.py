@@ -14,6 +14,18 @@ class Server:
         self.status = 'disconnected'
         self.jwt_secret = jwt_secret
     
+    def send_weights_to_server(self, weights):
+        response = self.send_message_to_server('WEIGHTS', weights)
+        if not response:
+            print('[CLIENT     ] could not send weights to server')
+            return
+        if response['status'] == 'ok':
+            print('[CLIENT     ] sent weights to server')
+            self.status = 'waiting_for_average'
+            return
+        print('[CLIENT     ] received invalid response from server')
+        
+    
     def send_message_to_server(self, intent, payload):
         host = self.server_url
         token = self.client_token

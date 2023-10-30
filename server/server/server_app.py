@@ -76,6 +76,18 @@ def receive_server_message():
     if intent == 'DEBUG':
         write_tol_log(f'message: {request.get_data()}', f'client_{client_id}', server_log)
         return json.dumps({'status': 'ok'}), 200
+    if intent == 'WEIGHTS':
+        data = request.get_json()
+        weights = data['weights']
+        client = get_client_by_id(client_id)
+        if weights == None:
+            del client['weights']
+            write_tol_log(f'removed weights of client', f'client_{client_id}', server_log)
+        else:
+            client['weights'] = weights
+            write_tol_log(f'received weights from client', f'client_{client_id}', server_log)
+        
+        return json.dumps({'status': 'ok'}), 200
     write_tol_log('received message without valid intent', f'client_{client_id}', server_log)
     return json.dumps({'error': 'invalid intent'}), 400
 
@@ -85,6 +97,17 @@ def get_client_by_id(id):
         if id == client['id']:
             return client
     return None
+
+def check_weights_present(server_log):
+    weights_present = 0
+    for client in clients:
+        if client['weights']: weights_present = weights_present + 1
+    write_tol_log(f'{weights_present} of {len(clients)} have submitted weights', f'server', server_log)
+    if weights_present == len(clients):
+        write_tol_log(f'all clients have submitted weights', f'server', server_log)
+        #TODO build average and send to clients
+    else:
+        write_tol_log(f'waiting for weights of {len(clients) - weights_present} clients.', f'server', server_log)
 
 
 if __name__ == "__main__":
