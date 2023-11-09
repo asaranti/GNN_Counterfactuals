@@ -3,6 +3,7 @@ import requests
 from datetime import datetime
 from time import sleep
 import jwt
+import numpy as np
 
 def get_client_status(client):
     #print(client)
@@ -105,3 +106,15 @@ def verify_client_token(token, secret, clients):
     except Exception as e:
         #print(e)
         return None
+
+def process_weights(results):
+    new_tensors = []
+    for result_tuple in zip(*results):
+        added = sum([*result_tuple])
+        divided = np.divide(added, len(result_tuple))
+        new_tensors.append(divided)
+        # print(divided.shape)
+    #print(f'[SERVER]   finished calculating average weights for job {job_id}')
+    #print(f'[SERVER]   sending final weights to workers for job {job_id}')
+    #TODO send_final_weights_to_workers(job_id, new_tensors)
+    return new_tensors

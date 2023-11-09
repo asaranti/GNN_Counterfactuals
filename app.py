@@ -981,6 +981,16 @@ def get_client_status():
     status = federation_server.get_instance().get_status()
     return json.dumps({'status': status}), 200
 
+@app.route('/server/reset', methods=['DELETE'])
+def reset_this_client():
+    headers = request.headers
+    authorized = federation_server.get_instance().verify_server_token(headers['Authorization'])
+    if not authorized:
+        return json.dumps({ 'error': 'not authorized' }), 401
+    federation_server.get_instance().reset_server()
+    status = federation_server.get_instance().get_status()
+    return json.dumps({'status': status}), 200
+
 @app.route('/server/message', methods=['POST'])
 def receive_server_message():
     headers = request.headers
@@ -999,6 +1009,16 @@ def receive_server_message():
     if intent == 'DEBUG':
         print(f"[CLIENT     ] message: {request.get_data()}")
         return json.dumps({'status': 'ok'}), 200
+    if intent == 'WEIGHTS':
+        print(f"[CLIENT     ] receiving weights from server")
+        try:
+            data = request.get_json()
+            weights = data['weights']
+            federation_server.get_instance().reveice_weights(weights)
+            return json.dumps({'status': 'ok'}), 200
+        except:
+            print(f"[CLIENT     ] could not receive weights from server")
+            return json.dumps({'error': 'error'}), 500
     print(f"[CLIENT     ] received message from server without valid intent")
     return json.dumps({'error': 'invalid intent'}), 400
 
@@ -1048,8 +1068,11 @@ if __name__ == "__main__":
     scheduler.add_job(func=remove_gcn_model_files, trigger="interval", hours=time_in_hours)
     scheduler.start()
 
-    federation_server.get_instance().connect('http://localhost:5000')
-    federation_server.get_instance().send_message_to_server('DEBUG', 'Hello')
+    try:   
+        federation_server.get_instance().connect('http://localhost:5000')
+        federation_server.get_instance().send_message_to_server('DEBUG', 'Hello')
+    except:
+        print('not connected to server')
 
     app.run(debug=True, port=5001)
 

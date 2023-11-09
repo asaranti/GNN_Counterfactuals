@@ -14,6 +14,10 @@ class Server:
         self.status = 'disconnected'
         self.jwt_secret = jwt_secret
     
+    def reset_server(self):
+        self.status = 'idle'
+        del self.server_weights
+    
     def send_weights_to_server(self, weights):
         response = self.send_message_to_server('WEIGHTS', weights)
         if not response:
@@ -24,6 +28,15 @@ class Server:
             self.status = 'waiting_for_average'
             return
         print('[CLIENT     ] received invalid response from server')
+    
+    def get_weights(self):
+        if not self.server_weights: return None
+        else: return self.server_weights
+
+    def reveice_weights(self, weights):
+        self.server_weights = weights
+        print('[CLIENT     ] saved weights from server')
+        self.status = 'average_received'
         
     
     def send_message_to_server(self, intent, payload):

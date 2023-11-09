@@ -5,7 +5,7 @@ import random
 import string
 import jwt
 import json
-from server_utils import get_client_status, remove_client, start_client_update_loop, verify_client_token
+from server_utils import get_client_status, process_weights, remove_client, start_client_update_loop, verify_client_token
 from flask_cors import CORS
 from server_utils import write_tol_log
 
@@ -106,6 +106,10 @@ def check_weights_present(server_log):
     if weights_present == len(clients):
         write_tol_log(f'all clients have submitted weights', f'server', server_log)
         #TODO build average and send to clients
+        weights = []
+        for client in clients:
+            weights.append(client[weights])
+        average = process_weights(weights)
     else:
         write_tol_log(f'waiting for weights of {len(clients) - weights_present} clients.', f'server', server_log)
 
